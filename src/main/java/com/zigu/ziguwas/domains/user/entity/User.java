@@ -39,5 +39,8 @@ public class User {
     @Column(name = "profile_photo_url")
     private String profilePhotoUrl;
 
+    @Column(name = "veri_status")
+    private VerificationStatus veriStatus;
+
 
 }
