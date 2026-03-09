@@ -13,11 +13,11 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    private final String webServerUrl;
-
-    public CorsConfig(@Value("${web.server}") String webServerUrl) {
-        this.webServerUrl = webServerUrl;
-    }
+//    private final String webServerUrl;
+//
+//    public CorsConfig(@Value("${web.server}") String webServerUrl) {
+//        this.webServerUrl = webServerUrl;
+//    }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

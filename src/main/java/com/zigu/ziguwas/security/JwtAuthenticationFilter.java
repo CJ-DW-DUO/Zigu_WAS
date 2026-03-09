@@ -1,7 +1,7 @@
 package com.zigu.ziguwas.security;
 
-import com.example.starlet_be.exception.CustomAuthenticationEntryPoint;
-import com.example.starlet_be.exception.ErrorCode;
+import com.zigu.ziguwas.exception.CustomAuthenticationEntryPoint;
+import com.zigu.ziguwas.exception.ErrorCode;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -43,7 +43,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
             } catch (JwtException | IllegalArgumentException e) {
-                request.setAttribute("exception", ErrorCode.JWT_TOKEN_PARSING_ERROR);
+//                request.setAttribute("exception", ErrorCode.JWT_TOKEN_PARSING_ERROR);
             }
         }
         filterChain.doFilter(request, response);
