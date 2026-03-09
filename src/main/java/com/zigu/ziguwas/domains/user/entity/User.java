@@ -36,7 +36,7 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Column
+    @Column(name = "profile_photo_url")
     private String profilePhotoUrl;
 
 
