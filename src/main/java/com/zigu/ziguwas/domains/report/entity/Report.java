@@ -1,7 +1,6 @@
 package com.zigu.ziguwas.domains.report.entity;
 
 import com.zigu.ziguwas.domains.item.entity.Item;
-import com.zigu.ziguwas.domains.report.ReportCategory;
 import com.zigu.ziguwas.domains.user.entity.User;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;

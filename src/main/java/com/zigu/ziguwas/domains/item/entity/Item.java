@@ -1,6 +1,5 @@
 package com.zigu.ziguwas.domains.item.entity;
 
-import com.zigu.ziguwas.domains.item.ItemCategory;
 import com.zigu.ziguwas.domains.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

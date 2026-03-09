@@ -1,7 +1,6 @@
 package com.zigu.ziguwas.domains.verification.entity;
 
 import com.zigu.ziguwas.domains.user.entity.User;
-import com.zigu.ziguwas.domains.verification.Status;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

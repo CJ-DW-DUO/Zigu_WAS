@@ -1,6 +1,5 @@
 package com.zigu.ziguwas.domains.notification.entity;
 
-import com.zigu.ziguwas.domains.notification.NotificationType;
 import com.zigu.ziguwas.domains.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
