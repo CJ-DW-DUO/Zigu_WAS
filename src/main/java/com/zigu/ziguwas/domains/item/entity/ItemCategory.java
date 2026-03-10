@@ -10,7 +10,9 @@ public enum ItemCategory {
     ELECTRONICS("전자기기"),
     BOOKS_AND_ACADEMICS("도서/학업"),
     HOBBY_AND_LEISURE("취미/여가"),
-    BEAUTY("뷰티");
+    BEAUTY_AND_FASHION("뷰티/패션"),
+    HEALTHY("건강"),
+    ETC("기타");
 
     private final String description;
 }
