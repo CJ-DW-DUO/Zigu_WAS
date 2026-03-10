@@ -12,7 +12,7 @@ public enum ReportCategory {
     INAPPROPRIATE_CONTENT("부적절한 표현이 포함되어 있어요"),
     FRAUD("사기 또는 사기 의심이 돼요");
 
-    private final String description; // 한글설명 저장
+    private final String description;
 
 
 }

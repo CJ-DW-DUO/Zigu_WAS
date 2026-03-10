@@ -38,8 +38,9 @@ public class Item {
     @Column(name = "day_per_price", nullable = false)
     private Long dayPerPrice;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "is_rented", nullable = false)
-    private boolean isRented; // 대여여부
+    private ItemStatus itemStatus; // 물건 대여 상태
 
     @Column(name = "is_reported", nullable = false)
     private boolean isReported; // 신고처리
