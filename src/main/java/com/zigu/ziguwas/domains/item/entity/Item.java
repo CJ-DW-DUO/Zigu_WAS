@@ -39,7 +39,7 @@ public class Item {
     private Long dayPerPrice;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "is_rented", nullable = false)
+    @Column(name = "item_status", nullable = false)
     private ItemStatus itemStatus; // 물건 대여 상태
 
     @Column(name = "is_reported", nullable = false)
