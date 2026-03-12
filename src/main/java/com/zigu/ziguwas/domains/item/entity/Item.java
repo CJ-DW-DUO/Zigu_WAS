@@ -3,6 +3,7 @@ package com.zigu.ziguwas.domains.item.entity;
 import com.zigu.ziguwas.domains.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -12,6 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
+@Builder
 public class Item {
 
     @Id
@@ -40,7 +42,8 @@ public class Item {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "item_status", nullable = false)
-    private ItemStatus itemStatus; // 물건 대여 상태
+    @Builder.Default
+    private ItemStatus itemStatus = ItemStatus.RESISTED; // 물건 대여 상태
 
     @Column(name = "is_reported", nullable = false)
     private boolean isReported; // 신고처리
