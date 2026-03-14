@@ -1,37 +1,62 @@
 package com.zigu.ziguwas.domains.item.controller;
 
+import com.zigu.ziguwas.domains.item.api.ItemApi;
 import com.zigu.ziguwas.domains.item.dto.reqdto.ItemRegisterReqDto;
 import com.zigu.ziguwas.domains.item.dto.resdto.ItemResDto;
 import com.zigu.ziguwas.domains.item.service.ItemService;
+import com.zigu.ziguwas.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/items")
-public class ItemController {
+public class ItemController implements ItemApi {
 
     private final ItemService itemService;
 
     /**
-     * 새로운 중고 물건을 등록합니다.
-     * 클라이언트로부터 전달받은 JSON 데이터를 DTO로 매핑하여 저장 로직을 수행합니다.
-     *
-     * @param itemRegisterReqDto 물건 정보 및 S3 이미지 URL 리스트가 담긴 DTO
-     * @param userDetails 현재 로그인한 유저의 정보 (JWT 필터에서 주입됨)
-     * @return 생성된 물건의 ID와 함께 201 Created 응답 반환
+     * 아이템의 기본 텍스트 정보를 먼저 등록합니다.
+     * @param itemRegisterReqDto 클라이언트로부터 전달받은 아이템 등록 정보 (유효성 검사 포함)
+     * @param customUserDetails 현재 로그인한 사용자의 시큐리티 인증 정보
+     * @return 등록 완료된 아이템의 응답 DTO와 HTTP 201(Created) 상태 코드
      */
     @PostMapping
-    public ResponseEntity<ItemResDto> registerItem(@RequestBody @Valid ItemRegisterReqDto itemRegisterReqDto , @AuthenticationPrincipal UserDetails userDetails) {
-        ItemResDto itemResDto = itemService.registerItem(itemRegisterReqDto, userDetails.getUsername());
+    public ResponseEntity<ItemResDto> registerItem(
+            @RequestBody @Valid ItemRegisterReqDto itemRegisterReqDto,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        Long userId = customUserDetails.getUserId();
+
+        ItemResDto itemResDto = itemService.registerItem(itemRegisterReqDto, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(itemResDto);
     }
+
+    /**
+     * 생성된 아이템에 실제 이미지 파일들을 업로드합니다.
+     * @param itemId 대상 아이템 ID
+     * @param images 멀티파트 파일 리스트
+     * @return 이미지가 추가된 최종 결과
+     */
+    @PostMapping("/{itemId}/images")
+    public ResponseEntity<ItemResDto> uploadItemImages(
+            @PathVariable("itemId") Long itemId,
+            @RequestPart("images") List<MultipartFile> images
+    ) {
+        ItemResDto response = itemService.uploadImages(itemId, images);
+        return ResponseEntity.ok(response);
+    }
 }
+
