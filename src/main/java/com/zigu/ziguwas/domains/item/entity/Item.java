@@ -47,11 +47,9 @@ public class Item {
     @Column(name = "is_reported", nullable = false)
     private boolean isReported; // 신고처리
 
-    @Column(name = "main_image_url", nullable = false)
-    private String mainImageUrl;
-
     @Builder.Default
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderColumn(name = "image_order")
     private List<ItemImage> imageUrl = new ArrayList<>();
 
     public void addImage(ItemImage image) {
@@ -61,4 +59,5 @@ public class Item {
         }
 
     }
+
 }
