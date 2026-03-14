@@ -2,6 +2,7 @@ package com.zigu.ziguwas.domains.item.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -24,7 +25,7 @@ public class ItemImage {
     @Column(name = "image_id")
     private Long imageId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_id", nullable = false)
     private Item item;
 
@@ -34,4 +35,5 @@ public class ItemImage {
     public void updateItem(Item item) {
         this.item = item;
     }
+    public ItemImage(String imageUrl) {this.imageUrl = imageUrl;}
 }
