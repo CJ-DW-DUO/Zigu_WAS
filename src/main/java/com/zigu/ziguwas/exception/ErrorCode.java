@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ErrorCode {
 
+    // 유저 관련
+    NOT_FOUND_USER(404,"유저를 찾을 수 없습니다."),
 
     // 인증 관련
     NOT_CERTIFIED_USER(400, "인증되지 않은 사용자 입니다."),

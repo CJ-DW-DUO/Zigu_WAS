@@ -3,15 +3,18 @@ package com.zigu.ziguwas.domains.item.entity;
 import com.zigu.ziguwas.domains.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
+@Builder
 public class Item {
 
     @Id
@@ -26,11 +29,9 @@ public class Item {
     @Column(name = "title", nullable = false)
     private String title;
 
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "item_category", joinColumns = @JoinColumn(name = "item_id"))
     @Enumerated(EnumType.STRING)
-    @Column(name = "category")
-    private List<ItemCategory> category;
+    @Column(name = "category", nullable = false)
+    private ItemCategory category;
 
     @Column(name = "description", nullable = false)
     private String description;
@@ -40,9 +41,24 @@ public class Item {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "item_status", nullable = false)
-    private ItemStatus itemStatus; // 물건 대여 상태
+    @Builder.Default
+    private ItemStatus itemStatus = ItemStatus.RESISTED; // 물건 대여 상태
 
     @Column(name = "is_reported", nullable = false)
     private boolean isReported; // 신고처리
 
+    @Column(name = "main_image_url", nullable = false)
+    private String mainImageUrl;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ItemImage> imageUrl = new ArrayList<>();
+
+    public void addImage(ItemImage image) {
+        this.imageUrl.add(image);
+        if (image.getItem() != this) { // 무한 loop 방지
+            image.updateItem(this);
+        }
+
+    }
 }

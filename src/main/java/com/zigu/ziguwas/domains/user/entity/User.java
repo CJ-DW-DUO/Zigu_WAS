@@ -3,6 +3,8 @@ package com.zigu.ziguwas.domains.user.entity;
 import com.zigu.ziguwas.domains.university.entity.University;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -53,6 +55,7 @@ public class User {
     private String profilePhotoUrl;
 
     // 인증 상태
+    @Enumerated(EnumType.STRING)
     @Column(name = "veri_status")
     private VerificationStatus veriStatus;
 

@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -15,6 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
+@Builder
 public class ItemImage {
 
     @Id
@@ -28,4 +30,8 @@ public class ItemImage {
 
     @Column(name = "image_url", nullable = false)
     private String imageUrl;
+
+    public void updateItem(Item item) {
+        this.item = item;
+    }
 }
