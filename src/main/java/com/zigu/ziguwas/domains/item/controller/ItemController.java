@@ -2,6 +2,7 @@ package com.zigu.ziguwas.domains.item.controller;
 
 import com.zigu.ziguwas.domains.item.api.ItemApi;
 import com.zigu.ziguwas.domains.item.dto.reqdto.ItemRegisterReqDto;
+import com.zigu.ziguwas.domains.item.dto.reqdto.ItemUpdateReqDto;
 import com.zigu.ziguwas.domains.item.dto.resdto.ItemResDto;
 import com.zigu.ziguwas.domains.item.service.ItemService;
 import com.zigu.ziguwas.security.CustomUserDetails;
@@ -14,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -78,6 +80,24 @@ public class ItemController implements ItemApi {
     ){
         itemService.deleteImage(itemId, imageId, customUserDetails.getUserId());
         return ResponseEntity.ok("삭제 완료.");
+    }
+
+    /**
+     * 아이템 등록 글을 수정 합니다.
+     * @param itemId 대상 아이템 ID
+     * @param itemUpdateReqDto 수정할 정보
+     * @param customUserDetails 현재 로그인한 사용자의 시큐리티 인증 정보
+     * @return 수정된 정보
+     */
+    @PutMapping("{itemId}")
+    public ResponseEntity<ItemResDto> updateItem(
+            @PathVariable("itemId") Long itemId,
+            @RequestBody @Valid ItemUpdateReqDto itemUpdateReqDto,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        Long userId = (customUserDetails != null) ? customUserDetails.getUserId() : 2L;
+        ItemResDto response = itemService.updateItem(itemId, itemUpdateReqDto, userId);
+        return ResponseEntity.ok(response);
     }
 }
 
