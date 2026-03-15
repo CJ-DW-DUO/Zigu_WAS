@@ -1,6 +1,7 @@
 package com.zigu.ziguwas.domains.item.api;
 
 import com.zigu.ziguwas.domains.item.dto.reqdto.ItemRegisterReqDto;
+import com.zigu.ziguwas.domains.item.dto.reqdto.ItemUpdateReqDto;
 import com.zigu.ziguwas.domains.item.dto.resdto.ItemResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -124,6 +125,19 @@ public interface ItemApi {
     ResponseEntity<String> deleteItemImages(
             @PathVariable("itemId") Long itemId,
             @PathVariable("imageId") Long imageId,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
+    @Operation(summary = "아이템 수정", description = "기존에 등록된 아이템의 정보를 수정합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "수정 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 파라미터"),
+            @ApiResponse(responseCode = "404", description = "아이템을 찾을 수 없음")
+    })
+    @PutMapping("/{itemId}")
+    ResponseEntity<ItemResDto> updateItem(
+            @PathVariable("itemId") Long itemId,
+            @RequestBody @Valid ItemUpdateReqDto itemUpdateReqDto,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
     );
 }
