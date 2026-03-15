@@ -60,4 +60,10 @@ public class Item {
 
     }
 
+    public void updateItemPost(String title, ItemCategory itemCategory, Long dayPerPrice, String description){
+        this.title = title;
+        this.category = itemCategory;
+        this.dayPerPrice = dayPerPrice;
+        this.description = description;
+    }
 }
