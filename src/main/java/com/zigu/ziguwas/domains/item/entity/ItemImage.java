@@ -32,8 +32,15 @@ public class ItemImage {
     @Column(name = "image_url", nullable = false)
     private String imageUrl;
 
+    @Column(name = "is_main_image_url", nullable = false)
+    private boolean isMainImageUrl;
+
+    public ItemImage(String imageUrl, boolean isMainImageUrl) {
+        this.imageUrl = imageUrl;
+        this.isMainImageUrl = isMainImageUrl;
+    }
     public void updateItem(Item item) {
         this.item = item;
     }
-    public ItemImage(String imageUrl) {this.imageUrl = imageUrl;}
+    public void updateMain(boolean isMainImageUrl) {this.isMainImageUrl = isMainImageUrl;}
 }
