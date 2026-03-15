@@ -2,6 +2,7 @@ package com.zigu.ziguwas.domains.item.service;
 
 import com.zigu.ziguwas.S3.S3Service;
 import com.zigu.ziguwas.domains.item.dto.reqdto.ItemRegisterReqDto;
+import com.zigu.ziguwas.domains.item.dto.reqdto.ItemUpdateReqDto;
 import com.zigu.ziguwas.domains.item.dto.resdto.ItemResDto;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemImage;
@@ -107,4 +108,31 @@ public class ItemService {
         s3Service.deleteFile(itemImage.getImageUrl());
         itemImageRepository.delete(itemImage);
     }
+
+    /**
+     * 기존 아이템의 정보를 수정합니다.
+     * @param itemId             수정할 아이템의 ID
+     * @param itemUpdateReqDto   수정할 정보가 담긴 DTO
+     * @param userId             수정을 요청한 사용자의 ID (권한 확인용)
+     * @return                   수정된 아이템 정보 (ItemResDto)
+     */
+    @Transactional
+    public ItemResDto updateItem(Long itemId, ItemUpdateReqDto itemUpdateReqDto, Long userId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ITEM));
+
+        if (!item.getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        item.updateItemPost(
+                itemUpdateReqDto.getTitle(),
+                itemUpdateReqDto.getCategory(),
+                itemUpdateReqDto.getDayPerPrice(),
+                itemUpdateReqDto.getDescription()
+        );
+
+        return ItemResDto.fromEntity(item);
+    }
+
 }
