@@ -171,4 +171,31 @@ public interface ItemApi {
 
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
     );
+
+    @Operation(
+            summary = "아이템 상세 조회",
+            description = "아이템의 상세 정보를 조회하며, 호출 시 조회수가 1 증가합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = ItemResDto.class))
+            ),
+            @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 없음 또는 만료)",
+                    content = @Content(examples = @ExampleObject(value = """
+                        { "status": 401, "message": "로그인이 필요합니다." }
+                        """))
+            ),
+            @ApiResponse(responseCode = "404", description = "아이템 없음",
+                    content = @Content(examples = @ExampleObject(value = """
+                        { "status": 404, "message": "아이템을 찾을 수 없습니다." }
+                        """))
+            )
+    })
+    @GetMapping("/{itemId}")
+    ResponseEntity<ItemResDto> getItemDetail(
+            @Parameter(description = "조회할 아이템 ID", required = true, example = "1")
+            @PathVariable("itemId") Long itemId,
+
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
 }
