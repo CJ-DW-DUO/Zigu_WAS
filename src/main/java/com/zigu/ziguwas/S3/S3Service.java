@@ -1,6 +1,7 @@
 package com.zigu.ziguwas.S3;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
@@ -77,5 +78,32 @@ public class S3Service {
             return "jpeg"; // 확장자가 없는 경우 기본값
         }
         return originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+    }
+
+    /**
+     * S3 버킷에서 특정 파일을 삭제합니다.
+     * 저장된 전체 URL에서 파일명(Key)만 추출하여 삭제 요청을 보냅니다.
+     *
+     * @param fileUrl 삭제할 파일의 전체 URL (DB에 저장된 경로)
+     * @throws CustomException 파일 삭제 중 오류가 발생할 경우 (ErrorCode.FAIL_DELETE_FILE)
+     */
+    public void deleteFile(String fileUrl) {
+        String fileName = extractFileName(fileUrl);
+
+        try {
+            amazonS3.deleteObject(new DeleteObjectRequest(bucket, fileName));
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.FAIL_DELETE_FILE);
+        }
+    }
+
+    /**
+     * S3 전체 URL에서 객체의 Key(파일명)를 추출합니다.
+     * @param fileUrl 파일의 전체 URL
+     * @return 추출된 파일명
+     */
+    private String extractFileName(String fileUrl) {
+        // 예: https://bucket-name.s3.region.amazonaws.com/uuid.png -> uuid.png
+        return fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
     }
 }
