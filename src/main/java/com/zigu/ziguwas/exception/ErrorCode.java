@@ -22,6 +22,7 @@ public enum ErrorCode {
 
     // 아이템 이미지 관련
     NOT_FOUND_IMAGE(404, "이미지를 찾을 수 없습니다." ),
+    IMAGE_NOT_BELONG_TO_ITEM(400, "해당 item에 속하지않은 image 입니다." ),
 
     // 파일 관련
     FAIL_UPLOAD_FILE(400, "파일업로드 실패"),
