@@ -50,15 +50,34 @@ public class ItemController implements ItemApi {
      * 생성된 아이템에 실제 이미지 파일들을 업로드합니다.
      * @param itemId 대상 아이템 ID
      * @param images 멀티파트 파일 리스트
+     * @param customUserDetails 현재 로그인한 사용자의 시큐리티 인증 정보
      * @return 이미지가 추가된 최종 결과
      */
     @PostMapping(value = "/{itemId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ItemResDto> uploadItemImages(
             @PathVariable("itemId") Long itemId,
-            @RequestPart("images") List<MultipartFile> images
+            @RequestPart("images") List<MultipartFile> images,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
-        ItemResDto response = itemService.uploadImages(itemId, images);
+        ItemResDto response = itemService.uploadImages(itemId, images, customUserDetails.getUserId());
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 아이템 이미지를 삭제합니다.
+     * @param itemId 대상 아이템 ID
+     * @param imageId 대상 아이템 이미지 ID
+     * @param customUserDetails 현재 로그인한 사용자의 시큐리티 인증 정보
+     * @return 이미지 삭제 결과
+     */
+    @DeleteMapping("/{itemId}/images/{imageId}")
+    public ResponseEntity<String> deleteItemImages(
+            @PathVariable("itemId") Long itemId,
+            @PathVariable("imageId") Long imageId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ){
+        itemService.deleteImage(itemId, imageId, customUserDetails.getUserId());
+        return ResponseEntity.ok("삭제 완료.");
     }
 }
 
