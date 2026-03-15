@@ -95,9 +95,24 @@ public class ItemController implements ItemApi {
             @RequestBody @Valid ItemUpdateReqDto itemUpdateReqDto,
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
-        Long userId = (customUserDetails != null) ? customUserDetails.getUserId() : 2L;
-        ItemResDto response = itemService.updateItem(itemId, itemUpdateReqDto, userId);
+        ItemResDto response = itemService.updateItem(itemId, itemUpdateReqDto, customUserDetails.getUserId());
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * 아이템 등록 글을 삭제합니다.
+     * @param itemId 대상 아이템 ID
+     * @param customUserDetails 현재 로그인한 사용자의 시큐리티 인증 정보
+     */
+    @DeleteMapping("{itemId}")
+    public ResponseEntity<String> deleteItem(
+            @PathVariable("itemId") Long itemId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        Long userId = (customUserDetails != null) ? customUserDetails.getUserId() : 2L;
+        itemService.deleteItem(itemId, userId);
+        return ResponseEntity.ok("삭제 완료.");
+    }
+
 }
 

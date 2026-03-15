@@ -115,6 +115,8 @@ public class ItemService {
      * @param itemUpdateReqDto   수정할 정보가 담긴 DTO
      * @param userId             수정을 요청한 사용자의 ID (권한 확인용)
      * @return                   수정된 아이템 정보 (ItemResDto)
+     * @throws CustomException
+     * - UNAUTHORIZED_ACCESS: 요청 유저와 아이템 작성자가 일치하지 않을 경우
      */
     @Transactional
     public ItemResDto updateItem(Long itemId, ItemUpdateReqDto itemUpdateReqDto, Long userId) {
@@ -133,6 +135,26 @@ public class ItemService {
         );
 
         return ItemResDto.fromEntity(item);
+    }
+
+    /**
+     * 아이템 게시글을 삭제합니다.
+     *
+     * @param itemId 삭제할 아이템의 고유 식별자
+     * @param userId 삭제를 요청한 유저의 고유 식별자 (권한 확인용)
+     * @throws CustomException
+     * - NOT_FOUND_ITEM: 삭제하려는 아이템이 존재하지 않을 경우
+     * - UNAUTHORIZED_ACCESS: 요청 유저와 아이템 작성자가 일치하지 않을 경우
+     */
+    @Transactional
+    public void deleteItem(Long itemId, Long userId){
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ITEM));
+
+        if (!item.getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+        itemRepository.delete(item);
     }
 
 }
