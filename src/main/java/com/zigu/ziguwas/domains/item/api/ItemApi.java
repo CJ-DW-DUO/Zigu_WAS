@@ -140,4 +140,35 @@ public interface ItemApi {
             @RequestBody @Valid ItemUpdateReqDto itemUpdateReqDto,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
     );
+
+    @Operation(
+            summary = "아이템 게시글 삭제",
+            description = "아이템 게시글과 관련된 모든 정보를 삭제합니다. 본인의 게시글만 삭제할 수 있습니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "삭제 완료",
+                    content = @Content(examples = @ExampleObject(value = "삭제 완료."))
+            ),
+            @ApiResponse(responseCode = "400", description = "권한 없음",
+                    content = @Content(examples = @ExampleObject(
+                            name = "허용되지 않은 접근",
+                            value = """
+                                { "status": 400, "message": "허용되지 않은 접근입니다." }
+                                """))
+            ),
+            @ApiResponse(responseCode = "404", description = "아이템 없음",
+                    content = @Content(examples = @ExampleObject(
+                            name = "아이템을 찾을 수 없음",
+                            value = """
+                                { "status": 404, "message": "아이템을 찾을 수 없습니다." }
+                                """))
+            )
+    })
+    @DeleteMapping("/{itemId}")
+    ResponseEntity<String> deleteItem(
+            @Parameter(description = "삭제할 아이템 ID", required = true)
+            @PathVariable("itemId") Long itemId,
+
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
 }
