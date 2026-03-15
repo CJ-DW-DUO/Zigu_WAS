@@ -71,8 +71,13 @@ public class ItemService {
 
         List<String> uploadedUrls = s3Service.uploadFiles(images);
 
-        for (String url : uploadedUrls) {
-            item.addImage(new ItemImage(url));
+        // 기존에 이미지가 하나도 없었는지 확인
+        boolean isFirstImage = item.getImageUrl().isEmpty();
+
+        for (int i = 0; i < uploadedUrls.size(); i++) {
+            // 첫 번째 업로드되는 파일이면서, 기존 이미지가 없을 때만 true
+            boolean isMain = isFirstImage && (i == 0);
+            item.addImage(new ItemImage(uploadedUrls.get(i), isMain));
         }
 
         return ItemResDto.fromEntity(item);
@@ -105,8 +110,23 @@ public class ItemService {
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
 
+        boolean wasMain = itemImage.isMainImageUrl();
+        Item item = itemImage.getItem();
+
         s3Service.deleteFile(itemImage.getImageUrl());
+
+        item.getImageUrl().remove(itemImage);
         itemImageRepository.delete(itemImage);
+
+        // 대표 이미지 승격 로직
+        // 삭제된 이미지가 메인이었고, 아직 다른 이미지가 남아있다면 새로운 메인을 뽑음
+        if (wasMain && !item.getImageUrl().isEmpty()) {
+            itemImageRepository.findFirstByItemOrderByImageIdAsc(item)
+                    .ifPresent(nextMain -> {
+                        nextMain.updateMain(true);
+
+                    });
+        }
     }
 
     /**
@@ -155,6 +175,22 @@ public class ItemService {
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
         itemRepository.delete(item);
+    }
+
+    /**
+     *
+     * @param itemId 해당 item을 조회합니다.
+     * @param userId 조회 요청을 보낸 유저 (이미 인증 됨)
+     * @return 해당 item 정보
+     */
+    @Transactional
+    public ItemResDto getItemDetail(Long itemId, Long userId) {
+
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ITEM));
+
+        item.increaseViewCount();
+        return ItemResDto.fromEntity(item);
     }
 
 }
