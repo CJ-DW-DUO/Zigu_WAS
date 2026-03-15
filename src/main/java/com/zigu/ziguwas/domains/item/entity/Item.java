@@ -49,8 +49,12 @@ public class Item {
 
     @Builder.Default
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderColumn(name = "image_order")
     private List<ItemImage> imageUrl = new ArrayList<>();
+
+    @Builder.Default
+    @Column(name = "view_count")
+    private Long viewCount = 0L;
+
 
     public void addImage(ItemImage image) {
         this.imageUrl.add(image);
@@ -65,5 +69,9 @@ public class Item {
         this.category = itemCategory;
         this.dayPerPrice = dayPerPrice;
         this.description = description;
+    }
+
+    public void increaseViewCount() {
+        this.viewCount++;
     }
 }
