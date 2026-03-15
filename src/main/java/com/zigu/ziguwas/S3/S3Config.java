@@ -2,6 +2,7 @@ package com.zigu.ziguwas.S3;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,14 +21,25 @@ public class S3Config {
     @Value("${cloud.aws.region.static}")
     private String region;
 
+    @Value("${cloud.aws.s3.endpoint:}")
+    private String endpoint;
+
     @Bean
     public AmazonS3 amazonS3Client() {
         BasicAWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
 
-        return AmazonS3ClientBuilder
-                .standard()
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withRegion(region)
-                .build();
+        AmazonS3ClientBuilder builder = AmazonS3ClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(credentials));
+
+        if (endpoint != null && !endpoint.isEmpty()) {
+            // 로컬스택용 가짜 S3 설정
+            builder.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, region))
+                    .withPathStyleAccessEnabled(true);
+        } else {
+            // 실제 AWS S3 설정
+            builder.withRegion(region);
+        }
+
+        return builder.build();
     }
 }
