@@ -8,8 +8,10 @@ import com.zigu.ziguwas.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -50,7 +52,7 @@ public class ItemController implements ItemApi {
      * @param images 멀티파트 파일 리스트
      * @return 이미지가 추가된 최종 결과
      */
-    @PostMapping("/{itemId}/images")
+    @PostMapping(value = "/{itemId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ItemResDto> uploadItemImages(
             @PathVariable("itemId") Long itemId,
             @RequestPart("images") List<MultipartFile> images

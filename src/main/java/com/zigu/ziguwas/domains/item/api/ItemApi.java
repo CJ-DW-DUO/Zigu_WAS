@@ -5,6 +5,7 @@ import com.zigu.ziguwas.domains.item.dto.resdto.ItemResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -25,7 +26,7 @@ import java.util.List;
 public interface ItemApi {
 
     @Operation(
-            summary = "1단계: 아이템 기본 정보 등록",
+            summary = "1단계: 아이템 기본 정보 등록 (2단계인 사진등록API와 세트)",
             description = "새로운 아이템의 텍스트 정보를 먼저 등록합니다."
     )
     @ApiResponses({
@@ -50,7 +51,7 @@ public interface ItemApi {
     );
 
     @Operation(
-            summary = "2단계: 아이템 다중 이미지 업로드",
+            summary = "2단계: 아이템 다중 이미지 업로드 (1단계인 글 등록API와 세트)",
             description = "등록된 아이템에 실제 이미지 파일들을 업로드합니다."
     )
     @ApiResponses({
@@ -70,7 +71,14 @@ public interface ItemApi {
     })
     @PostMapping(value = "/{itemId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<ItemResDto> uploadItemImages(
-            @Parameter(description = "이미지를 추가할 아이템 ID", required = true) @PathVariable("itemId") Long itemId,
-            @Parameter(description = "업로드할 멀티파트 파일 리스트", required = true) @RequestPart("images") List<MultipartFile> images
+            @Parameter(description = "이미지를 추가할 아이템 ID", required = true)
+            @PathVariable("itemId") Long itemId,
+
+            @Parameter(
+                    description = "업로드할 이미지 파일 리스트",
+                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            array = @ArraySchema(schema = @Schema(type = "string", format = "binary")))
+            )
+            @RequestPart("images") List<MultipartFile> images
     );
 }

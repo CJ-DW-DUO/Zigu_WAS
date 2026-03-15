@@ -1,0 +1,12 @@
+version: '3.8'
+
+# 로컬 s3테스트용
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: zigu-s3-test
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - DEFAULT_REGION=ap-northeast-2
