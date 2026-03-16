@@ -41,9 +41,9 @@ public class AuthController {
      * @return 이메일 전송 성공여부
      */
     @PostMapping("/email/send")
-    public ResponseEntity<?> emailValidation(@Valid @RequestBody EmailReqDto dto) {
+    public ResponseEntity<?> emailCodeSend(@Valid @RequestBody EmailReqDto dto) {
 
-        authService.emailValidation(dto);
+        authService.emailCodeSend(dto);
 
         return ResponseEntity.ok().build();
     }
