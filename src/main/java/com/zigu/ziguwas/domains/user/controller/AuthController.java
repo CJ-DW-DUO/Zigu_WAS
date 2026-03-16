@@ -1,15 +1,14 @@
 package com.zigu.ziguwas.domains.user.controller;
 
-import com.zigu.ziguwas.domains.university.repository.UniversityRepository;
 import com.zigu.ziguwas.domains.user.dto.request.EmailReqDto;
 import com.zigu.ziguwas.domains.user.dto.request.EmailVerifyReqDto;
+import com.zigu.ziguwas.domains.user.dto.request.LoginReqDto;
 import com.zigu.ziguwas.domains.user.dto.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.entity.User;
-import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.domains.user.service.AuthService;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
-import com.zigu.ziguwas.redis.RedisService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,9 +25,6 @@ import java.net.URI;
 public class AuthController {
 
     private final AuthService authService;
-    private final UserRepository userRepository;
-    private final UniversityRepository universityRepository;
-    private final RedisService redisService;
 
 
     /**
@@ -64,7 +60,8 @@ public class AuthController {
 
 
     /**
-     * 회원가입 API 입니다.
+     * 회원가입 API
+     *
      * @param dto 회원가입 정보가 담긴 데이터 전송 객체
      * @return 회원의 PK가 담긴 자원의 위치
      */
@@ -76,7 +73,21 @@ public class AuthController {
         return ResponseEntity.created(URI.create("/api/v1/user/" + user.getId())).build();
     }
 
-    // 로그인
+
+    /**
+     * 로그인 API
+     *
+     * @param dto 로그인 정보
+     * @param res http에 담을 응답
+     * @return 로그인 정보, 유저 ID, AccessToken, RefreshToken
+     */
+    @PostMapping("/login")
+    public ResponseEntity<?> login(
+            @Valid @RequestBody LoginReqDto dto,
+            HttpServletResponse res
+    ){
+        return ResponseEntity.ok().body(authService.tryLogin(dto, res));
+    }
 
 
     // 회원탈퇴
