@@ -10,12 +10,9 @@ import com.zigu.ziguwas.domains.user.service.AuthService;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.redis.RedisService;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,9 +38,9 @@ public class AuthController {
      * @return 이메일 전송 성공여부
      */
     @PostMapping("/email/send")
-    public ResponseEntity<?> emailValidation(@Valid @RequestBody EmailReqDto dto) {
+    public ResponseEntity<?> emailCodeSend(@Valid @RequestBody EmailReqDto dto) {
 
-        authService.emailValidation(dto);
+        authService.emailCodeSend(dto);
 
         return ResponseEntity.ok().build();
     }
@@ -71,13 +68,13 @@ public class AuthController {
      * @param dto 회원가입 정보가 담긴 데이터 전송 객체
      * @return 회원의 PK가 담긴 자원의 위치
      */
-//    @PostMapping("/signup")
-//    public ResponseEntity<?> signUp(@Valid @RequestBody SignupReqDto dto){
-//        User user = authService.signUp(dto);
-//        if(user == null)
-//            throw new CustomException(ErrorCode.USER_CREATE_FAILED);
-//        return ResponseEntity.created(URI.create("/api/v1/user/" + user.getId())).build();
-//    }
+    @PostMapping("/signup")
+    public ResponseEntity<?> signUp(@Valid @RequestBody SignupReqDto dto){
+        User user = authService.signUp(dto);
+        if(user == null)
+            throw new CustomException(ErrorCode.USER_CREATE_FAILED);
+        return ResponseEntity.created(URI.create("/api/v1/user/" + user.getId())).build();
+    }
 
     // 로그인
 

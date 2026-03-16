@@ -1,8 +1,12 @@
 package com.zigu.ziguwas.domains.user.service;
 
+import com.zigu.ziguwas.domains.university.entity.University;
 import com.zigu.ziguwas.domains.university.repository.UniversityRepository;
 import com.zigu.ziguwas.domains.user.dto.request.EmailReqDto;
 import com.zigu.ziguwas.domains.user.dto.request.EmailVerifyReqDto;
+import com.zigu.ziguwas.domains.user.dto.request.SignupReqDto;
+import com.zigu.ziguwas.domains.user.entity.User;
+import com.zigu.ziguwas.domains.user.entity.VerificationStatus;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
@@ -10,6 +14,7 @@ import com.zigu.ziguwas.redis.RedisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,32 +26,56 @@ public class AuthService {
     private final UniversityRepository universityRepository;
     private final JavaMailSender mailSender;
     private final RedisService redisService;
+    private final PasswordEncoder passwordEncoder;
 
 
     /**
-     * 이메일 검증 및 인증코드 발송
-     *
      * 대학에 존재하는 도메인인지, 중복되지 않은 이메일인지 검증
-     * Redis를 이용한 랜덤 인증 코드 생성 후 발송
      *
-     * @param dto 이메일
+     * @param email 이메일
      */
-    @Transactional
-    public void emailValidation(EmailReqDto dto) {
+    private void validateEmail(String email){
+
         // 1. 대학의 도메인인지 체크
         // @ 뒤에오는 이메일을 추출
-        String domain = dto.getEmail().substring(dto.getEmail().indexOf("@") + 1);
+        String domain = email.substring(email.indexOf("@") + 1);
 
         if(!universityRepository.existsByUnivEmail(domain)){
             throw new CustomException(ErrorCode.NOT_MATCHED_UNIV_EMAIL);
         }
 
         // 2. 중복이 없는지 체크
-        if(userRepository.existsByEmail(dto.getEmail())){
+        if(userRepository.existsByEmail(email)){
             throw new CustomException(ErrorCode.EMAIL_CONFLICTED);
         }
+    }
 
-        // 3. 인증코드 생성 및 레디스 저장
+
+    /**
+     * 닉네임 유효성 검증
+     *
+     * @param nickname 닉네임
+     */
+    private void validateNickname(String nickname){
+        // 1. 중복되는지 검증
+        if(userRepository.existsByNickname(nickname)){
+            throw new CustomException(ErrorCode.NICKNAME_CONFLICT);
+        }
+    }
+
+    /**
+     * 이메일 인증코드 발송
+     *
+     * Redis를 이용한 랜덤 인증 코드 생성 후 발송
+     *
+     * @param dto 이메일
+     */
+    @Transactional
+    public void emailCodeSend(EmailReqDto dto) {
+        // 1. 이메일 검증
+        validateEmail(dto.getEmail());
+
+        // 2. 인증코드 생성 및 레디스 저장
 
         // 6자리 랜덤 인증 코드 생성
         String verificationCode = String.valueOf((int)(Math.random() * 899999) + 100000);
@@ -54,7 +83,7 @@ public class AuthService {
         // Redis에 저장 / 이메일, 인증코드, 300초
         redisService.setDataExpire(dto.getEmail(), verificationCode, 300);
 
-        // 4. 이메일 발송
+        // 3. 이메일 발송
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(dto.getEmail());
         message.setSubject("[Zigu] 회원가입 인증 번호 안내");
@@ -82,11 +111,49 @@ public class AuthService {
         // 2. 인증코드 매치 확인
         boolean result = savedCode.equals(dto.getCode());
         if(result){
+            // 인증 코드는 삭제
             redisService.deleteData(dto.getEmail());
+            // 인증된 메일 상태는 10분간 유지하도록
+            redisService.setDataExpire(dto.getEmail(), "DONE", 600);
         }
 
         // 3. 매칭 결과 반환
         return result;
     }
 
+    @Transactional
+    public User signUp(SignupReqDto dto) {
+        // 1. 이메일 검증
+        validateEmail(dto.getEmail());
+
+        // 2. 해당 이메일이 현재 인증 상태인지
+        if(redisService.getData(dto.getEmail()) == null || !redisService.getData(dto.getEmail()).equals("DONE")){
+            throw new CustomException(ErrorCode.EMAIL_NOT_VERIFIED);
+        }
+        redisService.deleteData(dto.getEmail());
+
+        // 3. 닉네임 검증
+        validateNickname(dto.getNickname());
+
+        // 4. 대학 찾기
+
+        // 이메일에서 해당 대학 이메일 부분 추출
+        String univDomain = dto.getEmail().substring(dto.getEmail().indexOf("@") + 1);
+
+        // 대학 검색
+        University univ = universityRepository.findByUnivEmail(univDomain).orElseThrow(
+                () -> new CustomException(ErrorCode.UNIVERSITY_NOT_FOUND)
+        );
+
+        // 5. 회원가입
+        // 아직 프로필사진 업로드 기능이 구현되지 않았습니다.
+        return userRepository.save(User.builder()
+                .nickname(dto.getNickname())
+                .email(dto.getEmail())
+                .password(passwordEncoder.encode(dto.getPassword()))
+                .univ(univ)
+                .profilePhotoUrl(null)
+                .veriStatus(VerificationStatus.CERTIFIED)
+                .build());
+    }
 }

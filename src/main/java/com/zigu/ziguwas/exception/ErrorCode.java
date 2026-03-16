@@ -17,8 +17,13 @@ public enum ErrorCode {
     NOT_MATCHED_UNIV_EMAIL(404, "해당 이메일은 대학 리스트에 존재하지 않습니다."),
     EMAIL_CONFLICTED(409, "해당 이메일은 이미 가입되어 있습니다."),
     EMAIL_SEND_FAILED(500, "이메일 전송에 실패하였습니다."),
+    EMAIL_NOT_VERIFIED(401, "해당 이메일은 인증되지 않았습니다."),
     VERIFY_CODE_NOT_FOUND(404, "인증코드를 발급하지 않은 이메일 입니다."),
     VERIFY_CODE_NOT_MATCHED(400, "인증코드가 일치하지 않습니다."),
+    NICKNAME_CONFLICT(409, "이미 사용중인 닉네임입니다."),
+
+    // 대학 관련
+    UNIVERSITY_NOT_FOUND(404, "해당 대학교는 존재하지 않습니다."),
 
     // 기타 관련
     INTERNAL_SERVER_ERROR(500, "내부 서버 오류입니다."),
