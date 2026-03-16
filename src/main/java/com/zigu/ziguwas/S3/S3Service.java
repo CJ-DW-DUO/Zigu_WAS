@@ -55,7 +55,7 @@ public class S3Service {
         try {
             amazonS3.putObject(bucket, storeFileName, multipartFile.getInputStream(), metadata);
         } catch (IOException e) {
-            throw new CustomException(ErrorCode.FAIL_UPLOAD_FILE);
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAIL);
         }
 
         return amazonS3.getUrl(bucket, storeFileName).toString();

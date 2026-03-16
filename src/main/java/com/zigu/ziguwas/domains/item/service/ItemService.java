@@ -63,7 +63,7 @@ public class ItemService {
     public ItemResDto uploadImages(Long itemId, List<MultipartFile> images, Long userId) {
 
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ITEM));
+                .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
 
         if (!item.getUser().getId().equals(userId)) {
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
@@ -142,7 +142,7 @@ public class ItemService {
     @Transactional
     public ItemResDto updateItem(Long itemId, ItemUpdateReqDto itemUpdateReqDto, Long userId) {
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ITEM));
+                .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
 
         if (!item.getUser().getId().equals(userId)) {
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
@@ -170,7 +170,7 @@ public class ItemService {
     @Transactional
     public void deleteItem(Long itemId, Long userId){
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ITEM));
+                .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
 
         if (!item.getUser().getId().equals(userId)) {
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
@@ -188,7 +188,7 @@ public class ItemService {
     public ItemResDto getItemDetail(Long itemId, Long userId) {
 
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ITEM));
+                .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
 
         item.increaseViewCount();
         return ItemResDto.fromEntity(item);
