@@ -35,12 +35,12 @@ public class ItemService {
      * @param itemRegisterReqDto 등록할 아이템 정보가 담긴 DTO
      * @param userId 아이템을 등록하는 사용자의 ID
      * @return 등록된 아이템 정보를 담은 ItemResDto
-     * @throws CustomException 사용자를 찾을 수 없을 때 (ErrorCode.NOT_FOUND_USER) 발생
+     * @throws CustomException 사용자를 찾을 수 없을 때 (ErrorCode.USER_NOT_FOUND) 발생
      */
     @Transactional
     public ItemResDto registerItem(ItemRegisterReqDto itemRegisterReqDto, Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_USER));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         Item item = itemRegisterReqDto.toEntity(user);
 
         Item savedItem = itemRepository.save(item);
