@@ -10,3 +10,10 @@ services:
     environment:
       - SERVICES=s3
       - DEFAULT_REGION=ap-northeast-2
+
+
+  redis:
+    image: redis:latest
+    container_name: zigu-redis
+    ports:
+      - "6379:6379"
