@@ -15,9 +15,6 @@ import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.redis.RedisService;
 import com.zigu.ziguwas.security.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -109,7 +106,7 @@ public class AuthService {
      * @return 인증코드 일치 여부
      */
     @Transactional
-    public boolean emailVerification(EmailVerifyReqDto dto) {
+    public void emailVerification(EmailVerifyReqDto dto) {
 
         // 1. Redis에 저장된 인증코드 불러오기
         String savedCode = redisService.getData(dto.getEmail());
@@ -119,16 +116,16 @@ public class AuthService {
         }
 
         // 2. 인증코드 매치 확인
-        boolean result = savedCode.equals(dto.getCode());
-        if(result){
+        if(savedCode.equals(dto.getCode())){
             // 인증 코드는 삭제
             redisService.deleteData(dto.getEmail());
             // 인증된 메일 상태는 10분간 유지하도록
             redisService.setDataExpire(dto.getEmail(), "DONE", 600);
+        } else {
+            // 인증 정보가 다를경우 예외
+            throw new CustomException(ErrorCode.VERIFY_CODE_NOT_MATCHED);
         }
 
-        // 3. 매칭 결과 반환
-        return result;
     }
 
     @Transactional
