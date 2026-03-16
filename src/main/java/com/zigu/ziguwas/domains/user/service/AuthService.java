@@ -15,6 +15,7 @@ import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.redis.RedisService;
 import com.zigu.ziguwas.security.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -128,6 +129,26 @@ public class AuthService {
 
     }
 
+    /**
+     * 닉네임 검증 단독 서비스
+     *
+     * 닉네임의 중복 여부만 판단하는 API를 위한 서비스입니다.
+     *
+     * @param nickname 닉네임
+     */
+    @Transactional
+    public void nicknameCheck(String nickname) {
+
+        // 닉네임 검증
+        validateNickname(nickname);
+    }
+
+    /**
+     * 회원가입 서비스
+     *
+     * @param dto 회원가입 정보
+     * @return 생성된 사용자 객체
+     */
     @Transactional
     public User signUp(SignupReqDto dto) {
         // 1. 이메일 검증
@@ -235,4 +256,6 @@ public class AuthService {
     public String createRefreshToken(String email) {
         return jwtUtil.createRefreshToken(email);
     }
+
+
 }
