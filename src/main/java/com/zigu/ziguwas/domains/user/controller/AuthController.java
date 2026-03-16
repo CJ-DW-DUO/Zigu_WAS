@@ -2,6 +2,7 @@ package com.zigu.ziguwas.domains.user.controller;
 
 import com.zigu.ziguwas.domains.university.repository.UniversityRepository;
 import com.zigu.ziguwas.domains.user.dto.request.EmailReqDto;
+import com.zigu.ziguwas.domains.user.dto.request.EmailVerifyReqDto;
 import com.zigu.ziguwas.domains.user.dto.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
@@ -33,7 +34,12 @@ public class AuthController {
     private final RedisService redisService;
 
 
-    // 이메일 중복, 이메일 학교 도메인 확인 및 인증 코드 발송
+    /**
+     * 이메일 검증과 인증코드 발송 API
+     *
+     * @param dto 이메일
+     * @return 이메일 전송 성공여부
+     */
     @PostMapping("/email/send")
     public ResponseEntity<?> emailValidation(@Valid @RequestBody EmailReqDto dto) {
 
@@ -43,12 +49,18 @@ public class AuthController {
     }
 
 
-    // 인증 코드 확인
+    /**
+     * 이메일로 전송된 인증번호 확인 API
+     *
+     * @param dto 이메일, 인증코드
+     * @return 인증코드 일치 성공 || 인증코드 불일치 || 인증코드 미존재 결과
+     */
     @PostMapping("/email/verify")
-    public ResponseEntity<?> emailVerification(@Valid @RequestBody SignupReqDto signupReqDto) {
+    public ResponseEntity<?> emailVerification(@Valid @RequestBody EmailVerifyReqDto dto) {
 
-        // 1. 인증번호가 일치하는지 체크
-
+        if(!authService.emailVerification(dto)){
+            throw new CustomException(ErrorCode.VERIFY_CODE_NOT_MATCHED);
+        }
 
         return ResponseEntity.ok().build();
     }
