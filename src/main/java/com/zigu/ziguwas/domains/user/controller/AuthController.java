@@ -35,9 +35,7 @@ public class AuthController {
      */
     @PostMapping("/email/send")
     public ResponseEntity<?> emailCodeSend(@Valid @RequestBody EmailReqDto dto) {
-
         authService.emailCodeSend(dto);
-
         return ResponseEntity.ok().build();
     }
 
@@ -50,11 +48,7 @@ public class AuthController {
      */
     @PostMapping("/email/verify")
     public ResponseEntity<?> emailVerification(@Valid @RequestBody EmailVerifyReqDto dto) {
-
-        if(!authService.emailVerification(dto)){
-            throw new CustomException(ErrorCode.VERIFY_CODE_NOT_MATCHED);
-        }
-
+        authService.emailVerification(dto);
         return ResponseEntity.ok().build();
     }
 
