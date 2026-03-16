@@ -3,10 +3,13 @@ package com.zigu.ziguwas.domains.user.service;
 import com.zigu.ziguwas.domains.university.repository.UniversityRepository;
 import com.zigu.ziguwas.domains.user.dto.request.EmailReqDto;
 import com.zigu.ziguwas.domains.user.dto.request.EmailVerifyReqDto;
+import com.zigu.ziguwas.domains.user.dto.request.SignupReqDto;
+import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.redis.RedisService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -82,11 +85,18 @@ public class AuthService {
         // 2. 인증코드 매치 확인
         boolean result = savedCode.equals(dto.getCode());
         if(result){
+            // 인증 코드는 삭제
             redisService.deleteData(dto.getEmail());
+            // 인증된 메일 상태는 10분간 유지하도록
+            redisService.setDataExpire(dto.getEmail(), "DONE", 600);
         }
 
         // 3. 매칭 결과 반환
         return result;
     }
 
+    @Transactional
+    public User signUp(@Valid SignupReqDto dto) {
+        return null;
+    }
 }
