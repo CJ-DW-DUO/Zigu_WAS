@@ -1,10 +1,12 @@
 package com.zigu.ziguwas.domains.user.service;
 
+import com.zigu.ziguwas.domains.university.entity.University;
 import com.zigu.ziguwas.domains.university.repository.UniversityRepository;
 import com.zigu.ziguwas.domains.user.dto.request.EmailReqDto;
 import com.zigu.ziguwas.domains.user.dto.request.EmailVerifyReqDto;
 import com.zigu.ziguwas.domains.user.dto.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.entity.User;
+import com.zigu.ziguwas.domains.user.entity.VerificationStatus;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
@@ -12,6 +14,7 @@ import com.zigu.ziguwas.redis.RedisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +26,7 @@ public class AuthService {
     private final UniversityRepository universityRepository;
     private final JavaMailSender mailSender;
     private final RedisService redisService;
+    private final PasswordEncoder passwordEncoder;
 
 
     /**
@@ -31,6 +35,7 @@ public class AuthService {
      * @param email 이메일
      */
     private void emailValidate(String email){
+    private void validateEmail(String email){
 
         // 1. 대학의 도메인인지 체크
         // @ 뒤에오는 이메일을 추출
@@ -46,6 +51,19 @@ public class AuthService {
         }
     }
 
+
+    /**
+     * 닉네임 유효성 검증
+     *
+     * @param nickname 닉네임
+     */
+    private void validateNickname(String nickname){
+        // 1. 중복되는지 검증
+        if(userRepository.existsByNickname(nickname)){
+            throw new CustomException(ErrorCode.NICKNAME_CONFLICT);
+        }
+    }
+
     /**
      * 이메일 인증코드 발송
      *
@@ -56,7 +74,7 @@ public class AuthService {
     @Transactional
     public void emailCodeSend(EmailReqDto dto) {
         // 1. 이메일 검증
-        emailValidate(dto.getEmail());
+        validateEmail(dto.getEmail());
 
         // 2. 인증코드 생성 및 레디스 저장
 
