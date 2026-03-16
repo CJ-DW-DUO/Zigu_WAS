@@ -3,6 +3,7 @@ package com.zigu.ziguwas.domains.user.controller;
 import com.zigu.ziguwas.domains.user.dto.request.EmailReqDto;
 import com.zigu.ziguwas.domains.user.dto.request.EmailVerifyReqDto;
 import com.zigu.ziguwas.domains.user.dto.request.LoginReqDto;
+import com.zigu.ziguwas.domains.user.dto.request.NicknameReqDto;
 import com.zigu.ziguwas.domains.user.dto.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.service.AuthService;
@@ -49,6 +50,19 @@ public class AuthController {
     @PostMapping("/email/verify")
     public ResponseEntity<?> emailVerification(@Valid @RequestBody EmailVerifyReqDto dto) {
         authService.emailVerification(dto);
+        return ResponseEntity.ok().build();
+    }
+
+
+    /**
+     * 닉네임 검증 단독 API
+     *
+     * @param dto 닉네임
+     * @return 검증 성공 || 실패
+     */
+    @PostMapping("/nickname-check")
+    public ResponseEntity<?> nicknameCheck(@Valid @RequestBody NicknameReqDto dto) {
+        authService.nicknameCheck(dto.getNickname());
         return ResponseEntity.ok().build();
     }
 
