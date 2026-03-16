@@ -36,7 +36,7 @@ public class User {
     // FK - 대학ID
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "univ_id", nullable = false)
-    private University univId;
+    private University univ;
 
     // 이메일
     @Column(nullable = false, unique = true)
