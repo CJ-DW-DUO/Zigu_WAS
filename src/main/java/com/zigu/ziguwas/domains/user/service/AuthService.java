@@ -127,7 +127,7 @@ public class AuthService {
         validateEmail(dto.getEmail());
 
         // 2. 해당 이메일이 현재 인증 상태인지
-        if(!redisService.getData(dto.getEmail()).equals("DONE")){
+        if(redisService.getData(dto.getEmail()) == null || !redisService.getData(dto.getEmail()).equals("DONE")){
             throw new CustomException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
         redisService.deleteData(dto.getEmail());
