@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -68,18 +69,18 @@ public class ItemController implements ItemApi {
 
     /**
      * 아이템 이미지를 삭제합니다.
-     * @param itemId 대상 아이템 ID
-     * @param imageId 대상 아이템 이미지 ID
+     * @param  itemId 대상 아이템 ID
+     * @param imageIds 대상 아이템 이미지들 ID
      * @param customUserDetails 현재 로그인한 사용자의 시큐리티 인증 정보
      * @return 이미지 삭제 결과
      */
-    @DeleteMapping("/{itemId}/images/{imageId}")
+    @DeleteMapping("/{itemId}/images")
     public ResponseEntity<String> deleteItemImages(
             @PathVariable("itemId") Long itemId,
-            @PathVariable("imageId") Long imageId,
+            @RequestParam List<Long> imageIds,
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ){
-        itemService.deleteImage(itemId, imageId, customUserDetails.getUserId());
+        itemService.deleteImage(itemId, imageIds, customUserDetails.getUserId());
         return ResponseEntity.ok("삭제 완료.");
     }
 

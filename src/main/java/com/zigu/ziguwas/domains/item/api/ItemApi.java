@@ -121,10 +121,10 @@ public interface ItemApi {
                     })
             )
     })
-    @DeleteMapping("/{itemId}/images/{imageId}")
+    @DeleteMapping("/{itemId}/images")
     ResponseEntity<String> deleteItemImages(
             @PathVariable("itemId") Long itemId,
-            @PathVariable("imageId") Long imageId,
+            @RequestParam List<Long> imageIds,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
     );
 

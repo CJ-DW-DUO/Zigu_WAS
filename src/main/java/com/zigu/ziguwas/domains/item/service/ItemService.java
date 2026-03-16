@@ -89,7 +89,7 @@ public class ItemService {
      * 데이터베이스(DB)에서 해당 이미지를 제거합니다.
      *
      * @param itemId  이미지가 속한 아이템의 ID (검증용)
-     * @param imageId 삭제할 이미지의 고유 ID
+     * @param imageIds 삭제할 이미지들의 고유 ID 리스트
      * @param userId 아이템을 등록하는 사용자의 ID
      * @throws CustomException
      * - ErrorCode.NOT_FOUND_IMAGE: 해당 ID의 이미지가 존재하지 않을 경우
@@ -97,35 +97,36 @@ public class ItemService {
      * - ErrorCode.UNAUTHORIZED_ACCESS: 이미지 ID 검증에 실패했을 경우
      */
     @Transactional
-    public void deleteImage(Long itemId, Long imageId, Long userId) {
+    public void deleteImage(Long itemId, List<Long> imageIds, Long userId) {
 
-        ItemImage itemImage = itemImageRepository.findById(imageId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_IMAGE));
+        List<ItemImage> itemImages = itemImageRepository.findAllById(imageIds);
 
-        if (!itemImage.getItem().getId().equals(itemId)) {
-            throw new CustomException(ErrorCode.IMAGE_NOT_BELONG_TO_ITEM);
+        if(itemImages.isEmpty()) {return;}
+
+        for (ItemImage img : itemImages) {
+            if (!img.getItem().getId().equals(itemId)) {
+                throw new CustomException(ErrorCode.IMAGE_NOT_BELONG_TO_ITEM);
+            }
+            if (!img.getItem().getUser().getId().equals(userId)) {
+                throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+            }
         }
 
-        if (!itemImage.getItem().getUser().getId().equals(userId)) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        Item item = itemImages.get(0).getItem();
+        boolean isMainDeleted = itemImages.stream().anyMatch(ItemImage::isMainImageUrl);
+
+        // S3 파일 삭제 및 DB 리스트 제거
+        for (ItemImage img : itemImages) {
+            s3Service.deleteFile(img.getImageUrl());
+            item.getImageUrl().remove(img); // orphanRemoval=true에 의해 DB 삭제 유발
         }
 
-        boolean wasMain = itemImage.isMainImageUrl();
-        Item item = itemImage.getItem();
+        itemImageRepository.deleteAllInBatch(itemImages);
 
-        s3Service.deleteFile(itemImage.getImageUrl());
-
-        item.getImageUrl().remove(itemImage);
-        itemImageRepository.delete(itemImage);
-
-        // 대표 이미지 승격 로직
-        // 삭제된 이미지가 메인이었고, 아직 다른 이미지가 남아있다면 새로운 메인을 뽑음
-        if (wasMain && !item.getImageUrl().isEmpty()) {
+        // 메인 이미지가 삭제 목록에 있었다면? 새로운 메인 지정
+        if (isMainDeleted && !item.getImageUrl().isEmpty()) {
             itemImageRepository.findFirstByItemOrderByImageIdAsc(item)
-                    .ifPresent(nextMain -> {
-                        nextMain.updateMain(true);
-
-                    });
+                    .ifPresent(nextMain -> nextMain.updateMain(true));
         }
     }
 
