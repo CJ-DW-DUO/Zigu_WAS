@@ -1,6 +1,7 @@
 package com.zigu.ziguwas.domains.item.controller;
 
 import com.zigu.ziguwas.domains.item.api.ItemApi;
+import com.zigu.ziguwas.domains.item.dto.reqdto.ItemDelReqDto;
 import com.zigu.ziguwas.domains.item.dto.reqdto.ItemRegisterReqDto;
 import com.zigu.ziguwas.domains.item.dto.reqdto.ItemUpdateReqDto;
 import com.zigu.ziguwas.domains.item.dto.resdto.ItemResDto;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -70,17 +70,17 @@ public class ItemController implements ItemApi {
     /**
      * 아이템 이미지를 삭제합니다.
      * @param  itemId 대상 아이템 ID
-     * @param imageIds 대상 아이템 이미지들 ID
+     * @param delDto 대상 아이템 이미지들
      * @param customUserDetails 현재 로그인한 사용자의 시큐리티 인증 정보
      * @return 이미지 삭제 결과
      */
     @DeleteMapping("/{itemId}/images")
     public ResponseEntity<String> deleteItemImages(
             @PathVariable("itemId") Long itemId,
-            @RequestParam List<Long> imageIds,
+            @RequestBody ItemDelReqDto delDto,
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ){
-        itemService.deleteImage(itemId, imageIds, customUserDetails.getUserId());
+        itemService.deleteImage(itemId, delDto.getImageIds(), customUserDetails.getUserId());
         return ResponseEntity.ok("삭제 완료.");
     }
 

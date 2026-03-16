@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.item.api;
 
+import com.zigu.ziguwas.domains.item.dto.reqdto.ItemDelReqDto;
 import com.zigu.ziguwas.domains.item.dto.reqdto.ItemRegisterReqDto;
 import com.zigu.ziguwas.domains.item.dto.reqdto.ItemUpdateReqDto;
 import com.zigu.ziguwas.domains.item.dto.resdto.ItemResDto;
@@ -124,7 +125,7 @@ public interface ItemApi {
     @DeleteMapping("/{itemId}/images")
     ResponseEntity<String> deleteItemImages(
             @PathVariable("itemId") Long itemId,
-            @RequestParam List<Long> imageIds,
+            @RequestBody ItemDelReqDto delDto,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
     );
 
