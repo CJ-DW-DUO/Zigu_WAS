@@ -3,6 +3,7 @@ package com.zigu.ziguwas.domains.university.repository;
 import com.zigu.ziguwas.domains.university.entity.University;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UniversityRepository extends JpaRepository<University, Long> {
@@ -22,4 +23,11 @@ public interface UniversityRepository extends JpaRepository<University, Long> {
      * @return 대학 객체
      */
     Optional<University> findByUnivEmail(String univEmail);
+
+    /**
+     * 검색어로 대학 정보 가져오기
+     * @param name 검색어
+     * @return 대학 리스트
+     */
+    List<University> findByUnivNameContains(String name);
 }
