@@ -4,14 +4,23 @@ import com.zigu.ziguwas.domains.university.entity.University;
 import com.zigu.ziguwas.domains.university.repository.UniversityRepository;
 import com.zigu.ziguwas.domains.user.dto.request.EmailReqDto;
 import com.zigu.ziguwas.domains.user.dto.request.EmailVerifyReqDto;
+import com.zigu.ziguwas.domains.user.dto.request.LoginReqDto;
 import com.zigu.ziguwas.domains.user.dto.request.SignupReqDto;
+import com.zigu.ziguwas.domains.user.dto.response.LoginResDto;
 import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.entity.VerificationStatus;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.redis.RedisService;
+import com.zigu.ziguwas.security.JwtUtil;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,6 +36,7 @@ public class AuthService {
     private final JavaMailSender mailSender;
     private final RedisService redisService;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
 
     /**
@@ -155,5 +165,77 @@ public class AuthService {
                 .profilePhotoUrl(null)
                 .veriStatus(VerificationStatus.CERTIFIED)
                 .build());
+    }
+
+    /**
+     * 로그인 시도 서비스
+     *
+     * @param dto 로그인 정보
+     * @param res 응답 헤더
+     */
+    @Transactional
+    public LoginResDto tryLogin(
+            LoginReqDto dto,
+            HttpServletResponse res
+    ) {
+
+        // 1. 해당 유저부터 존재하는지
+        User user = userRepository.findByEmail(dto.getEmail()).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        // 2. 비밀번호 확인
+        if(!passwordEncoder.matches(dto.getPassword(), user.getPassword())){
+            throw new CustomException(ErrorCode.INCORRECT_PASSWORD);
+        }
+
+        // 3. JWT 토큰 발급
+        String accessToken = createAccessToken(dto.getEmail());
+        String refreshToken = createRefreshToken(dto.getEmail());
+
+        // 4. 리프레쉬 토큰 헤더에 붙이는 작업
+        ResponseCookie responseCookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .path("/")
+                .maxAge(7*24*60*60) // 일주일
+                .build();
+        res.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
+
+        // 5. 액세스 토큰 헤더에 붙이는 작업
+        ResponseCookie accessCookie = ResponseCookie.from("accessToken", accessToken)
+                .httpOnly(true)
+                .path("/")
+                .maxAge(12*60*60) // 12시간
+                .build();
+        res.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+
+        // 6. DTO 구성 반환
+        return LoginResDto.builder()
+                .userId(user.getId())
+                .email(user.getEmail())
+                .nickname(user.getNickname())
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
+
+    /**
+     * JWT AccessToken 발급
+     *
+     * @param email 이메일
+     * @return AccessToken
+     */
+    public String createAccessToken(String email) {
+        return jwtUtil.createAccessToken(email);
+    }
+
+    /**
+     * JWT RefreshToken 발급
+     *
+     * @param email 이메일
+     * @return RefreshToken
+     */
+    public String createRefreshToken(String email) {
+        return jwtUtil.createRefreshToken(email);
     }
 }
