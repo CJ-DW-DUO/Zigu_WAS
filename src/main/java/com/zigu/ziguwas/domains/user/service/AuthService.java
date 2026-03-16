@@ -34,7 +34,6 @@ public class AuthService {
      *
      * @param email 이메일
      */
-    private void emailValidate(String email){
     private void validateEmail(String email){
 
         // 1. 대학의 도메인인지 체크
@@ -123,7 +122,38 @@ public class AuthService {
     }
 
     @Transactional
-    public User signUp(@Valid SignupReqDto dto) {
-        return null;
+    public User signUp(SignupReqDto dto) {
+        // 1. 이메일 검증
+        validateEmail(dto.getEmail());
+
+        // 2. 해당 이메일이 현재 인증 상태인지
+        if(!redisService.getData(dto.getEmail()).equals("DONE")){
+            throw new CustomException(ErrorCode.EMAIL_NOT_VERIFIED);
+        }
+        redisService.deleteData(dto.getEmail());
+
+        // 3. 닉네임 검증
+        validateNickname(dto.getNickname());
+
+        // 4. 대학 찾기
+
+        // 이메일에서 해당 대학 이메일 부분 추출
+        String univDomain = dto.getEmail().substring(dto.getEmail().indexOf("@") + 1);
+
+        // 대학 검색
+        University univ = universityRepository.findByUnivEmail(univDomain).orElseThrow(
+                () -> new CustomException(ErrorCode.UNIVERSITY_NOT_FOUND)
+        );
+
+        // 5. 회원가입
+        // 아직 프로필사진 업로드 기능이 구현되지 않았습니다.
+        return userRepository.save(User.builder()
+                .nickname(dto.getNickname())
+                .email(dto.getEmail())
+                .password(passwordEncoder.encode(dto.getPassword()))
+                .univ(univ)
+                .profilePhotoUrl(null)
+                .veriStatus(VerificationStatus.CERTIFIED)
+                .build());
     }
 }
