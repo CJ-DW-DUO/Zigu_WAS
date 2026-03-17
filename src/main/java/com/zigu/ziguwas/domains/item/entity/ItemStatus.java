@@ -11,7 +11,7 @@ public enum ItemStatus {
     RETURNED("반납완료"),
 
     // 등록 상태
-    RESISTED("등록됨");
+    REGISTERED("등록됨");
 
     private final String description;
 
