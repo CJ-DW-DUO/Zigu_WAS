@@ -11,6 +11,8 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 @Component
 @RequiredArgsConstructor
 public class StompHandler implements ChannelInterceptor {
@@ -33,6 +35,11 @@ public class StompHandler implements ChannelInterceptor {
                 if (email == null) {
                     // 해당 이메일 정보가 없으면 유저가 없음
                     throw new CustomException(ErrorCode.USER_NOT_FOUND);
+                } else {
+                    Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
+                    if (sessionAttributes != null) {
+                        sessionAttributes.put("userEmail", email);
+                    }
                 }
                 // 필요 시 accessor에 사용자 정보를 저장하여 이후 로직에서 활용 가능
             } else {
