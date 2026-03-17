@@ -34,10 +34,12 @@ public enum ErrorCode {
     // 아이템 관련
     ITEM_NOT_FOUND(404, "아이템을 찾을 수 없습니다." ),
 
-
     // 아이템 이미지 관련
     IMAGE_NOT_FOUND(404, "이미지를 찾을 수 없습니다." ),
     IMAGE_NOT_BELONG_TO_ITEM(400, "해당 item에 속하지않은 image 입니다." ),
+
+    // 채팅 관련
+    CHATROOM_NOT_FOUND(404, "해당 채팅방은 존재하지 않습니다."),
 
     // 파일 관련
     FILE_UPLOAD_FAIL(400, "파일업로드 실패"),
