@@ -36,7 +36,7 @@ public class ItemListController implements ItemListApi {
             @PageableDefault(size = 12) Pageable pageable,
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
-        Long userId = (customUserDetails != null) ? customUserDetails.getUserId() : 2L;
-        return ResponseEntity.ok(itemListService.getItemList(cond, pageable ,userId));
+
+        return ResponseEntity.ok(itemListService.getItemList(cond, pageable , customUserDetails.getUserId()));
     }
 }
