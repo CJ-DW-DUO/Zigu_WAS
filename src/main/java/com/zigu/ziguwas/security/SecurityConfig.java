@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/email/**").permitAll()
                         .requestMatchers("/api/v1/verify/**").permitAll()
                         .requestMatchers("/api/v1/openai/**").permitAll()
+                        .requestMatchers("/ws-stomp/**").permitAll() // 웹소켓 핸드쉐이크 허용
                         .requestMatchers("/swagger-resources/**", "/swagger-ui/**", "/v3/api-docs/**",
                                 "/webjars/**", "/error").permitAll()
                         .requestMatchers("/view/**").permitAll()
