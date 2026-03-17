@@ -1,5 +1,7 @@
 package com.zigu.ziguwas.websocket;
 
+import com.zigu.ziguwas.exception.CustomException;
+import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
@@ -29,11 +31,13 @@ public class StompHandler implements ChannelInterceptor {
                 String email = jwtUtil.getEmailFromToken(token);
 
                 if (email == null) {
-                    throw new RuntimeException("인증 정보가 올바르지 않습니다.");
+                    // 해당 이메일 정보가 없으면 유저가 없음
+                    throw new CustomException(ErrorCode.USER_NOT_FOUND);
                 }
                 // 필요 시 accessor에 사용자 정보를 저장하여 이후 로직에서 활용 가능
             } else {
-                throw new RuntimeException("토큰이 존재하지 않습니다.");
+                // 이메일이 있으나 토큰이 존재하지 않음
+                throw new CustomException(ErrorCode.TOKEN_NOT_FOUND);
             }
         }
         return message;
