@@ -70,7 +70,11 @@ public class ChatService {
     }
 
     /**
-     * 채팅방 생성 및 참여자 등록 (거래 게시글 등에서 채팅 시작 시 호출)
+     * 1대1 채팅방 생성
+     *
+     * @param senderId 채팅 생성자
+     * @param receiverId 채팅 참여자
+     * @return 채팅방 ID
      */
     @Transactional
     public Long createChatRoom(Long senderId, Long receiverId) {
