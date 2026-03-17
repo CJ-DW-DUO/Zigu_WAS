@@ -1,6 +1,6 @@
-package com.zigu.ziguwas.domains.chatmessage.controller;
+package com.zigu.ziguwas.domains.chat.controller;
 
-import com.zigu.ziguwas.domains.chatmessage.dto.request.ChatMessageReqDto;
+import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageReqDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;

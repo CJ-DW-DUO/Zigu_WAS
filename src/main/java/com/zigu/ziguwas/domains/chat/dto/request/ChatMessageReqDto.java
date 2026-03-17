@@ -1,4 +1,4 @@
-package com.zigu.ziguwas.domains.chatmessage.dto.request;
+package com.zigu.ziguwas.domains.chat.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;

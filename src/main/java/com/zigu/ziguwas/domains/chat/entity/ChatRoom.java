@@ -1,4 +1,4 @@
-package com.zigu.ziguwas.domains.chatroom.entity;
+package com.zigu.ziguwas.domains.chat.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

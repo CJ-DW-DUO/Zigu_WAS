@@ -1,6 +1,5 @@
-package com.zigu.ziguwas.domains.chatparticipant.entity;
+package com.zigu.ziguwas.domains.chat.entity;
 
-import com.zigu.ziguwas.domains.chatroom.entity.ChatRoom;
 import com.zigu.ziguwas.domains.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
