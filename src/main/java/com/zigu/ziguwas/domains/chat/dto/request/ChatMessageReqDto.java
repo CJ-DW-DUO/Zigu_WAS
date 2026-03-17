@@ -9,10 +9,6 @@ import lombok.Data;
 @Builder
 public class ChatMessageReqDto {
 
-    @Schema(description = "채팅방ID", example = "1")
-    @NotBlank(message = "방 번호는 필수 입력입니다.")
-    private Long roomId;
-
     @Schema(description = "채팅메시지", example = "지구야 안녕")
     @NotBlank(message = "메시지는 비울 수 없습니다.")
     private String message;
