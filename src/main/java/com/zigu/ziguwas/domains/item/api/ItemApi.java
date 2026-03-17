@@ -1,9 +1,9 @@
 package com.zigu.ziguwas.domains.item.api;
 
-import com.zigu.ziguwas.domains.item.dto.reqdto.ItemDelReqDto;
-import com.zigu.ziguwas.domains.item.dto.reqdto.ItemRegisterReqDto;
-import com.zigu.ziguwas.domains.item.dto.reqdto.ItemUpdateReqDto;
-import com.zigu.ziguwas.domains.item.dto.resdto.ItemResDto;
+import com.zigu.ziguwas.domains.item.dto.request.ItemDelReqDto;
+import com.zigu.ziguwas.domains.item.dto.request.ItemRegisterReqDto;
+import com.zigu.ziguwas.domains.item.dto.request.ItemUpdateReqDto;
+import com.zigu.ziguwas.domains.item.dto.response.ItemResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

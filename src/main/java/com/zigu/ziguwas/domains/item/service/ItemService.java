@@ -1,9 +1,9 @@
 package com.zigu.ziguwas.domains.item.service;
 
 import com.zigu.ziguwas.S3.S3Service;
-import com.zigu.ziguwas.domains.item.dto.reqdto.ItemRegisterReqDto;
-import com.zigu.ziguwas.domains.item.dto.reqdto.ItemUpdateReqDto;
-import com.zigu.ziguwas.domains.item.dto.resdto.ItemResDto;
+import com.zigu.ziguwas.domains.item.dto.request.ItemRegisterReqDto;
+import com.zigu.ziguwas.domains.item.dto.request.ItemUpdateReqDto;
+import com.zigu.ziguwas.domains.item.dto.response.ItemResDto;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemImage;
 import com.zigu.ziguwas.domains.item.repository.ItemImageRepository;

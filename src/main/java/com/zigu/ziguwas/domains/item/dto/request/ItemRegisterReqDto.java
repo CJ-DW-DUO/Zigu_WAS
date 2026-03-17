@@ -1,4 +1,4 @@
-package com.zigu.ziguwas.domains.item.dto.reqdto;
+package com.zigu.ziguwas.domains.item.dto.request;
 
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemCategory;

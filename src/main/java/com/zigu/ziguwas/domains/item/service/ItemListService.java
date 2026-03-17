@@ -1,7 +1,7 @@
 package com.zigu.ziguwas.domains.item.service;
 
-import com.zigu.ziguwas.domains.item.dto.resdto.ItemListResDto;
-import com.zigu.ziguwas.domains.item.dto.resdto.ItemSearchCond;
+import com.zigu.ziguwas.domains.item.dto.response.ItemListResDto;
+import com.zigu.ziguwas.domains.item.dto.response.ItemSearchCond;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.repository.ItemListRepository;
 import com.zigu.ziguwas.domains.item.repository.spec.ItemSpecs;

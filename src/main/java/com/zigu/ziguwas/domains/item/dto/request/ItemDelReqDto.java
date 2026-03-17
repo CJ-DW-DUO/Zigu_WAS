@@ -1,4 +1,4 @@
-package com.zigu.ziguwas.domains.item.dto.reqdto;
+package com.zigu.ziguwas.domains.item.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;

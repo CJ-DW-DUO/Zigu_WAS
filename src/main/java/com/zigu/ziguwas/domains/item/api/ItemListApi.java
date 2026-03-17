@@ -1,7 +1,7 @@
 package com.zigu.ziguwas.domains.item.api;
 
-import com.zigu.ziguwas.domains.item.dto.resdto.ItemListResDto;
-import com.zigu.ziguwas.domains.item.dto.resdto.ItemSearchCond;
+import com.zigu.ziguwas.domains.item.dto.response.ItemListResDto;
+import com.zigu.ziguwas.domains.item.dto.response.ItemSearchCond;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

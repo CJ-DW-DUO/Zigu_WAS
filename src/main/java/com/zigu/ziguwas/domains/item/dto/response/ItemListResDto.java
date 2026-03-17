@@ -1,4 +1,4 @@
-package com.zigu.ziguwas.domains.item.dto.resdto;
+package com.zigu.ziguwas.domains.item.dto.response;
 
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemImage;
