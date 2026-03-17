@@ -42,7 +42,7 @@ public class Item {
     @Enumerated(EnumType.STRING)
     @Column(name = "item_status", nullable = false)
     @Builder.Default
-    private ItemStatus itemStatus = ItemStatus.RESISTED; // 물건 대여 상태
+    private ItemStatus itemStatus = ItemStatus.REGISTERED; // 물건 대여 상태
 
     @Column(name = "is_reported", nullable = false)
     private boolean isReported; // 신고처리
