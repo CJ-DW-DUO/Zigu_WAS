@@ -118,7 +118,7 @@ public class ItemService {
         // S3 파일 삭제 및 DB 리스트 제거
         for (ItemImage img : itemImages) {
             s3Service.deleteFile(img.getImageUrl());
-            item.getImageUrl().remove(img); // orphanRemoval=true에 의해 DB 삭제 유발
+            item.getImageUrl().remove(img);
         }
 
         itemImageRepository.deleteAllInBatch(itemImages);
