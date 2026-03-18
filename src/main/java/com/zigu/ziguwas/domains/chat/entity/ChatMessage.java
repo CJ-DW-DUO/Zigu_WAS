@@ -38,6 +38,8 @@ public class ChatMessage {
 
     @Column(nullable = false)
     private LocalDateTime timestamp;
+
+    @Column(name = "image_url")
     private String imageUrl;
 
 }
