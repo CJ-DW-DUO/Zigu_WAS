@@ -41,17 +41,18 @@ public class ChatService {
     /**
      * 실시간 메시지 저장
      *
-     * @param dto 메시지 내용
+     * @param message 메시지
      * @param email 이메일
+     * @param chatRoomId 채팅방ID
      */
     @Transactional
-    public void saveMessage(ChatMessageReqDto dto, String email) {
+    public void saveMessage(String message, String email, Long chatRoomId) {
         // 1. 발신자 정보 조회
         User sender = userRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         // 2. 해당 채팅방 존재 여부 확인
-        ChatRoom chatRoom = chatRoomRepository.findById(dto.getRoomId())
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND));
 
         // 3. 참여자 권한 검증 (선택 사항: 보낸 사람이 해당 방의 참여자인지 확인)
@@ -62,7 +63,7 @@ public class ChatService {
                 null,
                 chatRoom,
                 sender,
-                dto.getMessage(),
+                message,
                 "" // 이미지 URL 필드는 필요 시 추가 처리
         );
 
