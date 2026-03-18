@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.user.controller;
 
+import com.zigu.ziguwas.domains.user.api.MyPageApi;
 import com.zigu.ziguwas.domains.user.dto.mypage.response.MyPageMainResDto;
 import com.zigu.ziguwas.domains.user.service.MyPageService;
 import com.zigu.ziguwas.security.CustomUserDetails;
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/mypage")
-public class MyPageController {
+public class MyPageController implements MyPageApi {
 
     private final MyPageService myPageService;
 
