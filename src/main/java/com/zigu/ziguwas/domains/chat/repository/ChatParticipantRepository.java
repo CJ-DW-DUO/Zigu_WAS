@@ -5,6 +5,8 @@ import com.zigu.ziguwas.domains.chat.entity.ChatRoom;
 import com.zigu.ziguwas.domains.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
+
 public interface ChatParticipantRepository extends JpaRepository<ChatParticipant, Long> {
 
     /**
@@ -15,4 +17,12 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
      * @return T/F
      */
     boolean existsByChatRoomAndUser(ChatRoom room, User user);
+
+    /**
+     * 사용자 기반으로 채팅에 참여중인 정보들을 모두 가져오기
+     *
+     * @param user 사용자
+     * @return 참가자 리스트
+     */
+    List<ChatParticipant> findAllByUser(User user);
 }

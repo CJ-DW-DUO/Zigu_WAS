@@ -1,6 +1,6 @@
 package com.zigu.ziguwas.domains.chat.service;
 
-import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageReqDto;
+import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomPreviewResDto;
 import com.zigu.ziguwas.domains.chat.entity.ChatMessage;
 import com.zigu.ziguwas.domains.chat.entity.ChatParticipant;
 import com.zigu.ziguwas.domains.chat.entity.ChatRoom;
@@ -11,9 +11,14 @@ import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
+import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +40,54 @@ public class ChatService {
             // 채팅방에 해당 유저가 없으므로 접근 제한
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
+    }
+
+    /**
+     * 참여중인 채팅방 조회 DTO
+     * @param customUserDetails
+     * @return
+     */
+    public List<ChatRoomPreviewResDto> getChatroomsPreview(CustomUserDetails customUserDetails) {
+
+        // 1. 사용자 조회
+        User user = userRepository.findByEmail(customUserDetails.getUsername()).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        // 2. 사용자가 속한 채팅방 조회
+        List<ChatParticipant> participants = chatParticipantRepository.findAllByUser(user);
+
+        // 3. 사용자가 속한 방 목록 조회
+        List<ChatRoomPreviewResDto> dtos = new ArrayList<>();
+
+        for (ChatParticipant chatParticipant : participants) {
+
+            // 3-1. 채팅방 조회
+            ChatRoom room = chatParticipant.getChatRoom();
+
+            // 3-2. 상대 참여자 이름(방이름) 조회
+            String roomName = userRepository.findById(chatParticipant.getUser().getId()).orElseThrow(
+                    () -> new CustomException(ErrorCode.CHATMATE_NOT_FOUND)
+            ).getNickname();
+
+            // 3-3. 마지막으로 보낸 메시지 조회
+            ChatMessage lastMessage = chatMessageRepository.findFirstByChatRoomOrderByTimestampDesc(chatParticipant.getChatRoom()).orElseThrow(
+                    () -> new CustomException(ErrorCode.CHAT_MESSAGE_NOT_FOUND)
+            );
+
+            // 3-4. 마지막으로 대화한 시각 조회
+            LocalDateTime lastSendTime = lastMessage.getTimestamp();
+
+            // 3-5. dto에 담기
+            dtos.add(ChatRoomPreviewResDto.builder()
+                            .roomId(room.getChatId())
+                            .roomName(roomName)
+                            .lastMessage(lastMessage.getMessage())
+                            .lastMessageTimestamp(lastSendTime)
+                            .build());
+        }
+
+        return dtos;
     }
 
 
@@ -64,7 +117,8 @@ public class ChatService {
                 chatRoom,
                 sender,
                 message,
-                "" // 이미지 URL 필드는 필요 시 추가 처리
+                LocalDateTime.now(),
+                null // 이미지 URL 필드는 필요 시 추가 처리
         );
 
         chatMessageRepository.save(chatMessage);

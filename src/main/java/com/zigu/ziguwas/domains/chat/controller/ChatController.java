@@ -4,11 +4,15 @@ import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageReqDto;
 import com.zigu.ziguwas.domains.chat.service.ChatService;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
+import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,6 +24,14 @@ public class ChatController {
 
     private final SimpMessageSendingOperations messagingTemplate;
     private final ChatService chatService;
+
+    @GetMapping("/api/v1/chatrooms")
+    public ResponseEntity<?> getChatroomsPreview(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ){
+        return ResponseEntity.ok(chatService.getChatroomsPreview(customUserDetails));
+    }
+
 
     /**
      * 메시지 전송 STOMP
