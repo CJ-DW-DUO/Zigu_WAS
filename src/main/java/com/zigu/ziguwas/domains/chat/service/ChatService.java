@@ -47,7 +47,7 @@ public class ChatService {
      * @param customUserDetails
      * @return
      */
-    public List<ChatRoomPreviewResDto> getMyChatroomsPreview(CustomUserDetails customUserDetails) {
+    public List<ChatRoomPreviewResDto> getChatroomsPreview(CustomUserDetails customUserDetails) {
 
         // 1. 사용자 조회
         User user = userRepository.findByEmail(customUserDetails.getUsername()).orElseThrow(
