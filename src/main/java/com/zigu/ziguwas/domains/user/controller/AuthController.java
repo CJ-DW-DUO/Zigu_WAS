@@ -1,10 +1,10 @@
 package com.zigu.ziguwas.domains.user.controller;
 
-import com.zigu.ziguwas.domains.user.dto.request.EmailReqDto;
-import com.zigu.ziguwas.domains.user.dto.request.EmailVerifyReqDto;
-import com.zigu.ziguwas.domains.user.dto.request.LoginReqDto;
-import com.zigu.ziguwas.domains.user.dto.request.NicknameReqDto;
-import com.zigu.ziguwas.domains.user.dto.request.SignupReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.request.EmailReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.request.EmailVerifyReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.request.LoginReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.request.NicknameReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.service.AuthService;
 import com.zigu.ziguwas.exception.CustomException;

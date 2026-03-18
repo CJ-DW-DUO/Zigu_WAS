@@ -1,10 +1,10 @@
 package com.zigu.ziguwas.domains.item.controller;
 
 import com.zigu.ziguwas.domains.item.api.ItemApi;
-import com.zigu.ziguwas.domains.item.dto.reqdto.ItemDelReqDto;
-import com.zigu.ziguwas.domains.item.dto.reqdto.ItemRegisterReqDto;
-import com.zigu.ziguwas.domains.item.dto.reqdto.ItemUpdateReqDto;
-import com.zigu.ziguwas.domains.item.dto.resdto.ItemResDto;
+import com.zigu.ziguwas.domains.item.dto.request.ItemDelReqDto;
+import com.zigu.ziguwas.domains.item.dto.request.ItemRegisterReqDto;
+import com.zigu.ziguwas.domains.item.dto.request.ItemUpdateReqDto;
+import com.zigu.ziguwas.domains.item.dto.response.ItemResDto;
 import com.zigu.ziguwas.domains.item.service.ItemService;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import jakarta.validation.Valid;

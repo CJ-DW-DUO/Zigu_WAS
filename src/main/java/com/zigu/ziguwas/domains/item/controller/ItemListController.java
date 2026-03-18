@@ -1,8 +1,8 @@
 package com.zigu.ziguwas.domains.item.controller;
 
 import com.zigu.ziguwas.domains.item.api.ItemListApi;
-import com.zigu.ziguwas.domains.item.dto.resdto.ItemListResDto;
-import com.zigu.ziguwas.domains.item.dto.resdto.ItemSearchCond;
+import com.zigu.ziguwas.domains.item.dto.response.ItemListResDto;
+import com.zigu.ziguwas.domains.item.dto.response.ItemSearchCond;
 import com.zigu.ziguwas.domains.item.service.ItemListService;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;

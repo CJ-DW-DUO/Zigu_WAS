@@ -1,7 +1,7 @@
 package com.zigu.ziguwas.domains.item.service;
 
-import com.zigu.ziguwas.domains.item.dto.resdto.ItemListResDto;
-import com.zigu.ziguwas.domains.item.dto.resdto.ItemSearchCond;
+import com.zigu.ziguwas.domains.item.dto.response.ItemListResDto;
+import com.zigu.ziguwas.domains.item.dto.response.ItemSearchCond;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.repository.ItemListRepository;
 import com.zigu.ziguwas.domains.item.repository.spec.ItemSpecs;
@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +20,7 @@ public class ItemListService {
 
     private final ItemListRepository itemListRepository;
 
+    @Transactional(readOnly = true)
     public Page<ItemListResDto> getItemList(ItemSearchCond cond, Pageable pageable , Long userId) {
 
         // 1. 정렬 조건 결정

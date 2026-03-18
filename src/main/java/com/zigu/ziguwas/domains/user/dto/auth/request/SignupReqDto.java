@@ -1,4 +1,4 @@
-package com.zigu.ziguwas.domains.user.dto.request;
+package com.zigu.ziguwas.domains.user.dto.auth.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;

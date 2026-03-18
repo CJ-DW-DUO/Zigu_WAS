@@ -1,9 +1,9 @@
 package com.zigu.ziguwas.domains.item.service;
 
 import com.zigu.ziguwas.S3.S3Service;
-import com.zigu.ziguwas.domains.item.dto.reqdto.ItemRegisterReqDto;
-import com.zigu.ziguwas.domains.item.dto.reqdto.ItemUpdateReqDto;
-import com.zigu.ziguwas.domains.item.dto.resdto.ItemResDto;
+import com.zigu.ziguwas.domains.item.dto.request.ItemRegisterReqDto;
+import com.zigu.ziguwas.domains.item.dto.request.ItemUpdateReqDto;
+import com.zigu.ziguwas.domains.item.dto.response.ItemResDto;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemImage;
 import com.zigu.ziguwas.domains.item.repository.ItemImageRepository;
@@ -118,7 +118,7 @@ public class ItemService {
         // S3 파일 삭제 및 DB 리스트 제거
         for (ItemImage img : itemImages) {
             s3Service.deleteFile(img.getImageUrl());
-            item.getImageUrl().remove(img); // orphanRemoval=true에 의해 DB 삭제 유발
+            item.getImageUrl().remove(img);
         }
 
         itemImageRepository.deleteAllInBatch(itemImages);
