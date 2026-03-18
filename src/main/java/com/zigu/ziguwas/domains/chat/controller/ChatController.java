@@ -25,6 +25,14 @@ public class ChatController {
     private final SimpMessageSendingOperations messagingTemplate;
     private final ChatService chatService;
 
+    /**
+     * 채팅방(미리보기) 목록 조회 API
+     *
+     * 채팅방 목록에 표시될 정보를 가져옵니다.
+     *
+     * @param customUserDetails 사용자 로그인 정보
+     * @return 채팅방 목록
+     */
     @GetMapping("/api/v1/chatrooms")
     public ResponseEntity<?> getChatroomsPreview(
             @AuthenticationPrincipal CustomUserDetails customUserDetails
