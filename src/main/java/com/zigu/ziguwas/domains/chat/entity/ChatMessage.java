@@ -12,6 +12,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
@@ -34,7 +36,8 @@ public class ChatMessage {
     @Column
     private String message;
 
-    @Column(name = "image_url", nullable = false)
+    @Column(nullable = false)
+    private LocalDateTime timestamp;
     private String imageUrl;
 
 }
