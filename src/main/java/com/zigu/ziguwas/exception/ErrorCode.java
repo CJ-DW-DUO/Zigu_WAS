@@ -40,6 +40,8 @@ public enum ErrorCode {
 
     // 채팅 관련
     CHATROOM_NOT_FOUND(404, "해당 채팅방은 존재하지 않습니다."),
+    CHATMATE_NOT_FOUND(404, "채팅방 상대를 찾을 수 없습니다."),
+    CHAT_MESSAGE_NOT_FOUND(404, "채팅 메시지를 찾을 수 없습니다"),
 
     // 파일 관련
     FILE_UPLOAD_FAIL(400, "파일업로드 실패"),
