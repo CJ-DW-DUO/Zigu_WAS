@@ -117,7 +117,8 @@ public class ChatService {
                 chatRoom,
                 sender,
                 message,
-                "" // 이미지 URL 필드는 필요 시 추가 처리
+                LocalDateTime.now(),
+                null // 이미지 URL 필드는 필요 시 추가 처리
         );
 
         chatMessageRepository.save(chatMessage);
