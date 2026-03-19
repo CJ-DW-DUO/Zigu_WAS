@@ -2,6 +2,7 @@ package com.zigu.ziguwas.domains.user.controller;
 
 import com.zigu.ziguwas.domains.user.api.MyPageApi;
 import com.zigu.ziguwas.domains.user.dto.mypage.response.MyPageMainResDto;
+import com.zigu.ziguwas.domains.user.dto.mypage.response.MyRegisteredItemResDto;
 import com.zigu.ziguwas.domains.user.service.MyPageService;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -29,5 +32,10 @@ public class MyPageController implements MyPageApi {
     public ResponseEntity<MyPageMainResDto> getMyPageMain(@AuthenticationPrincipal CustomUserDetails customUserDetails) {
         return ResponseEntity.ok(myPageService.getMyPageMain(customUserDetails.getUserId()));
 
+    }
+
+    @GetMapping("/items")
+    public ResponseEntity<List<MyRegisteredItemResDto>>  getMyPageItems(@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        return ResponseEntity.ok(myPageService.getMyRegisteredItems(customUserDetails.getUserId()));
     }
 }
