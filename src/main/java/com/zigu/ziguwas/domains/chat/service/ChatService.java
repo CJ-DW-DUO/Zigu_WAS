@@ -127,17 +127,17 @@ public class ChatService {
     /**
      * 1대1 채팅방 생성
      *
-     * @param senderId 채팅 생성자
+     * @param details 채팅 생성자 로그인정보
      * @param receiverId 채팅 참여자
      * @return 채팅방 ID
      */
     @Transactional
-    public Long createChatRoom(Long senderId, Long receiverId) {
+    public Long createChatRoom(CustomUserDetails details, Long receiverId) {
         // 1. 채팅방 생성
         ChatRoom chatRoom = chatRoomRepository.save(new ChatRoom());
 
         // 2. 사용자 조회
-        User sender = userRepository.findById(senderId)
+        User sender = userRepository.findByEmail(details.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         User receiver = userRepository.findById(receiverId)

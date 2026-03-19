@@ -1,6 +1,7 @@
 package com.zigu.ziguwas.domains.chat.controller;
 
 import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageReqDto;
+import com.zigu.ziguwas.domains.chat.dto.request.ChatRecvIdReqDto;
 import com.zigu.ziguwas.domains.chat.service.ChatService;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
@@ -13,8 +14,12 @@ import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.net.URI;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,11 +30,41 @@ public class ChatController {
     private final SimpMessageSendingOperations messagingTemplate;
     private final ChatService chatService;
 
+    /**
+     * 채팅방(미리보기) 목록 조회 API
+     *
+     * 채팅방 목록에 표시될 정보를 가져옵니다.
+     *
+     * @param customUserDetails 사용자 로그인 정보
+     * @return 채팅방 목록
+     */
     @GetMapping("/api/v1/chatrooms")
     public ResponseEntity<?> getChatroomsPreview(
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ){
         return ResponseEntity.ok(chatService.getChatroomsPreview(customUserDetails));
+    }
+
+
+    /**
+     * 1대1 채팅방 생성 API
+     *
+     * @param customUserDetails 채팅 생성자 로그인정보
+     * @param dto 채팅 참여자
+     * @return 채팅팡 URI
+     */
+    @PostMapping("/api/v1/chatrooms")
+    public ResponseEntity<?> createChatroom(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestBody ChatRecvIdReqDto dto
+    ){
+        Long created = chatService.createChatRoom(customUserDetails, dto.getRecieverId());
+
+        if(created == null) {
+            throw new CustomException(ErrorCode.CHATROOM_NOT_CREATED);
+        }
+
+        return ResponseEntity.created(URI.create("/api/v1/chatrooms/" + created)).build();
     }
 
 
