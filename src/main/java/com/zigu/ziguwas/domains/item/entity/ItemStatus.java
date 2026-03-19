@@ -6,9 +6,6 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ItemStatus {
-    // 대여 상태
-    IN_PROGRESS("대여중"),
-    RETURNED("반납완료"),
 
     // 등록 상태
     REGISTERED("등록됨");
