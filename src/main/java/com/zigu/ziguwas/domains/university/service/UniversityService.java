@@ -1,6 +1,6 @@
 package com.zigu.ziguwas.domains.university.service;
 
-import com.zigu.ziguwas.domains.university.controller.dto.response.UniversitiesResDto;
+import com.zigu.ziguwas.domains.university.response.UniversitiesResDto;
 import com.zigu.ziguwas.domains.university.entity.University;
 import com.zigu.ziguwas.domains.university.repository.UniversityRepository;
 import lombok.RequiredArgsConstructor;
