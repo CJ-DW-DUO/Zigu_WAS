@@ -87,4 +87,8 @@ public class Item {
     public void increaseViewCount() {
         this.viewCount++;
     }
+
+    public void updateItemStatus(ItemStatus itemStatus) {
+        this.itemStatus = itemStatus;
+    }
 }
