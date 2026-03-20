@@ -8,9 +8,9 @@ import lombok.RequiredArgsConstructor;
 public enum ItemStatus {
 
     // 등록 상태
-    REGISTERED("등록됨");
+    REGISTERED("등록됨"),
+    RENTING("대여중");
 
     private final String description;
-
 
 }
