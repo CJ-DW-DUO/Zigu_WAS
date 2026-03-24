@@ -9,6 +9,7 @@ import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -25,6 +26,7 @@ public class MyPageTradeService {
      * @param userId 현재 로그인한 사용자의 ID
      * @return 대여 중인 거래 정보 DTO 리스트
      */
+    @Transactional(readOnly = true)
     public List<MyPageTradeListResDto> findRentingItems(Long userId) {
 
         User user = userRepository.findById(userId)
@@ -33,5 +35,22 @@ public class MyPageTradeService {
         return myPageTradeRepository.findAllByRenteeAndTradeStatus(user, TradeStatus.IN_PROGRESS)
                 .stream().map(MyPageTradeListResDto::fromEntity).toList();
     }
+
+    /**
+     * 내가 빌려준 물건 내역을 조회합니다.
+     *
+     * @param userId 현재 로그인한 사용자의 ID
+     * @return 대여 해준 거래 정보 DTO 리스트
+     */
+    @Transactional(readOnly = true)
+    public List<MyPageTradeListResDto> findRenterItems(Long userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        return myPageTradeRepository.findAllByRenterAndTradeStatus(user,TradeStatus.IN_PROGRESS)
+                .stream().map(MyPageTradeListResDto::fromEntity).toList();
+    }
+
 
 }
