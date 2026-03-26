@@ -2,7 +2,6 @@ package com.zigu.ziguwas.domains.trade.dto.response;
 
 import com.zigu.ziguwas.domains.item.entity.ItemImage;
 import com.zigu.ziguwas.domains.trade.entity.Trade;
-import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
@@ -33,7 +32,7 @@ public class MyPageTradeListResDto {
     private final String mainImageUrl;
 
     @Schema(description = "거래 상태", example = "반납 완료")
-    private final TradeStatus tradeStatus;
+    private final String tradeStatus;
 
     public static MyPageTradeListResDto fromEntity(Trade trade) {
         return MyPageTradeListResDto.builder()
@@ -47,7 +46,7 @@ public class MyPageTradeListResDto {
                         .map(ItemImage::getImageUrl)
                         .findFirst()
                         .orElse(null))
-                .tradeStatus(trade.getTradeStatus())
+                .tradeStatus(trade.getTradeStatus().getDescription())
                 .build();
     }
 
