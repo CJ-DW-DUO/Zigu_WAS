@@ -1,6 +1,7 @@
 package com.zigu.ziguwas.domains.trade.api;
 
 import com.zigu.ziguwas.domains.trade.dto.response.MyPageTradeListResDto;
+import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
@@ -48,7 +50,8 @@ public interface MyPageTradeApi {
     })
     @GetMapping("/renting")
     ResponseEntity<List<MyPageTradeListResDto>> getRentingItems(
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestParam TradeStatus tradeStatus
     );
 
     @Operation(
