@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class ChatMessageReqDto {
+public class ChatMessageSendReqDto {
 
     @Schema(description = "채팅메시지", example = "지구야 안녕")
     @NotBlank(message = "메시지는 비울 수 없습니다.")

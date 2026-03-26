@@ -1,5 +1,7 @@
 package com.zigu.ziguwas.domains.chat.service;
 
+import com.zigu.ziguwas.domains.chat.dto.request.ChatMessagePageReqDto;
+import com.zigu.ziguwas.domains.chat.dto.response.ChatMessageDetailResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomPreviewResDto;
 import com.zigu.ziguwas.domains.chat.entity.ChatMessage;
 import com.zigu.ziguwas.domains.chat.entity.ChatParticipant;
@@ -13,6 +15,10 @@ import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +53,7 @@ public class ChatService {
      * @param customUserDetails
      * @return
      */
+    @Transactional
     public List<ChatRoomPreviewResDto> getChatroomsPreview(CustomUserDetails customUserDetails) {
 
         // 1. 사용자 조회
@@ -85,6 +92,50 @@ public class ChatService {
                             .lastMessage(lastMessage.getMessage())
                             .lastMessageTimestamp(lastSendTime)
                             .build());
+        }
+
+        return dtos;
+    }
+
+    /**
+     * 채팅방 상세조회
+     *
+     * @param customUserDetails 로그인정보
+     * @param chatRoomId 채팅방ID
+     * @return 채팅정보
+     */
+    @Transactional
+    public List<ChatMessageDetailResDto> getChatroomDetail(CustomUserDetails customUserDetails, Long chatRoomId, ChatMessagePageReqDto dto) {
+
+        // 1. 유저 확인
+        User user = userRepository.findByEmail(customUserDetails.getUsername()).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        // 2. 채팅방의 존재여부 확인
+        ChatRoom room = chatRoomRepository.findById(chatRoomId).orElseThrow(
+                () -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND)
+        );
+
+        // 3. 페이지 범위 설정하기
+        Pageable pageable = PageRequest.of(dto.getPage(), dto.getSize(),
+                Sort.by("timestamp").descending());
+
+        // 4. 채팅방의 메시지 가져오기
+        Slice<ChatMessage> messages = chatMessageRepository.findByChatRoom(room, pageable);
+        List<ChatMessageDetailResDto> dtos = new ArrayList<>();
+
+        // 5. 메시지 dto에 붙이기
+        for(ChatMessage cm : messages){
+            dtos.add(ChatMessageDetailResDto.builder()
+                            .chatRoomId(cm.getChatRoom().getChatId())
+                            .senderId(cm.getSender().getId())
+                            .messageId(cm.getMessageId())
+                            .senderName(cm.getSender().getNickname())
+                            .message(cm.getMessage())
+                            .timestamp(cm.getTimestamp().toString())
+                            .imageUrl(cm.getImageUrl())
+                    .build());
         }
 
         return dtos;
@@ -150,7 +201,6 @@ public class ChatService {
         // 4. 채팅방 ID 반환
         return chatRoom.getChatId();
     }
-
 
 
 }
