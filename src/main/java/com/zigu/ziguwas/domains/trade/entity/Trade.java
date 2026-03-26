@@ -17,6 +17,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 
 @Entity
 @NoArgsConstructor
@@ -51,6 +53,15 @@ public class Trade {
     @Column(name = "trade_status", nullable = false)
     private TradeStatus tradeStatus;
 
+    @Column(name = "trade_stdate")
+    private LocalDate tradeStdate; // 거래 시작일
+
+    @Column(name = "trade_reqdate", nullable = false)
+    private LocalDate tradeReqdate; // 거래 요청일 (거래요청시 Trade Entity 생성되니까 거래요청은 NOT NULL)
+
+    @Column(name = "trade_resdate", nullable = false)
+    private LocalDate tradeResdate; // 거래 수락일
+
     /**
      * 거래 상태를 변경하고 아이템의 상태도 함께 제어합니다.
      * @param newTradeStatus 변경할 거래 상태
@@ -75,5 +86,15 @@ public class Trade {
             return 0L; // 혹시나 하는 null일때..
         }
         return this.item.getDayPerPrice() * this.period;
+    }
+
+    /**
+     * 대여 종료일을 계산합니다.
+     */
+    public LocalDate getEndDate() {
+        if (tradeStdate == null || period == null){
+            return null;
+        }
+        return tradeStdate.plusDays(period);
     }
 }
