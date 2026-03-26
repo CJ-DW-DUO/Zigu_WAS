@@ -8,6 +8,6 @@ import lombok.Data;
 public class ChatRecvIdReqDto {
 
     @Schema(description = "채팅 대상자 ID", example = "2")
-    @NotBlank(message = "채팅 대상자 ID는 입력")
+    @NotBlank(message = "채팅 대상자 ID는 입력해야 합니다.")
     private Long recieverId;
 }
