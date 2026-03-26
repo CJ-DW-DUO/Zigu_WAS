@@ -1,6 +1,5 @@
-package com.zigu.ziguwas.domains.chatmessage.entity;
+package com.zigu.ziguwas.domains.chat.entity;
 
-import com.zigu.ziguwas.domains.chatroom.entity.ChatRoom;
 import com.zigu.ziguwas.domains.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,6 +11,8 @@ import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Entity
 @NoArgsConstructor
@@ -35,7 +36,10 @@ public class ChatMessage {
     @Column
     private String message;
 
-    @Column(name = "image_url", nullable = false)
+    @Column(nullable = false)
+    private LocalDateTime timestamp;
+
+    @Column(name = "image_url")
     private String imageUrl;
 
 }
