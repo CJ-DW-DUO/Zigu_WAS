@@ -1,12 +1,14 @@
 package com.zigu.ziguwas.domains.chat.controller;
 
-import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageReqDto;
+import com.zigu.ziguwas.domains.chat.dto.request.ChatMessagePageReqDto;
+import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageSendReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.ChatRecvIdReqDto;
 import com.zigu.ziguwas.domains.chat.service.ChatService;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -14,6 +16,7 @@ import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,6 +46,24 @@ public class ChatController {
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ){
         return ResponseEntity.ok(chatService.getChatroomsPreview(customUserDetails));
+    }
+
+    /**
+     * 채팅방 상세조회 API
+     *
+     * 채팅방 내에서 진행한 대화내역등을 모두 볼 수 있다.
+     *
+     * @param customUserDetails 로그인정보
+     * @param chatRoomId 채팅방ID
+     * @return 채팅정보
+     */
+    @GetMapping("/api/v1/chatrooms/{chatRoomId}")
+    public ResponseEntity<?> getChatroomDetail(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable Long chatRoomId,
+            @RequestBody ChatMessagePageReqDto dto
+    ){
+        return ResponseEntity.ok(chatService.getChatroomDetail(customUserDetails, chatRoomId, dto));
     }
 
 
@@ -81,7 +102,7 @@ public class ChatController {
     @MessageMapping("/chat/v1/chatrooms/{chatRoomId}")
     public void message(
             @DestinationVariable Long chatRoomId,
-            ChatMessageReqDto dto,
+            ChatMessageSendReqDto dto,
             StompHeaderAccessor headerAccessor
     ){
         // 1. 이메일 추출
