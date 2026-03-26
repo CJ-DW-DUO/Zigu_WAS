@@ -213,5 +213,15 @@ public class ChatService {
         return chatRoom.getChatId();
     }
 
+//    @Transactional
+//    public void deleteChatRoom(Long chatRoomId) {
+//
+//        if(!chatRoomRepository.existsById(chatRoomId)) {
+//            throw new CustomException(ErrorCode.CHATROOM_NOT_FOUND);
+//        }
+//
+//        chatRoomRepository.deleteById(chatRoomId);
+//    }
+
 
 }

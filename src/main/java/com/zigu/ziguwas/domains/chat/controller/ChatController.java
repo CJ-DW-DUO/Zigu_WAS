@@ -15,6 +15,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -122,6 +123,14 @@ public class ChatController {
         // 2. /sub/chat/room/{roomId}를 구독중인 사용자들에게 메시지 전달
         messagingTemplate.convertAndSend("/sub/chat/room/" + chatRoomId, dto);
     }
+
+//    @DeleteMapping("/api/v1/chatrooms/{chatRoomId}")
+//    public ResponseEntity<?> deleteChatroom(
+//            @PathVariable Long chatRoomId
+//    ){
+//        chatService.deleteChatRoom(chatRoomId);
+//        return ResponseEntity.ok().build();
+//    }
 
 
 }
