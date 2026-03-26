@@ -33,7 +33,7 @@ public class TradeService {
      * @param dto 아이템ID, 매물 대여기간
      */
     @Transactional
-    public void tradeOffer(
+    public Long tradeOffer(
             CustomUserDetails details,
             TradeOfferReqDto dto
     ){
@@ -63,6 +63,8 @@ public class TradeService {
                 .tradeReqdate(LocalDate.now())
                 .build();
 
-        tradeRepository.save(trade);
+        Trade saved = tradeRepository.save(trade);
+
+        return saved.getId();
     }
 }
