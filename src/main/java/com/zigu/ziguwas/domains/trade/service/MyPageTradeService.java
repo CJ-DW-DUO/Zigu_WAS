@@ -21,18 +21,19 @@ public class MyPageTradeService {
     private final UserRepository userRepository;
 
     /**
-     * 내가 빌린 물건 중 현재 대여 중인 내역을 조회합니다.
+     * 내가 빌린 물건 내역을 조회합니다.
      *
      * @param userId 현재 로그인한 사용자의 ID
+     * @param tradeStatus 필터링 할 거래 상태
      * @return 대여 중인 거래 정보 DTO 리스트
      */
     @Transactional(readOnly = true)
-    public List<MyPageTradeListResDto> findRentingItems(Long userId) {
+    public List<MyPageTradeListResDto> findRentingItems(Long userId, TradeStatus tradeStatus) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        return myPageTradeRepository.findAllByRenteeAndTradeStatus(user, TradeStatus.IN_PROGRESS)
+        return myPageTradeRepository.findAllByRenteeAndTradeStatus(user, tradeStatus)
                 .stream().map(MyPageTradeListResDto::fromEntity).toList();
     }
 
