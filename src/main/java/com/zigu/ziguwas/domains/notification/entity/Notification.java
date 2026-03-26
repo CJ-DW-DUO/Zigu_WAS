@@ -14,6 +14,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
@@ -38,4 +40,7 @@ public class Notification {
 
     @Column(name = "noti_content", nullable = false)
     private String notiContent;
+
+    @Column(name = "rec_time", nullable = false)
+    private LocalDateTime recTime;
 }
