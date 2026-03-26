@@ -34,6 +34,9 @@ public enum ErrorCode {
     // 아이템 관련
     ITEM_NOT_FOUND(404, "아이템을 찾을 수 없습니다." ),
 
+    // 거래 관련
+    TRADE_NOT_FOUND(404, "해당 거래내역을 찾을 수 없습니다." ),
+
     // 아이템 이미지 관련
     IMAGE_NOT_FOUND(404, "이미지를 찾을 수 없습니다." ),
     IMAGE_NOT_BELONG_TO_ITEM(400, "해당 item에 속하지않은 image 입니다." ),
