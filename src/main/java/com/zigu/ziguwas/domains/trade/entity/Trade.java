@@ -14,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -24,6 +25,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
+@Builder
 public class Trade {
 
     @Id
@@ -46,9 +48,6 @@ public class Trade {
     @Column(name = "period", nullable = false)
     private Long period; // 대여기간
 
-    @Column(name = "is_approved", nullable = false)
-    private boolean isApproved;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "trade_status", nullable = false)
     private TradeStatus tradeStatus;
@@ -59,7 +58,7 @@ public class Trade {
     @Column(name = "trade_reqdate", nullable = false)
     private LocalDate tradeReqdate; // 거래 요청일 (거래요청시 Trade Entity 생성되니까 거래요청은 NOT NULL)
 
-    @Column(name = "trade_resdate", nullable = false)
+    @Column(name = "trade_resdate")
     private LocalDate tradeResdate; // 거래 수락일
 
     /**
