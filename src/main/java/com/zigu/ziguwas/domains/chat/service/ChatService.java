@@ -78,18 +78,25 @@ public class ChatService {
             ).getNickname();
 
             // 3-3. 마지막으로 보낸 메시지 조회
-            ChatMessage lastMessage = chatMessageRepository.findFirstByChatRoomOrderByTimestampDesc(chatParticipant.getChatRoom()).orElseThrow(
-                    () -> new CustomException(ErrorCode.CHAT_MESSAGE_NOT_FOUND)
-            );
+            ChatMessage lastMessage = chatMessageRepository.findFirstByChatRoomOrderByTimestampDesc(chatParticipant.getChatRoom()).orElse(null);
 
             // 3-4. 마지막으로 대화한 시각 조회
-            LocalDateTime lastSendTime = lastMessage.getTimestamp();
+
+            LocalDateTime lastSendTime = null;
+            String lastMessageContent;
+
+            if (lastMessage == null) {
+                lastMessageContent = "대화 내역이 없습니다.";
+            } else {
+                lastSendTime = lastMessage.getTimestamp();
+                lastMessageContent = lastMessage.getMessage();
+            }
 
             // 3-5. dto에 담기
             dtos.add(ChatRoomPreviewResDto.builder()
                             .roomId(room.getChatId())
                             .roomName(roomName)
-                            .lastMessage(lastMessage.getMessage())
+                            .lastMessage(lastMessageContent)
                             .lastMessageTimestamp(lastSendTime)
                             .build());
         }
@@ -190,6 +197,10 @@ public class ChatService {
         // 2. 사용자 조회
         User sender = userRepository.findByEmail(details.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if(receiverId == null) {
+            throw new CustomException(ErrorCode.MISS_USER_ID);
+        }
 
         User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));

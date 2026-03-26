@@ -10,6 +10,7 @@ public enum ErrorCode {
     // 유저 관련
     USER_CREATE_FAILED(500, "사용자 생성에 실패하였습니다."),
     USER_NOT_FOUND(404,"사용자를 찾을 수 없습니다."),
+    MISS_USER_ID(400, "해당 유저 ID를 입력하지 않았습니다."),
 
     // 인증 관련
     USER_NOT_CERTIFIED(401, "인증되지 않은 사용자 입니다."),
