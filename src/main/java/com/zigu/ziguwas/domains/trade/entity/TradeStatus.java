@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 public enum TradeStatus {
 
     // 대여 상태
-    IN_PROGRESS("대여중"),
+    IN_PROGRESS("대여중(수락됨)"),
     RETURNED("반납완료"),
 
     // 대여 요청 상태
