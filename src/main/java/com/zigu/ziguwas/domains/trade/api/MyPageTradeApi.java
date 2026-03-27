@@ -5,12 +5,15 @@ import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -81,5 +84,35 @@ public interface MyPageTradeApi {
     @GetMapping("/renter")
     ResponseEntity<List<MyPageTradeListResDto>> getRenterItems(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
+    @Operation(
+            summary = "보낸 대여 요청 목록 조회",
+            description = "내가 다른 사용자에게 보낸 대여 요청 내역을 조회합니다. 상태 필터링과 페이징이 지원됩니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = Page.class))
+            ),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 파라미터"),
+            @ApiResponse(responseCode = "404", description = "사용자 정보를 찾을 수 없음")
+    })
+    @GetMapping("/requests/sent")
+    ResponseEntity<Page<MyPageTradeListResDto>> getSentRequests(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+
+            @Parameter(
+                    name = "status",
+                    description = "조회할 거래 상태 (REQUESTED: 대기, IN_PROGRESS: 수락/대여중, REJECTED: 거절). 미입력 시 전체 조회",
+                    in = ParameterIn.QUERY,
+                    schema = @Schema(implementation = TradeStatus.class)
+            )
+            @RequestParam(required = false) TradeStatus status,
+
+            @Parameter(
+                    description = "페이징 및 정렬 설정 (예: page=0&size=10&sort=tradeReqdate,desc)",
+                    example = "{\"page\": 0, \"size\": 10, \"sort\": [\"tradeReqdate,desc\"]}"
+            )
+            Pageable pageable
     );
 }
