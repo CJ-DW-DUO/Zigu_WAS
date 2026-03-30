@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.chat.controller;
 
+import com.zigu.ziguwas.domains.chat.api.ChatApi;
 import com.zigu.ziguwas.domains.chat.dto.request.ChatMessagePageReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageSendReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.ChatRecvIdReqDto;
@@ -29,7 +30,7 @@ import java.net.URI;
 @RequiredArgsConstructor
 //@RequestMapping("/api/v1/chat-messages")
 @RequestMapping
-public class ChatController {
+public class ChatController implements ChatApi {
 
     private final SimpMessageSendingOperations messagingTemplate;
     private final ChatService chatService;
