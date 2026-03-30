@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.user.controller;
 
+import com.zigu.ziguwas.domains.user.api.AuthApi;
 import com.zigu.ziguwas.domains.user.dto.auth.request.EmailReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.EmailVerifyReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.LoginReqDto;
@@ -23,7 +24,7 @@ import java.net.URI;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")
-public class AuthController {
+public class AuthController implements AuthApi {
 
     private final AuthService authService;
 

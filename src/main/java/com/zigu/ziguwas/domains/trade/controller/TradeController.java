@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.trade.controller;
 
+import com.zigu.ziguwas.domains.trade.api.TradeApi;
 import com.zigu.ziguwas.domains.trade.dto.request.TradeOfferReqDto;
 import com.zigu.ziguwas.domains.trade.service.TradeService;
 import com.zigu.ziguwas.security.CustomUserDetails;
@@ -17,7 +18,7 @@ import java.net.URI;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/trades")
-public class TradeController {
+public class TradeController implements TradeApi {
 
     private final TradeService tradeService;
 

@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.university.controller;
 
+import com.zigu.ziguwas.domains.university.api.UniversityApi;
 import com.zigu.ziguwas.domains.university.service.UniversityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/universities")
-public class UniversityController {
+public class UniversityController implements UniversityApi {
 
     private final UniversityService universityService;
 

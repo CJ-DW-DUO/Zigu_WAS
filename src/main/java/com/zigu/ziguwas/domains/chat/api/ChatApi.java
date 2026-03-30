@@ -1,0 +1,47 @@
+package com.zigu.ziguwas.domains.chat.api;
+
+import com.zigu.ziguwas.domains.chat.dto.request.ChatMessagePageReqDto;
+import com.zigu.ziguwas.domains.chat.dto.request.ChatRecvIdReqDto;
+import com.zigu.ziguwas.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+
+@Tag(name = "Chat API", description = "채팅 관련 API 입니다.")
+public interface ChatApi {
+
+    @Operation(summary = "채팅방 목록 조회", description = "사용자가 참여 중인 모든 채팅방의 미리보기 목록을 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공")
+    })
+    ResponseEntity<?> getChatroomsPreview(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
+    @Operation(summary = "채팅방 상세 조회", description = "특정 채팅방의 상세 대화 내역 및 정보를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "채팅방을 찾을 수 없음")
+    })
+    ResponseEntity<?> getChatroomDetail(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable Long chatRoomId,
+            @RequestBody ChatMessagePageReqDto dto
+    );
+
+    @Operation(summary = "1대1 채팅방 생성", description = "특정 상대방과의 1대1 채팅방을 생성합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "채팅방 생성 성공"),
+            @ApiResponse(responseCode = "400", description = "채팅방 생성 실패")
+    })
+    ResponseEntity<?> createChatroom(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestBody ChatRecvIdReqDto dto
+    );
+}
