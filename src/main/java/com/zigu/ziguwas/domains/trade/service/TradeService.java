@@ -166,7 +166,7 @@ public class TradeService {
      * @param details 임대인 / 임차인 로그인 여부
      * @param tradeId 거래ID
      */
-    public void returnItem(
+    public void returnTradeCheck(
             CustomUserDetails details,
             Long tradeId
     ){
