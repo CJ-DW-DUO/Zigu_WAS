@@ -55,6 +55,9 @@ public class Trade {
     @Column(name = "trade_stdate")
     private LocalDate tradeStdate; // 거래 시작일
 
+    @Column(name = "trade_endate")
+    private LocalDate tradeEndate; // 거래 종료일
+
     @Column(name = "trade_reqdate", nullable = false)
     private LocalDate tradeReqdate; // 거래 요청일 (거래요청시 Trade Entity 생성되니까 거래요청은 NOT NULL)
 
