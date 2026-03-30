@@ -71,4 +71,23 @@ public class TradeController {
         return ResponseEntity.ok().build();
     }
 
+
+    /**
+     * 대여 반납 확인 API
+     *
+     * 임대인이 물건을 받는 즉시 반납 확인
+     *
+     * @param details 임대인 로그인 정보
+     * @param tradeId 거래ID
+     * @return 성공여부
+     */
+    @PostMapping("/{tradeId}/return")
+    public ResponseEntity<?> returnTradeCheck(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @PathVariable Long tradeId
+    ){
+        tradeService.returnTradeCheck(details, tradeId);
+        return ResponseEntity.ok().build();
+    }
+
 }

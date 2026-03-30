@@ -28,6 +28,31 @@ public class TradeService {
 
 
     /**
+     * 사용자 불러오기
+     *
+     * @param email 사용자 이메일
+     * @return 사용자 엔티티
+     */
+    private User getCurrentUser(String email){
+        return userRepository.findByEmail(email).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+    }
+
+    /**
+     * 거래 불러오기
+     *
+     * @param tradeId 거래ID
+     * @return 거래 엔티티
+     */
+    private Trade getCurrentTrade(Long tradeId){
+        return tradeRepository.findById(tradeId).orElseThrow(
+                () -> new CustomException(ErrorCode.TRADE_NOT_FOUND)
+        );
+    }
+
+
+    /**
      * 대여 요청 서비스
      *
      * @param details 임차예정인 로그인 정보
@@ -39,9 +64,7 @@ public class TradeService {
             TradeOfferReqDto dto
     ){
         // 1. 임차인 조회(로그인 정보 검증)
-        User rentee = userRepository.findByEmail(details.getUsername()).orElseThrow(
-                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
-        );
+        User rentee = getCurrentUser(details.getUsername());
 
         // 2. 매물 조회
         Item item = itemRepository.findById(dto.getItemId()).orElseThrow(
@@ -81,14 +104,10 @@ public class TradeService {
             boolean isApproved
     ){
         // 1. 임대인 조회
-        User renter = userRepository.findByEmail(details.getUsername()).orElseThrow(
-                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
-        );
+        User renter = getCurrentUser(details.getUsername());
 
         // 2. 거래 조회
-        Trade trade = tradeRepository.findById(tradeId).orElseThrow(
-                () -> new CustomException(ErrorCode.TRADE_NOT_FOUND)
-        );
+        Trade trade = getCurrentTrade(tradeId);
 
         // 3. 매물 조회
         Item item = trade.getItem();
@@ -136,6 +155,54 @@ public class TradeService {
         }
 
         // 8. 거래 변경 상태 저장
+        tradeRepository.save(trade);
+    }
+
+    /**
+     * 반납 확인 서비스
+     *
+     * 임대인과 임차인이 한 대여에 대해서 상호로 반납여부를 확인한다.
+     *
+     * @param details 임대인 / 임차인 로그인 여부
+     * @param tradeId 거래ID
+     */
+    public void returnTradeCheck(
+            CustomUserDetails details,
+            Long tradeId
+    ){
+        // 1. 사용자 조회
+        User user = getCurrentUser(details.getUsername());
+
+        // 2. 거래조회
+        Trade trade = getCurrentTrade(tradeId);
+
+        // 3. 매물 조회
+        Item item = trade.getItem();
+        if(item == null){
+            throw new CustomException(ErrorCode.ITEM_NOT_FOUND);
+        }
+
+        // 4. 임대인 일치 확인
+        if(!user.getId().equals(trade.getRenter().getId())){
+            throw new CustomException(ErrorCode.RENTER_NOT_MATCHED);
+        }
+
+        // 5. 아이템 상태 확인
+        if(!item.getItemStatus().equals(ItemStatus.RENTING)){
+            throw new CustomException(ErrorCode.ITEM_NOT_RENTING);
+        }
+
+        // 6. 거래 상태 확인
+        if(!trade.getTradeStatus().equals(TradeStatus.IN_PROGRESS)){
+            throw new CustomException(ErrorCode.TRADE_STATUS_NOT_REQUESTED);
+        }
+
+        // 7. 상태변경
+        item.updateItemStatus(ItemStatus.REGISTERED);
+        trade.updateStatus(TradeStatus.RETURNED);
+
+        // 8. 변경 반영
+        itemRepository.save(item);
         tradeRepository.save(trade);
     }
 }

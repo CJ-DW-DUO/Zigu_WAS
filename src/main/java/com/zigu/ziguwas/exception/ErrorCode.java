@@ -35,11 +35,13 @@ public enum ErrorCode {
     // 아이템 관련
     ITEM_NOT_FOUND(404, "아이템을 찾을 수 없습니다." ),
     ITEM_ALREADY_RENTING(400, "이미 해당 매물은 대여중입니다."),
+    ITEM_NOT_RENTING(400, "해당 매물이 현재 대여중이지 않습니다."),
 
     // 거래 관련
     TRADE_NOT_FOUND(404, "해당 거래내역을 찾을 수 없습니다." ),
     RENTER_NOT_MATCHED(400, "로그인정보와 임대인정보가 일치하지 않습니다."),
     TRADE_STATUS_NOT_REQUESTED(400, "거래가 요청상태가 아닙니다."),
+    TRADE_STATUS_NOT_INPROGRESSED(400, "거래가 대여중 상태가 아닙니다."),
 
     // 아이템 이미지 관련
     IMAGE_NOT_FOUND(404, "이미지를 찾을 수 없습니다." ),
