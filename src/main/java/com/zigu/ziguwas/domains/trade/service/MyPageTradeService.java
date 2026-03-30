@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.trade.service;
 
+import com.zigu.ziguwas.domains.trade.dto.response.MyPageReceiveResDto;
 import com.zigu.ziguwas.domains.trade.dto.response.MyPageTradeListResDto;
 import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
 import com.zigu.ziguwas.domains.trade.repository.MyPageTradeRepository;
@@ -75,6 +76,27 @@ public class MyPageTradeService {
 
         return myPageTradeRepository.findAllByRenteeAndTradeStatusIn(user, statuses, pageable)
                 .map(MyPageTradeListResDto::fromEntity);
+    }
+
+    /**
+     * 받은 대여 요청을 조회합니다.
+     *
+     * @param userId renter의 userId
+     * @param tradeStatus 필터링 할 상태
+     * @param pageable 페이지 정보
+     * @return 받은 요청 리스트
+     */
+    @Transactional(readOnly = true)
+    public Page<MyPageReceiveResDto> getReceivedRequests(Long userId, TradeStatus tradeStatus, Pageable pageable) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        List<TradeStatus> statuses = (tradeStatus == null)
+                ? List.of(TradeStatus.IN_PROGRESS, TradeStatus.REQUESTED, TradeStatus.REJECTED)
+                : List.of(tradeStatus);
+
+        return myPageTradeRepository.findAllByRenterAndTradeStatusIn(user, statuses, pageable)
+                .map(MyPageReceiveResDto::fromEntity);
     }
 
 

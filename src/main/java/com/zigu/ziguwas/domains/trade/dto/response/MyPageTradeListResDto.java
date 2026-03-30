@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 @Builder
-@Schema(description = "마이페이지의 거래 관련 DTO")
+@Schema(description = "마이페이지의 거래 관련 DTO (받은요청 빼고)")
 public class MyPageTradeListResDto {
 
     @Schema(description = "거래 ID", example = "1")

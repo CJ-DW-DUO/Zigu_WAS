@@ -42,4 +42,15 @@ public interface MyPageTradeRepository extends JpaRepository<Trade, Long> {
     @EntityGraph(attributePaths = {"item", "renter"})
     Page<Trade> findAllByRenteeAndTradeStatusIn(User rentee, Collection<TradeStatus> statuses, Pageable pageable);
 
+    /**
+     * 내가 받은 대여 요청 목록을 상태별로 필터링하여 조회합니다.
+     *
+     * @param renter   빌린 사람(나)
+     * @param statuses 조회할 상태 목록 (예: 전체 선택 시 [REQUESTED, IN_PROGRESS, REJECTED])
+     * @param pageable 페이징 및 정렬 정보
+     * @return 필터링된 거래 내역 페이징 객체
+     */
+    @EntityGraph(attributePaths = {"item", "rentee"})
+    Page<Trade> findAllByRenterAndTradeStatusIn(User renter, Collection<TradeStatus> statuses, Pageable pageable);
+
 }
