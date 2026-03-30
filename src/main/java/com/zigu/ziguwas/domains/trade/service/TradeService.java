@@ -28,6 +28,31 @@ public class TradeService {
 
 
     /**
+     * 사용자 불러오기
+     *
+     * @param email 사용자 이메일
+     * @return 사용자 엔티티
+     */
+    private User getCurrentUser(String email){
+        return userRepository.findByEmail(email).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+    }
+
+    /**
+     * 거래 불러오기
+     *
+     * @param tradeId 거래ID
+     * @return 거래 엔티티
+     */
+    private Trade getCurrentTrade(Long tradeId){
+        return tradeRepository.findById(tradeId).orElseThrow(
+                () -> new CustomException(ErrorCode.TRADE_NOT_FOUND)
+        );
+    }
+
+
+    /**
      * 대여 요청 서비스
      *
      * @param details 임차예정인 로그인 정보
