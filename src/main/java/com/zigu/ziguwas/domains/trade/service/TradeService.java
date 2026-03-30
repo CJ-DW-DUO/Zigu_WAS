@@ -1,6 +1,7 @@
 package com.zigu.ziguwas.domains.trade.service;
 
 import com.zigu.ziguwas.domains.item.entity.Item;
+import com.zigu.ziguwas.domains.item.entity.ItemStatus;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
 import com.zigu.ziguwas.domains.trade.dto.request.TradeOfferReqDto;
 import com.zigu.ziguwas.domains.trade.entity.Trade;
@@ -27,9 +28,9 @@ public class TradeService {
 
 
     /**
-     * 거래 요청 서비스
+     * 대여 요청 서비스
      *
-     * @param details 로그인 정보
+     * @param details 임차예정인 로그인 정보
      * @param dto 아이템ID, 매물 대여기간
      */
     @Transactional
@@ -42,16 +43,13 @@ public class TradeService {
                 () -> new CustomException(ErrorCode.USER_NOT_FOUND)
         );
 
-
         // 2. 매물 조회
         Item item = itemRepository.findById(dto.getItemId()).orElseThrow(
                 () -> new CustomException(ErrorCode.ITEM_NOT_FOUND)
         );
 
-
         // 3. 임대인 조회
         User renter = item.getUser();
-
 
         // 4. 요청 전송, 거래 시작, 수락일은 요청 당시에 존재하지 않으므로 미기입
         Trade trade = Trade.builder()
@@ -66,5 +64,78 @@ public class TradeService {
         Trade saved = tradeRepository.save(trade);
 
         return saved.getId();
+    }
+
+
+    /**
+     * 대여 제안 응답 서비스 -> 승인 혹은 거절
+     *
+     * @param details 임대인 로그인 정보
+     * @param tradeId 거래ID
+     * @param isApproved 대여 승인/거절 여부
+     */
+    @Transactional
+    public void offerResponse(
+            CustomUserDetails details,
+            Long tradeId,
+            boolean isApproved
+    ){
+        // 1. 임대인 조회
+        User renter = userRepository.findByEmail(details.getUsername()).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        // 2. 거래 조회
+        Trade trade = tradeRepository.findById(tradeId).orElseThrow(
+                () -> new CustomException(ErrorCode.TRADE_NOT_FOUND)
+        );
+
+        // 3. 매물 조회
+        Item item = trade.getItem();
+        if(item == null){
+            throw new CustomException(ErrorCode.ITEM_NOT_FOUND);
+        }
+
+        // 4. 임대인 일치 확인
+        if(renter.getId().equals(trade.getRenter().getId())) {
+            throw new CustomException(ErrorCode.RENTER_NOT_MATCHED);
+        }
+
+        // 5. 거래 요청 상태 확인(대여 오류 방지)
+        if(!trade.getTradeStatus().equals(TradeStatus.REQUESTED)) {
+            throw new CustomException(ErrorCode.TRADE_STATUS_NOT_REQUESTED);
+        }
+
+        // 6. 매물 대여 가능 확인
+        if(item.getItemStatus().equals(ItemStatus.RENTING)){
+            throw new CustomException(ErrorCode.ITEM_ALREADY_RENTING);
+        }
+
+        // 7. 대여 승인 혹은 거절 분기
+        if(isApproved){
+            // 대여 승인
+
+            // 7A - 1. 거래 상태 변경
+            trade.updateStatus(TradeStatus.IN_PROGRESS);
+
+            // 7A - 2. 거래 시작일, 마감일, 수락일 설정
+            // 거래 시작일과 수락일에 대한 분리가 필요함, 수정 필수
+            trade.setDates(LocalDate.now(), LocalDate.now(),
+                    LocalDate.now().plusDays(trade.getPeriod()));
+
+            // 7A - 3. 매물 상태 변경
+            item.updateItemStatus(ItemStatus.RENTING);
+
+            // 7A - 4. 매물 변경상태 저장
+            itemRepository.save(item);
+        } else {
+            // 대여 거절
+
+            // 7B. 거래 상태 변경
+            trade.updateStatus(TradeStatus.REJECTED);
+        }
+
+        // 8. 거래 변경 상태 저장
+        tradeRepository.save(trade);
     }
 }
