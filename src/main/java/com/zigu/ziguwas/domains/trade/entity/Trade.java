@@ -99,4 +99,10 @@ public class Trade {
         }
         return tradeStdate.plusDays(period);
     }
+
+    public void setDates(LocalDate startDate, LocalDate endDate, LocalDate resDate) {
+        this.tradeStdate = startDate;
+        this.tradeEndate = endDate;
+        this.tradeResdate = resDate;
+    }
 }
