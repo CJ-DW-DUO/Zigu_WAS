@@ -37,7 +37,6 @@ public class TradeController {
                 tradeService.tradeOffer(details, dto))).build();
     }
 
-
     /**
      * 대여 제안 수락 API
      *
@@ -52,6 +51,23 @@ public class TradeController {
     ){
         // 거래 승인 true 매개변수 전달
         tradeService.offerResponse(details, tradeId, true);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 대여 제안 거절 API
+     *
+     * @param details 임대인 로그인 정보
+     * @param tradeId 거래ID
+     * @return 성공여부
+     */
+    @PostMapping("/{tradeId}/reject")
+    public ResponseEntity<?> rejectTrade(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @PathVariable Long tradeId
+    ){
+        // 거래 승인 false(거절) 매개변수 전달
+        tradeService.offerResponse(details, tradeId, false);
         return ResponseEntity.ok().build();
     }
 
