@@ -52,10 +52,10 @@ public class Trade {
     @Column(name = "trade_status", nullable = false)
     private TradeStatus tradeStatus;
 
-    @Column(name = "trade_stdate")
+    @Column(name = "trade_stdate", nullable = false)
     private LocalDate tradeStdate; // 거래 시작일
 
-    @Column(name = "trade_endate")
+    @Column(name = "trade_endate", nullable = false)
     private LocalDate tradeEndate; // 거래 종료일
 
     @Column(name = "trade_reqdate", nullable = false)

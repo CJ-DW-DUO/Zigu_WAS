@@ -26,7 +26,7 @@ public class TradeController implements TradeApi {
      * 거래 제안 API
      *
      * @param details 임차예정인 로그인 정보
-     * @param dto 매물ID, 대여일수
+     * @param dto 매물ID, 대여시작일, 대여 종료일
      * @return 만들어진 거래 정보
      */
     @PostMapping
