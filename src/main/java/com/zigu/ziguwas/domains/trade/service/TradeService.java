@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -76,16 +77,20 @@ public class TradeService {
 
         // 4. 요청 전송, 거래 시작, 수락일은 요청 당시에 존재하지 않으므로 미기입
         Trade trade = Trade.builder()
-                .item(item)
-                .renter(renter)
-                .rentee(rentee)
-                .period(dto.getPeriod())
-                .tradeStatus(TradeStatus.REQUESTED)
-                .tradeReqdate(LocalDate.now())
+                .item(item) // 매물 연결
+                .renter(renter) // 임대인 연결
+                .rentee(rentee) // 임차인 연결
+                .tradeStdate(dto.getStartDate()) // 거래 시작 예정일 우선 기입
+                .tradeEndate(dto.getEndDate()) // 거래 종료 예정일 우선 기입
+                .period(ChronoUnit.DAYS.between(dto.getStartDate(), dto.getEndDate())) // 대여 기간
+                .tradeStatus(TradeStatus.REQUESTED) // 요청됨
+                .tradeReqdate(LocalDate.now()) // 요청은 지금 보내는 것
                 .build();
 
+        // 5. 거래 요청 저장
         Trade saved = tradeRepository.save(trade);
 
+        // 6. 거래ID 반환
         return saved.getId();
     }
 
