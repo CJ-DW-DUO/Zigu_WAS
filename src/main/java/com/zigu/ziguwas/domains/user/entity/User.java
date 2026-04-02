@@ -61,4 +61,11 @@ public class User {
     @Column(name = "veri_status")
     private VerificationStatus veriStatus;
 
+    public void updateNickname(String nickname){
+        this.nickname = nickname;
+    }
+
+    public void updateProfileImage(String profilePhotoUrl) {
+        this.profilePhotoUrl = profilePhotoUrl;
+    }
 }
