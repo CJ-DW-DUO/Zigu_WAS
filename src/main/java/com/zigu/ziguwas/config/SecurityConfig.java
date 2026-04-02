@@ -1,8 +1,9 @@
-package com.zigu.ziguwas.security;
+package com.zigu.ziguwas.config;
 
 
 import com.zigu.ziguwas.exception.CustomAccessDeniedHandler;
 import com.zigu.ziguwas.exception.CustomAuthenticationEntryPoint;
+import com.zigu.ziguwas.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
