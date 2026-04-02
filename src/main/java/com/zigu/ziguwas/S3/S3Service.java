@@ -44,7 +44,7 @@ public class S3Service {
     /**
      * 단일 파일을 S3 버킷에 업로드하고 접근 URL을 반환합니다.
      */
-    private String uploadSingleFile(MultipartFile multipartFile) {
+    public String uploadSingleFile(MultipartFile multipartFile) {
         String originalFilename = multipartFile.getOriginalFilename();
         String storeFileName = createStoreFileName(originalFilename);
 
