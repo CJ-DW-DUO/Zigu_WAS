@@ -1,6 +1,8 @@
 package com.zigu.ziguwas.domains.user.api;
 
+import com.zigu.ziguwas.domains.user.dto.mypage.request.MyPageProfileReqDto;
 import com.zigu.ziguwas.domains.user.dto.mypage.response.MyPageMainResDto;
+import com.zigu.ziguwas.domains.user.dto.mypage.response.MyPageProfileResDto;
 import com.zigu.ziguwas.domains.user.dto.mypage.response.MyRegisteredItemResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,7 +18,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -89,5 +94,35 @@ public interface MyPageApi {
     @GetMapping("/items")
     ResponseEntity<List<MyRegisteredItemResDto>> getMyPageItems(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
+    @Operation(
+            summary = "프로필 수정",
+            description = "닉네임과 프로필 이미지를 수정합니다. 이미지는 선택 사항입니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "수정 성공",
+                    content = @Content(schema = @Schema(implementation = MyPageProfileResDto.class))),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 (닉네임 중복 등)",
+                    content = @Content(examples = @ExampleObject(value = """
+                { "status": 409, "message": "이미 사용 중인 닉네임입니다." }
+                """))),
+            @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음",
+                    content = @Content(examples = @ExampleObject(value = """
+                { "status": 404, "message": "해당 사용자를 찾을 수 없습니다." }
+                """)))
+    })
+    @PutMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ResponseEntity<MyPageProfileResDto> updateProfile(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+
+            @RequestPart(value = "data")
+            @Parameter(description = "수정할 닉네임 정보 (JSON)", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
+
+            MyPageProfileReqDto reqDto,
+
+            @RequestPart(value = "profileImage", required = false)
+            @Parameter(description = "새로운 프로필 이미지 파일")
+            MultipartFile profileImage
     );
 }
