@@ -3,6 +3,8 @@ package com.zigu.ziguwas.domains.trade.service;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemStatus;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
+import com.zigu.ziguwas.domains.notification.entity.NotificationType;
+import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.trade.dto.request.TradeOfferReqDto;
 import com.zigu.ziguwas.domains.trade.entity.Trade;
 import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
@@ -13,6 +15,7 @@ import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +29,8 @@ public class TradeService {
     private final TradeRepository tradeRepository;
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
+    // 거래 상태 변경 시 알림 이벤트를 발행하기 위한 퍼블리셔
+    private final ApplicationEventPublisher eventPublisher;
 
 
     /**
@@ -90,10 +95,18 @@ public class TradeService {
         // 5. 거래 요청 저장
         Trade saved = tradeRepository.save(trade);
 
+        // 5-1. 임대인에게 대여 요청 알림 이벤트 발행
+        eventPublisher.publishEvent(new NotificationCreatedEvent(
+                renter.getId(),
+                NotificationType.RENTAL_REQUEST,
+                "새로운 대여 요청",
+                rentee.getNickname() + "님이 " + item.getTitle() + " 대여를 요청했어요."
+        ));
+
         // 6. 거래ID 반환
         return saved.getId();
     }
-
+    
 
     /**
      * 대여 제안 응답 서비스 -> 승인 혹은 거절
@@ -121,7 +134,7 @@ public class TradeService {
         }
 
         // 4. 임대인 일치 확인
-        if(renter.getId().equals(trade.getRenter().getId())) {
+        if(!renter.getId().equals(trade.getRenter().getId())) {
             throw new CustomException(ErrorCode.RENTER_NOT_MATCHED);
         }
 
@@ -161,6 +174,23 @@ public class TradeService {
 
         // 8. 거래 변경 상태 저장
         tradeRepository.save(trade);
+
+        // 9. 승인/거절 여부에 따라 임차인에게 보낼 알림 메시지 구성
+        NotificationType notificationType = isApproved
+                ? NotificationType.RENTAL_ACCEPT
+                : NotificationType.RENTAL_REJECT;
+        String title = isApproved ? "대여 요청 승인" : "대여 요청 거절";
+        String content = isApproved
+                ? "요청한 " + item.getTitle() + " 대여가 승인되었습니다."
+                : "요청한 " + item.getTitle() + " 대여가 거절되었습니다.";
+
+        // 10. 임차인에게 승인/거절 알림 이벤트 발행
+        eventPublisher.publishEvent(new NotificationCreatedEvent(
+                trade.getRentee().getId(),
+                notificationType,
+                title,
+                content
+        ));
     }
 
     /**
@@ -209,5 +239,13 @@ public class TradeService {
         // 8. 변경 반영
         itemRepository.save(item);
         tradeRepository.save(trade);
+
+        // 9. 임차인에게 반납 완료 알림 이벤트 발행
+        eventPublisher.publishEvent(new NotificationCreatedEvent(
+                trade.getRentee().getId(),
+                NotificationType.RETURN_COMPLETE,
+                "반납 처리 완료",
+                item.getTitle() + "의 반납 처리가 완료되었습니다."
+        ));
     }
 }
