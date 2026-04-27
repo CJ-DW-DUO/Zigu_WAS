@@ -43,4 +43,10 @@ public class Notification {
 
     @Column(name = "rec_time", nullable = false)
     private LocalDateTime recTime;
+
+    @Column(name = "is_read", nullable = false)
+    private Boolean isRead;
+
+    @Column(name = "read_at")
+    private LocalDateTime readAt;
 }
