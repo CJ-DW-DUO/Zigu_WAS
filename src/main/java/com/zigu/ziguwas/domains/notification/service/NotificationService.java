@@ -81,6 +81,27 @@ public class NotificationService {
         return notificationRepository.countByUserAndIsReadFalse(user);
     }
 
+    /**
+     * 특정 알림을 읽음 처리합니다.
+     *
+     * @param userId 사용자 ID
+     * @param notificationId 알림 ID
+     */
+    @Transactional
+    public void markAsRead(Long userId, Long notificationId) {
+        // 1. 사용자 존재 여부 확인
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        // 2. 본인 소유 알림 조회
+        Notification notification = notificationRepository.findByNotiIdAndUser(notificationId, user).orElseThrow(
+                () -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND)
+        );
+
+        // 3. 읽음 상태 업데이트
+        notification.markAsRead();
+    }
 }
 
 
