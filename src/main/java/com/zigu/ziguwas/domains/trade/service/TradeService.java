@@ -80,7 +80,13 @@ public class TradeService {
         // 3. 임대인 조회
         User renter = item.getUser();
 
-        // 4. 요청 전송, 거래 시작, 수락일은 요청 당시에 존재하지 않으므로 미기입
+
+        // 4. 임대인이랑 임차인이 같으면 안됨
+        if(rentee.getId().equals(renter.getId())){
+            throw new CustomException(ErrorCode.SELF_TRADE_NOT_ALLOWED);
+        }
+
+        // 5. 요청 전송, 거래 시작, 수락일은 요청 당시에 존재하지 않으므로 미기입
         Trade trade = Trade.builder()
                 .item(item) // 매물 연결
                 .renter(renter) // 임대인 연결
@@ -92,10 +98,10 @@ public class TradeService {
                 .tradeReqdate(LocalDate.now()) // 요청은 지금 보내는 것
                 .build();
 
-        // 5. 거래 요청 저장
+        // 6. 거래 요청 저장
         Trade saved = tradeRepository.save(trade);
 
-        // 5-1. 임대인에게 대여 요청 알림 이벤트 발행
+        // 7. 임대인에게 대여 요청 알림 이벤트 발행
         eventPublisher.publishEvent(new NotificationCreatedEvent(
                 renter.getId(),
                 NotificationType.RENTAL_REQUEST,
