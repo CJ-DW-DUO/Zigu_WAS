@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Getter
 public class Notification {
 
@@ -49,4 +51,39 @@ public class Notification {
 
     @Column(name = "read_at")
     private LocalDateTime readAt;
+
+    /**
+     * 알림 생성 시 사용하는 정적 팩토리 메서드입니다.
+     *
+     * 생성 시점에 수신 시간(recTime)을 현재 시간으로 기록하고,
+     * 읽음 상태는 기본값(false)으로 초기화합니다.
+     */
+    public static Notification create(
+            User user,
+            NotificationType notificationType,
+            String notiTitle,
+            String notiContent
+    ) {
+        return Notification.builder()
+                .user(user)
+                .notificationType(notificationType)
+                .notiTitle(notiTitle)
+                .notiContent(notiContent)
+                .recTime(LocalDateTime.now())
+                .isRead(false)
+                .build();
+    }
+
+    /**
+     * 알림을 읽음 상태로 변경합니다.
+     *
+     * 이미 읽은 알림은 중복 갱신하지 않습니다.
+     */
+    public void markAsRead() {
+        if (Boolean.TRUE.equals(this.isRead)) {
+            return;
+        }
+        this.isRead = true;
+        this.readAt = LocalDateTime.now();
+    }
 }
