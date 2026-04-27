@@ -93,7 +93,7 @@ public class TradeService {
         // 6. 거래ID 반환
         return saved.getId();
     }
-
+    
 
     /**
      * 대여 제안 응답 서비스 -> 승인 혹은 거절
