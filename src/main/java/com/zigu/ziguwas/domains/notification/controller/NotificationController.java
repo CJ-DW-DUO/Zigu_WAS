@@ -40,6 +40,22 @@ public class NotificationController {
         );
     }
 
+    /**
+     * 내 미읽음 알림 개수를 조회합니다.
+     *
+     * @param customUserDetails 인증 사용자 정보
+     * @return 미읽음 알림 개수
+     */
+    @GetMapping("/unread-count")
+    public ResponseEntity<NotificationUnreadCountResDto> getUnreadCount(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ) {
+        // 1. 사용자 기준 미읽음 개수 조회
+        long unreadCount = notificationService.getUnreadCount(customUserDetails.getUserId());
+        // 2. 응답 DTO로 감싸서 반환
+        return ResponseEntity.ok(new NotificationUnreadCountResDto(unreadCount));
+    }
+
 }
 
 
