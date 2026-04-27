@@ -25,4 +25,14 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
      * @return 참가자 리스트
      */
     List<ChatParticipant> findAllByUser(User user);
+
+    /**
+     * 특정 채팅방의 참여자 목록을 조회합니다.
+     *
+     * 메시지 알림 발송 시, 발신자를 제외한 수신자 계산에 사용됩니다.
+     *
+     * @param chatRoom 채팅방
+     * @return 해당 채팅방 참여자 리스트
+     */
+    List<ChatParticipant> findAllByChatRoom(ChatRoom chatRoom);
 }
