@@ -9,12 +9,15 @@ import com.zigu.ziguwas.domains.chat.entity.ChatRoom;
 import com.zigu.ziguwas.domains.chat.repository.ChatMessageRepository;
 import com.zigu.ziguwas.domains.chat.repository.ChatParticipantRepository;
 import com.zigu.ziguwas.domains.chat.repository.ChatRoomRepository;
+import com.zigu.ziguwas.domains.notification.entity.NotificationType;
+import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -34,6 +37,8 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatParticipantRepository chatParticipantRepository;
     private final UserRepository userRepository;
+    // 채팅/거래 등 도메인 서비스에서 알림 이벤트를 발행할 때 사용
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 채팅방에 해당 유저가 존재하는지 확인하는 서비스
@@ -50,8 +55,9 @@ public class ChatService {
 
     /**
      * 참여중인 채팅방 조회 DTO
-     * @param customUserDetails
-     * @return
+     *
+     * @param customUserDetails 로그인 사용자 정보
+     * @return 사용자가 참여중인 채팅방 미리보기 목록
      */
     @Transactional
     public List<ChatRoomPreviewResDto> getChatroomsPreview(CustomUserDetails customUserDetails) {
@@ -109,6 +115,7 @@ public class ChatService {
      *
      * @param customUserDetails 로그인정보
      * @param chatRoomId 채팅방ID
+     * @param dto 페이지 요청 정보
      * @return 채팅정보
      */
     @Transactional
@@ -180,6 +187,23 @@ public class ChatService {
         );
 
         chatMessageRepository.save(chatMessage);
+
+        // 5. 같은 채팅방의 참여자 중 발신자를 제외한 사용자에게 알림 이벤트 발행
+        List<ChatParticipant> participants = chatParticipantRepository.findAllByChatRoom(chatRoom);
+        for (ChatParticipant participant : participants) {
+            User receiver = participant.getUser();
+            if (receiver.getId().equals(sender.getId())) {
+                continue;
+            }
+
+            // 5-1. 실제 알림 저장은 NotificationEventListener가 AFTER_COMMIT 시점에 처리
+            eventPublisher.publishEvent(new NotificationCreatedEvent(
+                    receiver.getId(),
+                    NotificationType.CHAT,
+                    "새 채팅 메시지",
+                    sender.getNickname() + "님: " + message
+            ));
+        }
     }
 
     /**
