@@ -35,14 +35,20 @@ public interface MyPageApi {
                     content = @Content(schema = @Schema(implementation = MyPageMainResDto.class))
             ),
             @ApiResponse(
-                    responseCode = "400",
-                    description = "잘못된 요청 또는 권한 문제",
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
                     content = @Content(examples = {
                             @ExampleObject(name = "인증되지 않은 사용자", value = """
-                                { "status": 400, "message": "인증되지 않은 사용자 입니다." }
-                                """),
+                                { "status": 401, "message": "인증되지 않은 사용자 입니다." }
+                                """)
+                    })
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "허용되지 않은 접근",
+                    content = @Content(examples = {
                             @ExampleObject(name = "허용되지 않은 접근", value = """
-                                { "status": 400, "message": "허용되지 않은 접근입니다." }
+                                { "status": 403, "message": "허용되지 않은 접근입니다." }
                                 """)
                     })
             ),
@@ -74,14 +80,20 @@ public interface MyPageApi {
             @ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = MyRegisteredItemResDto.class)))),
             @ApiResponse(
-                    responseCode = "400",
-                    description = "잘못된 요청 또는 권한 문제",
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
                     content = @Content(examples = {
                             @ExampleObject(name = "인증되지 않은 사용자", value = """
-                                { "status": 400, "message": "인증되지 않은 사용자 입니다." }
-                                """),
+                                { "status": 401, "message": "인증되지 않은 사용자 입니다." }
+                                """)
+                    })
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "허용되지 않은 접근",
+                    content = @Content(examples = {
                             @ExampleObject(name = "허용되지 않은 접근", value = """
-                                { "status": 400, "message": "허용되지 않은 접근입니다." }
+                                { "status": 403, "message": "허용되지 않은 접근입니다." }
                                 """)
                     })
             )

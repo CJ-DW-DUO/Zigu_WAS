@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.notification.controller;
 
+import com.zigu.ziguwas.domains.notification.api.NotificationApi;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationListResDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationUnreadCountResDto;
 import com.zigu.ziguwas.domains.notification.service.NotificationService;
@@ -18,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/notifications")
-public class NotificationController {
+public class NotificationController implements NotificationApi {
 
     private final NotificationService notificationService;
 
