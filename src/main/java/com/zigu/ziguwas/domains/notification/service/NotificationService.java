@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -26,7 +27,7 @@ public class NotificationService {
      *
      * @param event 알림 생성 이벤트
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createNotification(NotificationCreatedEvent event) {
         // 1. 수신 사용자 조회
         User receiver = userRepository.findById(event.receiverUserId()).orElseThrow(
