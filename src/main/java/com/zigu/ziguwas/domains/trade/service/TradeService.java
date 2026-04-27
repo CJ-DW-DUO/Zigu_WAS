@@ -121,7 +121,7 @@ public class TradeService {
         }
 
         // 4. 임대인 일치 확인
-        if(renter.getId().equals(trade.getRenter().getId())) {
+        if(!renter.getId().equals(trade.getRenter().getId())) {
             throw new CustomException(ErrorCode.RENTER_NOT_MATCHED);
         }
 
