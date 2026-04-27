@@ -53,6 +53,10 @@ public enum ErrorCode {
     CHATMATE_NOT_FOUND(404, "채팅방 상대를 찾을 수 없습니다."),
     CHAT_MESSAGE_NOT_FOUND(404, "채팅 메시지를 찾을 수 없습니다"),
 
+    // 알림 관련
+    // 본인 소유 알림이 아니거나, 이미 삭제된 알림 조회 시 사용
+    NOTIFICATION_NOT_FOUND(404, "해당 알림을 찾을 수 없습니다."),
+
     // 파일 관련
     FILE_UPLOAD_FAIL(400, "파일업로드 실패"),
     FAIL_DELETE_FILE(400, "파일 삭제 실패" );
