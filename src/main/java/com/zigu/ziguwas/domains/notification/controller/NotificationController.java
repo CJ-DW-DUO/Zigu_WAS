@@ -30,7 +30,7 @@ public class NotificationController {
      * @return 알림 목록 페이지
      */
     @GetMapping
-    public ResponseEntity<Page<NotificationListResDto>> getMyNotifications(
+    public ResponseEntity<?> getMyNotifications(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
             Pageable pageable
     ) {
@@ -47,7 +47,7 @@ public class NotificationController {
      * @return 미읽음 알림 개수
      */
     @GetMapping("/unread-count")
-    public ResponseEntity<NotificationUnreadCountResDto> getUnreadCount(
+    public ResponseEntity<?> getUnreadCount(
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
         // 1. 사용자 기준 미읽음 개수 조회
@@ -64,7 +64,7 @@ public class NotificationController {
      * @return 처리 성공 응답
      */
     @PatchMapping("/{notificationId}/read")
-    public ResponseEntity<Void> markAsRead(
+    public ResponseEntity<?> markAsRead(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @PathVariable Long notificationId
     ) {
