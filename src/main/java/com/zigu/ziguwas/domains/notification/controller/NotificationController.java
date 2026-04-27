@@ -56,6 +56,23 @@ public class NotificationController {
         return ResponseEntity.ok(new NotificationUnreadCountResDto(unreadCount));
     }
 
+    /**
+     * 특정 알림을 읽음 처리합니다.
+     *
+     * @param customUserDetails 인증 사용자 정보
+     * @param notificationId 읽음 처리할 알림 ID
+     * @return 처리 성공 응답
+     */
+    @PatchMapping("/{notificationId}/read")
+    public ResponseEntity<Void> markAsRead(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable Long notificationId
+    ) {
+        // 1. 본인 소유 알림인지 검증 후 읽음 처리
+        notificationService.markAsRead(customUserDetails.getUserId(), notificationId);
+        // 2. 본문 없는 성공 응답
+        return ResponseEntity.ok().build();
+    }
 }
 
 
