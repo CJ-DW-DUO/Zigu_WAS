@@ -42,6 +42,7 @@ public enum ErrorCode {
     RENTER_NOT_MATCHED(400, "로그인정보와 임대인정보가 일치하지 않습니다."),
     TRADE_STATUS_NOT_REQUESTED(400, "거래가 요청상태가 아닙니다."),
     TRADE_STATUS_NOT_INPROGRESSED(400, "거래가 대여중 상태가 아닙니다."),
+    SELF_TRADE_NOT_ALLOWED(400, "자기 자신의 물건을 빌릴 수 없습니다."),
 
     // 아이템 이미지 관련
     IMAGE_NOT_FOUND(404, "이미지를 찾을 수 없습니다." ),
