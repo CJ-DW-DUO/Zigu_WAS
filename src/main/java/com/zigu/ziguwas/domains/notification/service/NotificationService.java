@@ -96,11 +96,16 @@ public class NotificationService {
         );
 
         // 2. 본인 소유 알림 조회
-        Notification notification = notificationRepository.findByNotiIdAndUser(notificationId, user).orElseThrow(
+        Notification notification = notificationRepository.findById(notificationId).orElseThrow(
                 () -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND)
         );
 
-        // 3. 읽음 상태 업데이트
+        // 3. 본인 소유의 알림인지 검증
+        if(!notification.getUser().getId().equals(user.getId())) {
+            throw new CustomException(ErrorCode.NOTIFICATION_USER_NOT_MATCHED);
+        }
+
+        // 4. 읽음 상태 업데이트
         notification.markAsRead();
     }
 }
