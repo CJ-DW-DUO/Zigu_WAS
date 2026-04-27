@@ -45,6 +45,42 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
+    /**
+     * 로그인 사용자의 알림 목록을 조회합니다.
+     *
+     * @param userId 사용자 ID
+     * @param pageable 페이지 정보
+     * @return 알림 목록 페이지
+     */
+    @Transactional(readOnly = true)
+    public Page<NotificationListResDto> getMyNotifications(Long userId, Pageable pageable) {
+        // 1. 사용자 존재 여부 확인
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        // 2. 최신순 페이지 조회 후 DTO 변환
+        return notificationRepository.findAllByUserOrderByRecTimeDesc(user, pageable)
+                .map(NotificationListResDto::fromEntity);
+    }
+
+    /**
+     * 로그인 사용자의 미읽음 알림 개수를 조회합니다.
+     *
+     * @param userId 사용자 ID
+     * @return 미읽음 알림 개수
+     */
+    @Transactional(readOnly = true)
+    public long getUnreadCount(Long userId) {
+        // 1. 사용자 존재 여부 확인
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        // 2. 미읽음 카운트 조회
+        return notificationRepository.countByUserAndIsReadFalse(user);
+    }
+
 }
 
 
