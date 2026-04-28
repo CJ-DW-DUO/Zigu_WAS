@@ -215,7 +215,10 @@ public class ChatService {
      */
     @Transactional
     public Long createChatRoom(CustomUserDetails details, Long receiverId) {
-        // 1. 사용자 조회
+        // 1. 채팅방 생성
+        ChatRoom chatRoom = chatRoomRepository.save(new ChatRoom());
+
+        // 2. 사용자 조회
         User sender = userRepository.findByEmail(details.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -226,46 +229,11 @@ public class ChatService {
         User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 2. 기존 1:1 채팅방이 있으면 재사용
-        ChatRoom existingRoom = chatRoomRepository.findOneByParticipants(sender, receiver).orElse(null);
-        if (existingRoom != null) {
+        // 3. 참여자 등록 (발신자, 수신자 모두 등록)
+        chatParticipantRepository.save(ChatParticipant.builder().chatRoom(chatRoom).user(sender).build());
+        chatParticipantRepository.save(ChatParticipant.builder().chatRoom(chatRoom).user(receiver).build());
 
-            // 전송자 조회
-            ChatParticipant senderParticipant = chatParticipantRepository.findByChatRoomAndUser(existingRoom, sender)
-                    .orElseThrow( () -> new CustomException(ErrorCode.CHAT_PARTICIPANT_NOT_FOUND));
-
-            // 타 품목으로 채팅방이 존재할 수 있기 때문에 참여상태 true로 변경
-            senderParticipant.setParticipating(true);
-            chatParticipantRepository.save(senderParticipant);
-
-            // 대상자 조회
-            ChatParticipant receiverParticipant = chatParticipantRepository.findByChatRoomAndUser(existingRoom, receiver)
-                    .orElseThrow( () -> new CustomException(ErrorCode.CHAT_PARTICIPANT_NOT_FOUND));
-
-            // 타 품목으로 채팅방이 존재할 수 있기 때문에 참여상태 true로 변경
-            receiverParticipant.setParticipating(true);
-            chatParticipantRepository.save(receiverParticipant);
-
-            // 이미 개설된 채팅방 ID 재활용
-            return existingRoom.getChatId();
-        }
-
-        // 3. 채팅방 신규 생성
-        ChatRoom chatRoom = chatRoomRepository.save(new ChatRoom());
-
-        // 4. 참여자 등록 (발신자, 수신자 모두 등록)
-        chatParticipantRepository.save(ChatParticipant.builder()
-                .chatRoom(chatRoom)
-                .user(sender)
-                .isParticipating(true)
-                .build());
-        chatParticipantRepository.save(ChatParticipant.builder()
-                .chatRoom(chatRoom)
-                .user(receiver)
-                .isParticipating(true)
-                .build());
-
-        // 5. 채팅방 ID 반환
+        // 4. 채팅방 ID 반환
         return chatRoom.getChatId();
     }
 
