@@ -40,4 +40,8 @@ public class ChatParticipant {
     @Column(name = "is_participating", nullable = false)
     private Boolean isParticipating;
 
+    public void setParticipating(boolean participating) {
+        this.isParticipating = participating;
+    }
+
 }
