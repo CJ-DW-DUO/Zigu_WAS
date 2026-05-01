@@ -25,6 +25,9 @@ public enum ErrorCode {
     VERIFY_CODE_NOT_MATCHED(400, "인증코드가 일치하지 않습니다."),
     NICKNAME_CONFLICT(409, "이미 사용중인 닉네임입니다."),
     INCORRECT_PASSWORD(401, "비밀번호가 일치하지 않습니다."),
+    INVALID_OLD_PASSWORD(401, "기존 비밀번호와 입력하신 비밀번호는 일치하지 않습니다." ),
+    PASSWORD_MISMATCH(401, "새로운 비밀번호와 일치하지 않습니다." ),
+    SAME_AS_OLD_PASSWORD(401, "새로운 비밀번호와 기존비밀번호가 동일합니다." ),
 
     // 대학 관련
     UNIVERSITY_NOT_FOUND(404, "해당 대학교는 존재하지 않습니다."),
