@@ -5,15 +5,19 @@ import com.zigu.ziguwas.domains.user.dto.auth.request.EmailReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.EmailVerifyReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.LoginReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.NicknameReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.request.PassWordUpdateReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.service.AuthService;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
+import com.zigu.ziguwas.security.CustomUserDetails;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -105,4 +109,19 @@ public class AuthController implements AuthApi {
     // 로그아웃
 
 
+    /**
+     * 사용자의 비밀번호를 변경합니다.
+     *
+     * @param customUserDetails 현재 로그인한 사용자의 인증된 객체
+     * @param reqDto 비밀번호 변경 요청 정보
+     * @return 성공 여부를 담은 응답
+     */
+    @PatchMapping("/password")
+    public ResponseEntity<Void> updatePassword(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @Valid @RequestBody PassWordUpdateReqDto reqDto
+    ) {
+        authService.updatePassword(customUserDetails.getUserId(), reqDto);
+        return ResponseEntity.ok().build();
+    }
 }
