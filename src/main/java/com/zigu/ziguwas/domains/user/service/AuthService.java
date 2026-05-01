@@ -5,6 +5,7 @@ import com.zigu.ziguwas.domains.university.repository.UniversityRepository;
 import com.zigu.ziguwas.domains.user.dto.auth.request.EmailReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.EmailVerifyReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.LoginReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.request.PassWordUpdateReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.LoginResDto;
 import com.zigu.ziguwas.domains.user.entity.User;
@@ -254,6 +255,40 @@ public class AuthService {
      */
     public String createRefreshToken(String email) {
         return jwtUtil.createRefreshToken(email);
+    }
+
+
+
+    /**
+     * 사용자의 비밀번호를 확인하고 새 비밀번호로 업데이트합니다.
+     *
+     * @param userId 비밀번호를 변경할 사용자의 식별자
+     * @param reqDto 기존 비밀번호, 새 비밀번호, 확인용 비밀번호를 담은 데이터 객체
+     * @throws CustomException 비밀번호가 틀리거나 정책에 어긋날 경우 발생
+     */
+    @Transactional
+    public void updatePassword(Long userId, PassWordUpdateReqDto reqDto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 1. 기존 비밀번호 일치 확인 (matches 메서드 활용)
+        if (!passwordEncoder.matches(reqDto.getOldPassword(), user.getPassword())) {
+            throw new CustomException(ErrorCode.INVALID_OLD_PASSWORD);
+        }
+
+        // 2. 새 비밀번호와 확인용 비밀번호 일치 확인
+        if (!reqDto.getNewPassword().equals(reqDto.getConfirmPassword())) {
+            throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
+        }
+
+        // 3. 기존 비밀번호와 동일한지 체크 (보안 강화)
+        if (passwordEncoder.matches(reqDto.getNewPassword(), user.getPassword())) {
+            throw new CustomException(ErrorCode.SAME_AS_OLD_PASSWORD);
+        }
+
+        // 4. 새 비밀번호 암호화 및 반영
+        String encodedPassword = passwordEncoder.encode(reqDto.getNewPassword());
+        user.updatePassWord(encodedPassword);
     }
 
 
