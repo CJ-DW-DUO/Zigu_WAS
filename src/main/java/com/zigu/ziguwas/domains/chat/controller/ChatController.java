@@ -3,20 +3,18 @@ package com.zigu.ziguwas.domains.chat.controller;
 import com.zigu.ziguwas.domains.chat.api.ChatApi;
 import com.zigu.ziguwas.domains.chat.dto.request.ChatMessagePageReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageSendReqDto;
-import com.zigu.ziguwas.domains.chat.dto.request.ChatRecvIdReqDto;
+import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
 import com.zigu.ziguwas.domains.chat.service.ChatService;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -96,9 +94,9 @@ public class ChatController implements ChatApi {
     @PostMapping("/api/v1/chatrooms")
     public ResponseEntity<?> createChatroom(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
-            @RequestBody ChatRecvIdReqDto dto
+            @RequestBody CreateChatRoomReqDto dto
     ){
-        Long created = chatService.createChatRoom(customUserDetails, dto.getRecieverId());
+        Long created = chatService.createChatRoom(customUserDetails, dto);
 
         if(created == null) {
             throw new CustomException(ErrorCode.CHATROOM_NOT_CREATED);
