@@ -139,15 +139,18 @@ public class ChatService {
                 () -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND)
         );
 
-        // 3. 페이지 범위 설정하기
+        // 3. 참가자 유효성 검증
+        validateParticipant(room, user);
+
+        // 4. 페이지 범위 설정하기
         Pageable pageable = PageRequest.of(dto.getPage(), dto.getSize(),
                 Sort.by("timestamp").descending());
 
-        // 4. 채팅방의 메시지 가져오기
+        // 5. 채팅방의 메시지 가져오기
         Slice<ChatMessage> messages = chatMessageRepository.findByChatRoom(room, pageable);
         List<ChatMessageDetailResDto> dtos = new ArrayList<>();
 
-        // 5. 메시지 dto에 붙이기
+        // 6. 메시지 dto에 붙이기
         for(ChatMessage cm : messages){
             dtos.add(ChatMessageDetailResDto.builder()
                             .chatRoomId(cm.getChatRoom().getChatId())
@@ -218,7 +221,7 @@ public class ChatService {
      * 1대1 채팅방 생성
      *
      * @param details 채팅 생성자 로그인정보
-     * @param receiverId 채팅 참여자
+     * @param dto 채팅 대상자 및 물품 정보
      * @return 채팅방 ID
      */
     @Transactional
@@ -229,10 +232,7 @@ public class ChatService {
                 () -> new CustomException(ErrorCode.ITEM_NOT_FOUND)
         );
 
-        // 2. 채팅방 생성
-        ChatRoom chatRoom = chatRoomRepository.save(ChatRoom.builder().item(item).build());
-
-        // 3. 사용자 조회
+        // 2. 사용자 조회
         User sender = userRepository.findByEmail(details.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -243,11 +243,19 @@ public class ChatService {
         User receiver = userRepository.findById(dto.getReceiverId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 3. 참여자 등록 (발신자, 수신자 모두 등록)
-        chatParticipantRepository.save(ChatParticipant.builder().chatRoom(chatRoom).user(sender).build());
-        chatParticipantRepository.save(ChatParticipant.builder().chatRoom(chatRoom).user(receiver).build());
+        // 3. 해당 물품과 거래로 이루어진 채팅방이 이미 존재하는지
+        if (chatRoomRepository.findByItemAndParticipants(item, sender, receiver).isPresent()) {
+            throw new CustomException(ErrorCode.CHATROOM_ALREADY_EXISTS);
+        }
 
-        // 4. 채팅방 ID 반환
+        // 4. 채팅방 생성
+        ChatRoom chatRoom = chatRoomRepository.save(ChatRoom.builder().item(item).build());
+
+        // 5. 참여자 등록 (발신자, 수신자 모두 등록)
+        chatParticipantRepository.save(ChatParticipant.builder().chatRoom(chatRoom).user(sender).isParticipating(true).build());
+        chatParticipantRepository.save(ChatParticipant.builder().chatRoom(chatRoom).user(receiver).isParticipating(true).build());
+
+        // 6. 채팅방 ID 반환
         return chatRoom.getChatId();
     }
 
@@ -270,29 +278,30 @@ public class ChatService {
                 () -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND)
         );
 
-        // 3. 채팅방과 연결된 아이템 조회
+        // 3. 참가자 유효성 검증
+        validateParticipant(chatRoom, user);
+
+        // 4. 채팅방과 연결된 아이템 조회
         Item item = chatRoom.getItem();
         if (item == null) {
             throw new CustomException(ErrorCode.ITEM_NOT_FOUND);
         }
 
-        // 4. 임대인/임차인 분기, 거래상태 조회
+        // 5. 거래상태 조회 (채팅방 기준)
+        Trade trade = tradeRepository.findByChatRoom(chatRoom).orElse(null);
 
-        // 현재 유저가 임대인인지 임차인인지 확인
-        // 임대인
-        Trade trade = tradeRepository.findByItemAndRenter(item, user).orElse(null);
-        if(trade == null) {
-            // 임차인
-            trade = tradeRepository.findByItemAndRentee(item, user).orElse(null);
+        String imageUrl = null;
+        if (item.getImageUrl() != null && !item.getImageUrl().isEmpty()) {
+            imageUrl = item.getImageUrl().get(0).toString();
         }
 
-        // 5. 반환
+        // 6. 반환
         return ChatRoomItemAndTradeInfoResDto.builder()
                 .chatroomId(chatRoomId)
                 .itemId(item.getId())
                 .itemTitle(item.getTitle())
                 .itemPrice(item.getDayPerPrice())
-                .imageUrl(item.getImageUrl().get(0).toString())
+                .imageUrl(imageUrl)
                 .userRole((item.getUser().getId().equals(user.getId())) ? "RENTER" : "RENTEE")
                 .tradeStatus((trade != null) ? trade.getTradeStatus().toString() : "NO_TRADE")
                 .build();
