@@ -6,16 +6,18 @@ import com.zigu.ziguwas.domains.user.dto.auth.request.LoginReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.NicknameReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.PassWordUpdateReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.SignupReqDto;
+import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
-import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "Auth API", description = "인증/인가 관련 API 입니다.")
@@ -98,66 +100,40 @@ public interface AuthApi {
     })
     ResponseEntity<?> login(@Valid @RequestBody LoginReqDto dto, HttpServletResponse res);
 
-    @Tag(name = "User Auth", description = "사용자 인증 및 계정 관리 API")
-    public interface UserAuthApi {
-
-        /**
-         * 사용자의 비밀번호를 확인하고 새 비밀번호로 변경합니다.
-         *
-         * @param userId 인증된 사용자 식별자
-         * @param reqDto 기존 비밀번호, 새 비밀번호 정보
-         * @return 성공 시 200 OK
-         */
-        @Operation(
-                summary = "비밀번호 변경",
-                description = "현재 비밀번호와 대조하여 일치할 경우 새로운 비밀번호로 업데이트합니다."
-        )
-        @ApiResponses({
-                @ApiResponse(
-                        responseCode = "200",
-                        description = "비밀번호 변경 성공",
-                        content = @Content(schema = @Schema(implementation = Void.class))
-                ),
-                @ApiResponse(
-                        responseCode = "401",
-                        description = "인증 실패 및 비밀번호 검증 오류",
-                        content = @Content(examples = {
-                                @ExampleObject(name = "인증되지 않은 사용자", value = """
-                                { "status": 401, "message": "인증되지 않은 사용자 입니다." }
-                                """),
-                                @ExampleObject(name = "기존 비밀번호 불일치", value = """
-                                { "status": 401, "message": "기존 비밀번호와 입력하신 비밀번호는 일치하지 않습니다." }
-                                """),
-                                @ExampleObject(name = "새 비밀번호 확인 불일치", value = """
-                                { "status": 401, "message": "새로운 비밀번호와 일치하지 않습니다." }
-                                """),
-                                @ExampleObject(name = "기존 비밀번호와 동일", value = """
-                                { "status": 401, "message": "새로운 비밀번호와 기존비밀번호가 동일합니다." }
-                                """)
-                        })
-                ),
-                @ApiResponse(
-                        responseCode = "403",
-                        description = "접근 권한 없음",
-                        content = @Content(examples = @ExampleObject(value = """
-                        { "status": 403, "message": "허용되지 않은 접근입니다." }
-                        """))
-                ),
-                @ApiResponse(
-                        responseCode = "404",
-                        description = "사용자 정보 없음",
-                        content = @Content(examples = @ExampleObject(value = """
-                        { "status": 404, "message": "사용자를 찾을 수 없습니다." }
-                        """))
-                ),
-                @ApiResponse(
-                        responseCode = "500",
-                        description = "서버 오류",
-                        content = @Content(examples = @ExampleObject(value = """
-                        { "status": 500, "message": "내부 서버 오류입니다." }
-                        """))
-                )
-        })
-        ResponseEntity<Void> updatePassword(Long userId, PassWordUpdateReqDto reqDto);
-    }
+    @Operation(
+            summary = "비밀번호 변경",
+            description = "현재 비밀번호와 대조하여 일치할 경우 새로운 비밀번호로 업데이트합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "비밀번호 변경 성공"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 및 비밀번호 검증 오류",
+                    content = @Content(examples = {
+                            @ExampleObject(name = "기존 비밀번호 불일치", value = """
+                            { "status": 401, "message": "기존 비밀번호와 입력하신 비밀번호는 일치하지 않습니다." }
+                            """),
+                            @ExampleObject(name = "새 비밀번호 확인 불일치", value = """
+                            { "status": 401, "message": "새로운 비밀번호와 일치하지 않습니다." }
+                            """),
+                            @ExampleObject(name = "기존 비밀번호와 동일", value = """
+                            { "status": 401, "message": "새로운 비밀번호와 기존비밀번호가 동일합니다." }
+                            """)
+                    })
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "사용자 정보 없음",
+                    content = @Content(examples = @ExampleObject(value = """
+                    { "status": 404, "message": "사용자를 찾을 수 없습니다." }
+                    """))
+            )
+    })
+    ResponseEntity<Void> updatePassword(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @Valid @RequestBody PassWordUpdateReqDto reqDto
+    );
 }
