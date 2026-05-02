@@ -2,6 +2,7 @@ package com.zigu.ziguwas.domains.chat.service;
 
 import com.zigu.ziguwas.domains.chat.dto.request.ChatMessagePageReqDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatMessageDetailResDto;
+import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomItemAndTradeInfoResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomPreviewResDto;
 import com.zigu.ziguwas.domains.chat.entity.ChatMessage;
 import com.zigu.ziguwas.domains.chat.entity.ChatParticipant;
@@ -9,8 +10,11 @@ import com.zigu.ziguwas.domains.chat.entity.ChatRoom;
 import com.zigu.ziguwas.domains.chat.repository.ChatMessageRepository;
 import com.zigu.ziguwas.domains.chat.repository.ChatParticipantRepository;
 import com.zigu.ziguwas.domains.chat.repository.ChatRoomRepository;
+import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.notification.entity.NotificationType;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
+import com.zigu.ziguwas.domains.trade.entity.Trade;
+import com.zigu.ziguwas.domains.trade.repository.TradeRepository;
 import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
@@ -39,6 +43,7 @@ public class ChatService {
     private final UserRepository userRepository;
     // 채팅/거래 등 도메인 서비스에서 알림 이벤트를 발행할 때 사용
     private final ApplicationEventPublisher eventPublisher;
+    private final TradeRepository tradeRepository;
 
     /**
      * 채팅방에 해당 유저가 존재하는지 확인하는 서비스
@@ -235,6 +240,53 @@ public class ChatService {
 
         // 4. 채팅방 ID 반환
         return chatRoom.getChatId();
+    }
+
+    /**
+     * 채팅방과 연결된 아이템 정보 및 거래 상태 조회
+     *
+     * @param customUserDetails 로그인 정보
+     * @param chatRoomId 채팅방 ID
+     * @return 채팅방 아이템 및 거래 정보 DTO
+     */
+    public ChatRoomItemAndTradeInfoResDto getChatroomItemAndTradeInfo(CustomUserDetails customUserDetails, Long chatRoomId) {
+
+        // 1. 사용자 조회
+        User user = userRepository.findByEmail(customUserDetails.getUsername()).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        // 2. 채팅방 조회
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(
+                () -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND)
+        );
+
+        // 3. 채팅방과 연결된 아이템 조회
+        Item item = chatRoom.getItem();
+        if (item == null) {
+            throw new CustomException(ErrorCode.ITEM_NOT_FOUND);
+        }
+
+        // 4. 임대인/임차인 분기, 거래상태 조회
+
+        // 현재 유저가 임대인인지 임차인인지 확인
+        // 임대인
+        Trade trade = tradeRepository.findByItemAndRenter(item, user).orElse(null);
+        if(trade == null) {
+            // 임차인
+            trade = tradeRepository.findByItemAndRentee(item, user).orElse(null);
+        }
+
+        // 5. 반환
+        return ChatRoomItemAndTradeInfoResDto.builder()
+                .chatroomId(chatRoomId)
+                .itemId(item.getId())
+                .itemTitle(item.getTitle())
+                .itemPrice(item.getDayPerPrice())
+                .imageUrl(item.getImageUrl().get(0).toString())
+                .userRole((item.getUser().getId().equals(user.getId())) ? "RENTER" : "RENTEE")
+                .tradeStatus((trade != null) ? trade.getTradeStatus().toString() : "NO_TRADE")
+                .build();
     }
 
 //    @Transactional
