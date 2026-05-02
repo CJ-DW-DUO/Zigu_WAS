@@ -68,6 +68,23 @@ public class ChatController implements ChatApi {
         return ResponseEntity.ok(chatService.getChatroomDetail(customUserDetails, chatRoomId, dto));
     }
 
+    /**
+     * 채팅방 거래 정보 조회 API
+     *
+     * 해당 채팅방이 어떤 물품에 대한 채팅방인지, 거래를 진행중인지 조회한다.
+     *
+     * @param customUserDetails 로그인정보
+     * @param chatRoomId 채팅방ID
+     * @return 채팅방 물품 및 거래정보
+     */
+    @GetMapping("/api/v1/chatrooms/{chatRoomId}/item-trade-info")
+    public ResponseEntity<?> getChatroomItemInfo(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable Long chatRoomId
+    ){
+        return ResponseEntity.ok(chatService.getChatroomItemAndTradeInfo(customUserDetails, chatRoomId));
+    }
+
 
     /**
      * 1대1 채팅방 생성 API
