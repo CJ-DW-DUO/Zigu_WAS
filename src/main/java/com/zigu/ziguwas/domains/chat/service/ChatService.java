@@ -1,6 +1,7 @@
 package com.zigu.ziguwas.domains.chat.service;
 
 import com.zigu.ziguwas.domains.chat.dto.request.ChatMessagePageReqDto;
+import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatMessageDetailResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomItemAndTradeInfoResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomPreviewResDto;
@@ -11,6 +12,7 @@ import com.zigu.ziguwas.domains.chat.repository.ChatMessageRepository;
 import com.zigu.ziguwas.domains.chat.repository.ChatParticipantRepository;
 import com.zigu.ziguwas.domains.chat.repository.ChatRoomRepository;
 import com.zigu.ziguwas.domains.item.entity.Item;
+import com.zigu.ziguwas.domains.item.repository.ItemRepository;
 import com.zigu.ziguwas.domains.notification.entity.NotificationType;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.trade.entity.Trade;
@@ -44,6 +46,7 @@ public class ChatService {
     // 채팅/거래 등 도메인 서비스에서 알림 이벤트를 발행할 때 사용
     private final ApplicationEventPublisher eventPublisher;
     private final TradeRepository tradeRepository;
+    private final ItemRepository itemRepository;
 
     /**
      * 채팅방에 해당 유저가 존재하는지 확인하는 서비스
@@ -219,19 +222,25 @@ public class ChatService {
      * @return 채팅방 ID
      */
     @Transactional
-    public Long createChatRoom(CustomUserDetails details, Long receiverId) {
-        // 1. 채팅방 생성
-        ChatRoom chatRoom = chatRoomRepository.save(new ChatRoom());
+    public Long createChatRoom(CustomUserDetails details, CreateChatRoomReqDto dto) {
 
-        // 2. 사용자 조회
+        // 1. 물품 조회
+        Item item = itemRepository.findById(dto.getItemId()).orElseThrow(
+                () -> new CustomException(ErrorCode.ITEM_NOT_FOUND)
+        );
+
+        // 2. 채팅방 생성
+        ChatRoom chatRoom = chatRoomRepository.save(ChatRoom.builder().item(item).build());
+
+        // 3. 사용자 조회
         User sender = userRepository.findByEmail(details.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        if(receiverId == null) {
+        if(dto.getReceiverId() == null) {
             throw new CustomException(ErrorCode.MISS_USER_ID);
         }
 
-        User receiver = userRepository.findById(receiverId)
+        User receiver = userRepository.findById(dto.getReceiverId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         // 3. 참여자 등록 (발신자, 수신자 모두 등록)
