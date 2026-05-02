@@ -63,7 +63,10 @@ public enum ErrorCode {
 
     // 파일 관련
     FILE_UPLOAD_FAIL(400, "파일업로드 실패"),
-    FAIL_DELETE_FILE(400, "파일 삭제 실패" );
+    FAIL_DELETE_FILE(400, "파일 삭제 실패" ),
+
+    // 검색 관련
+    SEARCH_HISTORY_NOT_FOUND(404, "검색기록이 존재하지 않습니다.");
 
     private final int status;
     private final String message;
