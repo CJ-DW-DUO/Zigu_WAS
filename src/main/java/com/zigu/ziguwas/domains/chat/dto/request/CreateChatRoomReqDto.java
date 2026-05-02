@@ -22,5 +22,5 @@ public class CreateChatRoomReqDto {
     @Schema(description = "물품 ID", example = "1")
     @NotBlank(message = "물품 ID는 입력해야 합니다.")
     @Positive(message = "물품 ID는 양수여야 합니다.")
-    private Long ItemId;
+    private Long itemId;
 }
