@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Zigu WAS Chat WS Test</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    label { display: block; margin-top: 12px; }
+    input, button, textarea { width: 100%; padding: 8px; margin-top: 6px; }
+    #log { height: 220px; }
+    .row { display: flex; gap: 12px; }
+    .row > div { flex: 1; }
+  </style>
+</head>
+<body>
+  <h2>Zigu WAS Chat WebSocket Test</h2>
+  <div class="row">
+    <div>
+      <label>WebSocket URL</label>
+      <input id="wsUrl" value="ws://localhost:8080/ws-stomp" />
+    </div>
+    <div>
+      <label>ChatRoom ID</label>
+      <input id="roomId" placeholder="예: 1" />
+    </div>
+  </div>
+
+  <label>JWT Access Token (Bearer 제외)</label>
+  <input id="token" placeholder="eyJhbGciOi..." />
+
+  <div class="row">
+    <div>
+      <button id="connectBtn">Connect</button>
+    </div>
+    <div>
+      <button id="disconnectBtn">Disconnect</button>
+    </div>
+  </div>
+
+  <label>Message</label>
+  <input id="message" placeholder="메시지를 입력" />
+  <button id="sendBtn">Send</button>
+
+  <label>Log</label>
+  <textarea id="log" readonly></textarea>
+
+  <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+  <script>
+    const logEl = document.getElementById('log');
+    const wsUrlEl = document.getElementById('wsUrl');
+    const roomIdEl = document.getElementById('roomId');
+    const tokenEl = document.getElementById('token');
+    const msgEl = document.getElementById('message');
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const sendBtn = document.getElementById('sendBtn');
+
+    let client = null;
+
+    function log(line) {
+      logEl.value += line + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    connectBtn.addEventListener('click', () => {
+      const wsUrl = wsUrlEl.value.trim();
+      const token = tokenEl.value.trim();
+      const roomId = roomIdEl.value.trim();
+
+      if (!wsUrl || !token || !roomId) {
+        log('wsUrl, token, roomId를 모두 입력하세요.');
+        return;
+      }
+
+      client = new StompJs.Client({
+        brokerURL: wsUrl,
+        connectHeaders: {
+          Authorization: 'Bearer ' + token
+        },
+        reconnectDelay: 3000,
+        onConnect: () => {
+          log('CONNECTED');
+          client.subscribe('/sub/chat/room/' + roomId, (message) => {
+            log('RECV: ' + message.body);
+          });
+        },
+        onStompError: (frame) => {
+          log('STOMP ERROR: ' + frame.headers['message']);
+          log('DETAILS: ' + frame.body);
+        },
+        onWebSocketError: (evt) => {
+          log('WS ERROR: ' + evt);
+        }
+      });
+
+      client.activate();
+    });
+
+    disconnectBtn.addEventListener('click', () => {
+      if (client) {
+        client.deactivate();
+        log('DISCONNECTED');
+      }
+    });
+
+    sendBtn.addEventListener('click', () => {
+      if (!client || !client.connected) {
+        log('먼저 CONNECT를 해주세요.');
+        return;
+      }
+      const roomId = roomIdEl.value.trim();
+      const message = msgEl.value.trim();
+      if (!roomId || !message) {
+        log('roomId와 message를 입력하세요.');
+        return;
+      }
+
+      client.publish({
+        destination: '/pub/chat/v1/chatrooms/' + roomId,
+        body: JSON.stringify({ message })
+      });
+
+      log('SEND: ' + message);
+      msgEl.value = '';
+    });
+  </script>
+</body>
+</html>
+
