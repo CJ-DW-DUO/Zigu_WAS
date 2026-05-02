@@ -6,6 +6,7 @@ import com.zigu.ziguwas.domains.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ChatParticipantRepository extends JpaRepository<ChatParticipant, Long> {
 
@@ -35,4 +36,7 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
      * @return 해당 채팅방 참여자 리스트
      */
     List<ChatParticipant> findAllByChatRoom(ChatRoom chatRoom);
+
+    // 채팅방에 해당 유저가 있으면 참여자 객체 반환
+    Optional<ChatParticipant> findByChatRoomAndUser(ChatRoom chatRoom, User user);
 }
