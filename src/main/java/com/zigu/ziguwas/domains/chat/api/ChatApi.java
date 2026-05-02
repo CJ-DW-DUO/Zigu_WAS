@@ -1,7 +1,7 @@
 package com.zigu.ziguwas.domains.chat.api;
 
 import com.zigu.ziguwas.domains.chat.dto.request.ChatMessagePageReqDto;
-import com.zigu.ziguwas.domains.chat.dto.request.ChatRecvIdReqDto;
+import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -42,6 +42,6 @@ public interface ChatApi {
     })
     ResponseEntity<?> createChatroom(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
-            @RequestBody ChatRecvIdReqDto dto
+            @RequestBody CreateChatRoomReqDto dto
     );
 }

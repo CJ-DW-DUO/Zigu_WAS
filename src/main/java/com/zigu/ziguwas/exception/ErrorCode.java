@@ -57,6 +57,7 @@ public enum ErrorCode {
     CHATMATE_NOT_FOUND(404, "채팅방 상대를 찾을 수 없습니다."),
     CHAT_MESSAGE_NOT_FOUND(404, "채팅 메시지를 찾을 수 없습니다"),
     CHAT_PARTICIPANT_NOT_FOUND(404, "채팅방 참여자를 찾을 수 없습니다."),
+    CHATROOM_ALREADY_EXISTS(409, "해당 물품에 대한 채팅방이 이미 존재합니다."),
 
     // 알림 관련
     NOTIFICATION_NOT_FOUND(404, "해당 알림을 찾을 수 없습니다."),
