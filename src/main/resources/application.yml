@@ -2,7 +2,7 @@ spring:
   application:
     name: Zigu-WAS
   profiles:
-    active: local
+    default: local
 
   servlet:
     multipart:
