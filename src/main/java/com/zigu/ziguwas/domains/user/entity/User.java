@@ -15,19 +15,20 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 
-/**
- * @author 곽동욱
- * @since 2026.03.12
- *
- * User Entity
- */
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Builder
+@SQLDelete(sql = "UPDATE user SET is_deleted = true, deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("is_deleted = false")
 public class User {
 
     // PK
@@ -61,6 +62,12 @@ public class User {
     @Column(name = "veri_status")
     private VerificationStatus veriStatus;
 
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false; // 기본 false
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     public void updateNickname(String nickname){
         this.nickname = nickname;
     }
@@ -71,5 +78,16 @@ public class User {
 
     public void updatePassWord(String encodePassword) {
         this.password = encodePassword;
+    }
+
+    /**
+     * 회원 탈퇴 시 개인정보를 식별할 수 없도록 마스킹하고 랜덤값으로 대체한다.
+     * 이메일과 닉네임 중복 제약 조건을 회피하기 위해 UUID를 활용한다.
+     */
+    public void maskPersonalInfo() {
+        this.email = "deleted_" + UUID.randomUUID().toString().substring(0, 8);
+        this.nickname = "탈퇴사용자_" + UUID.randomUUID().toString().substring(0, 8);
+        this.profilePhotoUrl = null;
+        this.password = "DELETED_USER_" + UUID.randomUUID().toString().substring(0, 4);
     }
 }
