@@ -15,6 +15,7 @@ import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.redis.RedisService;
 import com.zigu.ziguwas.security.JwtUtil;
+import com.zigu.ziguwas.security.TokenService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -35,6 +36,7 @@ public class AuthService {
     private final RedisService redisService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final TokenService tokenService;
 
 
     /**
@@ -211,6 +213,9 @@ public class AuthService {
         String accessToken = createAccessToken(dto.getEmail());
         String refreshToken = createRefreshToken(dto.getEmail());
 
+        // redis에 refresh token 저장
+        tokenService.saveRefreshToken(user.getId(), refreshToken);
+
         // 4. 리프레쉬 토큰 헤더에 붙이는 작업
         ResponseCookie responseCookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
@@ -290,6 +295,32 @@ public class AuthService {
         String encodedPassword = passwordEncoder.encode(reqDto.getNewPassword());
         user.updatePassWord(encodedPassword);
     }
+
+    /**
+     * 유저를 소프트 탈퇴 처리합니다.
+     * @param userId 탈퇴할 유저의 식별자
+     */
+    @Transactional
+    public void withdraw(Long userId,String accessToken) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 1. 리프레시 토큰 삭제
+        tokenService.deleteRefreshToken(userId);
+
+        // 2. 액세스 토큰 블랙리스트 등록 (추가)
+        long remainingTime = jwtUtil.getExpiration(accessToken);
+        redisService.setDataExpire("BLACKLIST:" + accessToken, "withdrawn", remainingTime);
+
+        // 3. 개인정보 마스킹
+        user.maskPersonalInfo();
+        userRepository.saveAndFlush(user);
+
+        // 4. 그 후 삭제 호출 @SQLDelete의 UPDATE 쿼리
+        userRepository.delete(user);
+    }
+
+
 
 
 }

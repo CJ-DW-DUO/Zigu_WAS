@@ -12,11 +12,14 @@ import com.zigu.ziguwas.domains.user.service.AuthService;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.security.CustomUserDetails;
+import com.zigu.ziguwas.security.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,6 +34,7 @@ import java.net.URI;
 public class AuthController implements AuthApi {
 
     private final AuthService authService;
+    private final JwtUtil jwtUtil;
 
 
     /**
@@ -123,5 +127,23 @@ public class AuthController implements AuthApi {
     ) {
         authService.updatePassword(customUserDetails.getUserId(), reqDto);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 로그인된 유저의 토큰 정보를 기반으로 회원 탈퇴를 진행한다.
+     * @param customUserDetails AuthenticationPrincipal 어노테이션을 통해 주입받은 유저 정보
+     * @return 성공 시 상태 코드 반환
+     */
+    @DeleteMapping
+    public ResponseEntity<Void> withdraw(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails ,
+            HttpServletRequest request
+    ) {
+
+        Long userId = customUserDetails.getUserId();
+        String accessToken = jwtUtil.resolveToken(request);
+        authService.withdraw(userId, accessToken);
+
+        return ResponseEntity.noContent().build();
     }
 }
