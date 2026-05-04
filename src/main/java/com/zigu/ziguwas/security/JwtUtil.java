@@ -4,6 +4,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,7 @@ public class JwtUtil {
     private final SecretKey secretKey;
 
     private final long accessValid = 1000L * 60 * 60; // 1시간
+    @Getter
     private final long refreshValid = 1000L * 60 * 60 * 24 * 7; // 7일
 
     public JwtUtil(@Value("${jwt.secret-key}") String secretKey) {
@@ -72,5 +74,21 @@ public class JwtUtil {
         }
         return null;
     }
+
+    public long getExpiration(String token) {
+        // 토큰의 전체 페이로드에서 만료 시간(Expiration)을 가져옴
+        Date expiration = Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getExpiration();
+
+        // 현재 시간과의 차이를 계산 (밀리초 단위)
+        long now = new Date().getTime();
+        long diff = expiration.getTime() - now;
+        return diff > 0 ? diff : 0L; // 0보다 작으면 그냥 0 반환
+    }
+
 
 }
