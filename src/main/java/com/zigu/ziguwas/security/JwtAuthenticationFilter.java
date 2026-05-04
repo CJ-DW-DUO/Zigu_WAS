@@ -2,6 +2,7 @@ package com.zigu.ziguwas.security;
 
 import com.zigu.ziguwas.exception.CustomAuthenticationEntryPoint;
 import com.zigu.ziguwas.exception.ErrorCode;
+import com.zigu.ziguwas.redis.RedisService;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,6 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final CustomUserDetailService customUserDetailService;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final RedisService redisService;
 
 
     @Override
@@ -32,6 +34,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (token != null) {
             try {
+                // 2. 블랙리스트 체크 (가장 먼저 수행!)
+
+                if (redisService.getData("BLACKLIST:" + token) != null) {
+                    // 블랙리스트에 있으면 다음 로직을 타지 않고 바로 예외 처리 지점으로 보냄
+                    request.setAttribute("exception", ErrorCode.BLACKLIST_TOKEN);
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
+                // 3. 기존 토큰 검증 및 인증 로직
                 String email = jwtUtil.getEmailFromToken(token);
                 UserDetails userDetails = customUserDetailService.loadUserByUsername(email);
 
@@ -43,7 +55,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
             } catch (JwtException | IllegalArgumentException e) {
-//                request.setAttribute("exception", ErrorCode.JWT_TOKEN_PARSING_ERROR);
+                // 토큰이 만료되었거나 파싱 에러가 날 경우 처리
+                request.setAttribute("exception", ErrorCode.JWT_TOKEN_PARSING_ERROR);
             }
         }
         filterChain.doFilter(request, response);
