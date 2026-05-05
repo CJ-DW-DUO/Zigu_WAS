@@ -91,7 +91,7 @@ public class AuthService {
         String verificationCode = String.valueOf((int)(Math.random() * 899999) + 100000);
 
         // Redis에 저장 / 이메일, 인증코드, 5분
-        redisService.setDataExpire(dto.getEmail(), verificationCode, 300 * 100);
+        redisService.setDataExpire(dto.getEmail(), verificationCode, 300 * 1000);
 
         // 3. 이메일 발송
         SimpleMailMessage message = new SimpleMailMessage();
@@ -123,7 +123,7 @@ public class AuthService {
             // 인증 코드는 삭제
             redisService.deleteData(dto.getEmail());
             // 인증된 메일 상태는 10분간 유지하도록
-            redisService.setDataExpire(dto.getEmail(), "DONE", 600 * 100);
+            redisService.setDataExpire(dto.getEmail(), "DONE", 600 * 1000);
         } else {
             // 인증 정보가 다를경우 예외
             throw new CustomException(ErrorCode.VERIFY_CODE_NOT_MATCHED);
