@@ -190,6 +190,11 @@ public interface ItemApi {
                     content = @Content(examples = @ExampleObject(value = """
                         { "status": 404, "message": "아이템을 찾을 수 없습니다." }
                         """))
+            ),
+            @ApiResponse(responseCode = "404", description = "탈퇴한 작성자의 아이템, 상세조회 불가",
+                    content = @Content(examples = @ExampleObject(value = """
+                        { "status": 404, "message": "탈퇴한 작성자의 매물 게시글은 상세 정보를 확인할 수 없습니다." }
+                        """))
             )
     })
     @GetMapping("/{itemId}")
