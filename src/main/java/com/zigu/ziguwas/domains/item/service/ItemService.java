@@ -12,6 +12,7 @@ import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -189,6 +190,16 @@ public class ItemService {
 
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
+
+        try {
+            // 주인이 없거나(null), 탈퇴한 유저라면 상세조회 차단
+            if (item.getUser() == null || item.getUser().isDeleted()) {
+                throw new CustomException(ErrorCode.WITHDRAWN_USER_ITEM);
+            }
+        } catch (EntityNotFoundException e) {
+            // 하이버네이트 프록시가 유저를 찾지 못할 때 (이미 탈퇴한 경우) 발생하는 에러 처리
+            throw new CustomException(ErrorCode.WITHDRAWN_USER_ITEM);
+        }
 
         item.increaseViewCount();
         return ItemResDto.fromEntity(item);
