@@ -39,6 +39,6 @@ public class ItemListService {
         // 카테고리조건 + 정렬
         Page<Item> items = itemListRepository.findAll(spec, sortedPageable);
 
-        return items.map(ItemListResDto::fromEntity);
+        return items.map(item -> ItemListResDto.fromEntity(item, userId));
     }
 }

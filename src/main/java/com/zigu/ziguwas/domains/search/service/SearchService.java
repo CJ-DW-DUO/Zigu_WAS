@@ -63,7 +63,7 @@ public class SearchService {
             );
         }
 
-        return items.map(ItemSearchResDto::fromEntity);
+        return items.map(item -> ItemSearchResDto.fromEntity(item, userId));
     }
 
     /**

@@ -46,7 +46,7 @@ public class ItemService {
 
         Item savedItem = itemRepository.save(item);
 
-        return ItemResDto.fromEntity(savedItem);
+        return ItemResDto.fromEntity(savedItem, userId);
     }
 
     /**
@@ -81,7 +81,7 @@ public class ItemService {
             item.addImage(new ItemImage(uploadedUrls.get(i), isMain));
         }
 
-        return ItemResDto.fromEntity(item);
+        return ItemResDto.fromEntity(item, userId);
     }
 
     /**
@@ -156,7 +156,7 @@ public class ItemService {
                 itemUpdateReqDto.getDescription()
         );
 
-        return ItemResDto.fromEntity(item);
+        return ItemResDto.fromEntity(item, userId);
     }
 
     /**
@@ -202,7 +202,7 @@ public class ItemService {
         }
 
         item.increaseViewCount();
-        return ItemResDto.fromEntity(item);
+        return ItemResDto.fromEntity(item, userId);
     }
 
 }
