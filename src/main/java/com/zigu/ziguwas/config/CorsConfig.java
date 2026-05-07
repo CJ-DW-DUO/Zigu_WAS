@@ -22,8 +22,9 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.addAllowedOriginPattern("http://localhost:*");
-        configuration.addAllowedOriginPattern("http://localhost");
+        configuration.addAllowedOriginPattern("*"); // 테스트 용도: 모든 출처 허용
+//        configuration.addAllowedOriginPattern("http://localhost:*");
+//        configuration.addAllowedOriginPattern("http://localhost");
 //        configuration.addAllowedOriginPattern(webServerUrl + ":*");
 //        configuration.addAllowedOriginPattern(webServerUrl);
 
