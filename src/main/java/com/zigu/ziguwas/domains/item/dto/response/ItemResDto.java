@@ -18,6 +18,12 @@ public class ItemResDto {
     @Schema(description = "아이템 고유 ID (PK)", example = "1")
     private final Long itemId;
 
+    @Schema(description = "작성자 고유 ID", example = "10")
+    private final Long writerId;
+
+    @Schema(description = "본인 게시글 여부", example = "true")
+    private final boolean isMine;
+
     @Schema(description = "아이템 카테고리 (Enum)", example = "ELECTRONICS")
     private final ItemCategory itemCategory;
 
@@ -39,9 +45,12 @@ public class ItemResDto {
     @Schema(description = "아이템 상세 설명", example = "거의 새 제품입니다. 키스킨 포함해서 대여해 드려요.")
     private final String description;
 
-    public static ItemResDto fromEntity(Item item) {
+    public static ItemResDto fromEntity(Item item,Long currentUserId) {
+        boolean isMine = currentUserId != null && item.getUser().getId().equals(currentUserId);
         return ItemResDto.builder()
                 .itemId(item.getId())
+                .writerId(item.getUser().getId())
+                .isMine(isMine)
                 .itemCategory(item.getCategory())
                 .categoryName(item.getCategory().getDescription())
                 .dayPerPrice(item.getDayPerPrice())

@@ -17,6 +17,12 @@ public class ItemListResDto {
     @Schema(description = "아이템 식별자", example = "1")
     private final Long itemId;
 
+    @Schema(description = "작성자 고유 ID", example = "10")
+    private final Long writerId;
+
+    @Schema(description = "본인 게시글 여부", example = "true")
+    private final boolean isMine;
+
     @Schema(description = "아이템 제목", example = "제목입니다 빌려가세요")
     private final String title;
 
@@ -38,9 +44,13 @@ public class ItemListResDto {
     @Schema(description = "카테고리 한글 명칭", example = "전자기기")
     private final String itemCategoryKor;
 
-    public static ItemListResDto fromEntity(Item item) {
+    public static ItemListResDto fromEntity(Item item, Long currentUserId) {
+
+        boolean isMine = currentUserId != null && item.getUser().getId().equals(currentUserId);
         return ItemListResDto.builder()
                 .itemId(item.getId())
+                .writerId(item.getUser().getId())
+                .isMine(isMine)
                 .title(item.getTitle())
                 .dayPerPrice(item.getDayPerPrice())
                 .itemStatus(item.getItemStatus().name())
