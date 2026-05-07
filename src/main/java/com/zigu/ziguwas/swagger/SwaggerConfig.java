@@ -6,9 +6,14 @@ import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 @Configuration
 @OpenAPIDefinition(
@@ -24,6 +29,15 @@ import org.springframework.context.annotation.Configuration;
         paramName = "Authorization"
 )
 public class SwaggerConfig {
+
+    @Value("${app.swagger.server-url}")
+    private String swaggerServerUrl;
+
+    @Bean
+    public OpenAPI customOpenApi() {
+        return new OpenAPI()
+                .servers(List.of(new Server().url(swaggerServerUrl)));
+    }
 
     @Bean
     public GroupedOpenApi openApi() {

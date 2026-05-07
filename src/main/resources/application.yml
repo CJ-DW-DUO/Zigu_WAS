@@ -21,6 +21,10 @@ spring:
 jwt:
   secret-key: ${SECRET_KEY}
 
+app:
+  swagger:
+    server-url: ${SWAGGER_SERVER_URL:http://localhost:8080}
+
 
 #server:
 #  port: 8443
