@@ -87,9 +87,25 @@ public class ChatService {
             ChatRoom room = chatParticipant.getChatRoom();
 
             // 3-2. 상대 참여자 이름(방이름) 조회
-            String roomName = userRepository.findById(chatParticipant.getUser().getId()).orElseThrow(
-                    () -> new CustomException(ErrorCode.CHATMATE_NOT_FOUND)
-            ).getNickname();
+
+            // 방 기준 모든 참여자 조회 (자기 자신 포함)
+            List<ChatParticipant> participant = chatParticipantRepository.findAllByChatRoom(room);
+
+            // 방 이름 초기화
+            String roomName = null;
+
+            // 자기 이름이 아닌 상대방 이름으로 방 이름 설정 (1:1 채팅이므로 상대방은 한명)
+            // 만약 채팅방이 여러명으로 이뤄진다면 해당 부분은 수정 필요
+            for(ChatParticipant p : participant) {
+                if(!p.getUser().equals(user)) {
+                    roomName = p.getUser().getNickname();
+                }
+            }
+
+            // 만약 방에 상대방이 없다면(자기 자신만 있다면) 예외 처리
+            if(roomName == null){
+                throw new CustomException(ErrorCode.CHATMATE_NOT_FOUND);
+            }
 
             // 3-3. 마지막으로 보낸 메시지 조회
             ChatMessage lastMessage = chatMessageRepository.findFirstByChatRoomOrderByTimestampDesc(chatParticipant.getChatRoom()).orElse(null);
