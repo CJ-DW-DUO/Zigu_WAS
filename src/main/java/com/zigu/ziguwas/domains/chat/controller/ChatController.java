@@ -1,7 +1,6 @@
 package com.zigu.ziguwas.domains.chat.controller;
 
 import com.zigu.ziguwas.domains.chat.api.ChatApi;
-import com.zigu.ziguwas.domains.chat.dto.request.ChatMessagePageReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageSendReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
 import com.zigu.ziguwas.domains.chat.service.ChatService;
@@ -20,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
@@ -61,9 +61,10 @@ public class ChatController implements ChatApi {
     public ResponseEntity<?> getChatroomDetail(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @PathVariable Long chatRoomId,
-            @RequestBody ChatMessagePageReqDto dto
+            @RequestParam Integer page,
+            @RequestParam Integer size
     ){
-        return ResponseEntity.ok(chatService.getChatroomDetail(customUserDetails, chatRoomId, dto));
+        return ResponseEntity.ok(chatService.getChatroomDetail(customUserDetails, chatRoomId, page, size));
     }
 
     /**

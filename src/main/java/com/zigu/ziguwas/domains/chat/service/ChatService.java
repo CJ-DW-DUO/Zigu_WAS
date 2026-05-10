@@ -1,6 +1,5 @@
 package com.zigu.ziguwas.domains.chat.service;
 
-import com.zigu.ziguwas.domains.chat.dto.request.ChatMessagePageReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatMessageDetailResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomItemAndTradeInfoResDto;
@@ -143,7 +142,7 @@ public class ChatService {
      * @return 채팅정보
      */
     @Transactional
-    public List<ChatMessageDetailResDto> getChatroomDetail(CustomUserDetails customUserDetails, Long chatRoomId, ChatMessagePageReqDto dto) {
+    public List<ChatMessageDetailResDto> getChatroomDetail(CustomUserDetails customUserDetails, Long chatRoomId, Integer page, Integer size) {
 
         // 1. 유저 확인
         User user = userRepository.findByEmail(customUserDetails.getUsername()).orElseThrow(
@@ -159,7 +158,7 @@ public class ChatService {
         validateParticipant(room, user);
 
         // 4. 페이지 범위 설정하기
-        Pageable pageable = PageRequest.of(dto.getPage(), dto.getSize(),
+        Pageable pageable = PageRequest.of(page, size,
                 Sort.by("timestamp").descending());
 
         // 5. 채팅방의 메시지 가져오기

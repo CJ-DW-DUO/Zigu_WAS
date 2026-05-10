@@ -1,6 +1,5 @@
 package com.zigu.ziguwas.domains.chat.api;
 
-import com.zigu.ziguwas.domains.chat.dto.request.ChatMessagePageReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomItemAndTradeInfoResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
@@ -16,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "Chat API", description = "채팅 관련 API 입니다.")
 public interface ChatApi {
@@ -34,9 +34,10 @@ public interface ChatApi {
             @ApiResponse(responseCode = "404", description = "채팅방을 찾을 수 없음")
     })
     ResponseEntity<?> getChatroomDetail(
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @PathVariable Long chatRoomId,
-            @RequestBody ChatMessagePageReqDto dto
+            @RequestParam Integer page,
+            @RequestParam Integer size
     );
 
     @Operation(summary = "채팅방 거래/물품 정보 조회", description = "특정 채팅방과 연결된 물품 정보 및 거래 상태를 조회합니다.")
