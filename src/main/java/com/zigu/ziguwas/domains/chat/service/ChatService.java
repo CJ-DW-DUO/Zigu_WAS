@@ -138,7 +138,8 @@ public class ChatService {
      *
      * @param customUserDetails 로그인정보
      * @param chatRoomId 채팅방ID
-     * @param dto 페이지 요청 정보
+     * @param page 페이지
+     * @param size 페이지 사이즈
      * @return 채팅정보
      */
     @Transactional
@@ -258,13 +259,14 @@ public class ChatService {
         User receiver = userRepository.findById(dto.getReceiverId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 3. 해당 물품과 거래로 이루어진 채팅방이 이미 존재하는지
-        if (chatRoomRepository.findByItemAndParticipants(item, sender, receiver).isPresent()) {
-            throw new CustomException(ErrorCode.CHATROOM_ALREADY_EXISTS);
+        // 3. 해당 물품과 거래로 이루어진 채팅방이 이미 존재한다면, 그냥 해당 ID를 반환
+        ChatRoom chatRoom = chatRoomRepository.findByItemAndParticipants(item, sender, receiver).orElse(null);
+        if (chatRoom != null) {
+            return chatRoom.getChatId();
         }
 
-        // 4. 채팅방 생성
-        ChatRoom chatRoom = chatRoomRepository.save(ChatRoom.builder().item(item).build());
+        // 4. 채팅방 생성 (존재하는 채팅방이 없을 경우)
+        chatRoom = chatRoomRepository.save(ChatRoom.builder().item(item).build());
 
         // 5. 참여자 등록 (발신자, 수신자 모두 등록)
         chatParticipantRepository.save(ChatParticipant.builder().chatRoom(chatRoom).user(sender).isParticipating(true).build());
