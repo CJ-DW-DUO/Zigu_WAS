@@ -1,5 +1,8 @@
 package com.zigu.ziguwas.domains.user.service;
 
+import com.zigu.ziguwas.domains.trade.entity.Trade;
+import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
+import com.zigu.ziguwas.domains.trade.repository.TradeRepository;
 import com.zigu.ziguwas.domains.university.entity.University;
 import com.zigu.ziguwas.domains.university.repository.UniversityRepository;
 import com.zigu.ziguwas.domains.user.dto.auth.request.EmailReqDto;
@@ -8,6 +11,8 @@ import com.zigu.ziguwas.domains.user.dto.auth.request.LoginReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.PassWordUpdateReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.LoginResDto;
+import com.zigu.ziguwas.domains.user.dto.auth.response.OngoingTradeResDto;
+import com.zigu.ziguwas.domains.user.dto.auth.response.WithdrawalCheckResDto;
 import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.entity.VerificationStatus;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
@@ -26,6 +31,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -37,6 +45,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final TokenService tokenService;
+    private final TradeRepository tradeRepository;
 
 
     /**
@@ -296,27 +305,49 @@ public class AuthService {
         user.updatePassWord(encodedPassword);
     }
 
+
     /**
-     * 유저를 소프트 탈퇴 처리합니다.
-     * @param userId 탈퇴할 유저의 식별자
+     * 탈퇴 가능 상태를 조회하여 진행 중인 거래 목록을 반환합니다.
+     * @param userId 유저 식별자
+     * @return 탈퇴 가능 여부 및 상세 거래 정보
+     */
+    @Transactional(readOnly = true)
+    public WithdrawalCheckResDto getWithdrawalStatus(Long userId) {
+        List<Trade> trades = tradeRepository.findAllByUserIdInvolvedAndStatus(userId, TradeStatus.IN_PROGRESS);
+
+        List<OngoingTradeResDto> ongoingTradeDtos = trades.stream()
+                .map(OngoingTradeResDto::from)
+                .collect(Collectors.toList());
+
+        return WithdrawalCheckResDto.toEntity(ongoingTradeDtos);
+    }
+
+    /**
+     * 회원을 소프트 탈퇴 처리하고 토큰을 무효화합니다.
+     * @param userId 탈퇴할 유저 식별자
+     * @param accessToken 현재 액세스 토큰
+     * @param reason 탈퇴 사유
      */
     @Transactional
-    public void withdraw(Long userId,String accessToken) {
+    public void withdraw(Long userId, String accessToken, String reason) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 1. 리프레시 토큰 삭제
-        tokenService.deleteRefreshToken(userId);
+        // 진행 중 거래 존재 시 예외 발생
+        List<Trade> activeTrades = tradeRepository.findAllByUserIdInvolvedAndStatus(userId, TradeStatus.IN_PROGRESS);
+        if (!activeTrades.isEmpty()) {
+            throw new CustomException(ErrorCode.ACTIVE_TRADE_EXISTS);
+        }
 
-        // 2. 액세스 토큰 블랙리스트 등록 (추가)
+        // 토큰 처리
+        tokenService.deleteRefreshToken(userId);
         long remainingTime = jwtUtil.getExpiration(accessToken);
         redisService.setDataExpire("BLACKLIST:" + accessToken, "withdrawn", remainingTime);
 
-        // 3. 개인정보 마스킹
-        user.maskPersonalInfo();
+        // 개인정보 마스킹 및 사유 저장 (User 엔티티 내부 메서드 활용)
+        user.applyWithdrawal(reason);
         userRepository.saveAndFlush(user);
 
-        // 4. 그 후 삭제 호출 @SQLDelete의 UPDATE 쿼리
         userRepository.delete(user);
     }
 
