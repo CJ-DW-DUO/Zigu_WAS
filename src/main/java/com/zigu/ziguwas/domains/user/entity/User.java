@@ -68,6 +68,9 @@ public class User {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Column(name = "del_reson")
+    private String delReson;
+
     public void updateNickname(String nickname){
         this.nickname = nickname;
     }
@@ -89,5 +92,14 @@ public class User {
         this.nickname = "탈퇴사용자_" + UUID.randomUUID().toString().substring(0, 8);
         this.profilePhotoUrl = null;
         this.password = "DELETED_USER_" + UUID.randomUUID().toString().substring(0, 4);
+    }
+
+    /**
+     * 회원 탈퇴 시 필요한 정보 변경을 처리합니다.
+     * @param reason 탈퇴 사유
+     */
+    public void applyWithdrawal(String reason) {
+        this.delReson = reason;
+        this.maskPersonalInfo();
     }
 }
