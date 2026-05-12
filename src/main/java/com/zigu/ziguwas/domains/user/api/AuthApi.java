@@ -6,18 +6,24 @@ import com.zigu.ziguwas.domains.user.dto.auth.request.LoginReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.NicknameReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.PassWordUpdateReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.SignupReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.request.WithdrawReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.response.WithdrawalCheckResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "Auth API", description = "인증/인가 관련 API 입니다.")
@@ -135,5 +141,51 @@ public interface AuthApi {
     ResponseEntity<Void> updatePassword(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @Valid @RequestBody PassWordUpdateReqDto reqDto
+    );
+
+    @Operation(summary = "탈퇴 전 상태 체크", description = "유저가 참여 중인 진행 중 거래(IN_PROGRESS) 유무를 확인합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공 (결과에 따라 canWithdraw가 true/false로 나뉨)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = WithdrawalCheckResDto.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "탈퇴 가능 케이스",
+                                            value = "{\"canWithdraw\": true, \"ongoingCount\": 0, \"ongoingTrades\": []}",
+                                            description = "진행 중인 거래가 없어 즉시 탈퇴 사유 입력 화면으로 이동 가능"
+                                    ),
+                                    @ExampleObject(
+                                            name = "탈퇴 불가 케이스",
+                                            value = "{\"canWithdraw\": false, \"ongoingCount\": 1, \"ongoingTrades\": [{\"tradeId\": 1, \"itemId\": 10, \"renterId\": 2, \"lesseeId\": 5, \"title\": \"아이템 제목\", \"status\": \"IN_PROGRESS\", \"price\": 10000, \"representativeImageUrl\": \"url\"}]}",
+                                            description = "진행 중인 거래가 있어 리스트 화면을 보여줘야 함"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(responseCode = "401", description = "인증 토큰이 없거나 유효하지 않음")
+    })
+    @GetMapping("/delcheck")
+    ResponseEntity<WithdrawalCheckResDto> checkWithdrawal(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
+    @Operation(summary = "회원 탈퇴", description = "사유를 입력받아 회원 탈퇴를 진행합니다. 진행 중인 거래가 있으면 실패합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "탈퇴 성공"),
+            @ApiResponse(responseCode = "400", description = "진행 중인 거래 존재",
+                    content = @Content(examples = @ExampleObject(value = "{\"status\": 400, \"message\": \"진행중인 거래가 있습니다.\"}"))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(examples = @ExampleObject(value = "{\"status\": 401, \"message\": \"인증되지 않은 사용자 입니다.\"}"))),
+            @ApiResponse(responseCode = "404", description = "유저 정보 없음",
+                    content = @Content(examples = @ExampleObject(value = "{\"status\": 404, \"message\": \"사용자를 찾을 수 없습니다.\"}")))
+    })
+    @DeleteMapping
+    ResponseEntity<Void> withdraw(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestBody WithdrawReqDto requestDto,
+            HttpServletRequest request
     );
 }

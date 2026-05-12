@@ -7,6 +7,8 @@ import com.zigu.ziguwas.domains.user.dto.auth.request.LoginReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.NicknameReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.PassWordUpdateReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.SignupReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.request.WithdrawReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.response.WithdrawalCheckResDto;
 import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.service.AuthService;
 import com.zigu.ziguwas.exception.CustomException;
@@ -20,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -106,10 +109,6 @@ public class AuthController implements AuthApi {
         return ResponseEntity.ok().body(authService.tryLogin(dto, res));
     }
 
-
-    // 회원탈퇴
-
-
     // 로그아웃
 
 
@@ -132,18 +131,28 @@ public class AuthController implements AuthApi {
     /**
      * 로그인된 유저의 토큰 정보를 기반으로 회원 탈퇴를 진행한다.
      * @param customUserDetails AuthenticationPrincipal 어노테이션을 통해 주입받은 유저 정보
+     * @param requestDto 탈퇴사유
      * @return 성공 시 상태 코드 반환
      */
     @DeleteMapping
     public ResponseEntity<Void> withdraw(
-            @AuthenticationPrincipal CustomUserDetails customUserDetails ,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestBody WithdrawReqDto requestDto,
             HttpServletRequest request
     ) {
-
-        Long userId = customUserDetails.getUserId();
         String accessToken = jwtUtil.resolveToken(request);
-        authService.withdraw(userId, accessToken);
-
+        authService.withdraw(customUserDetails.getUserId(), accessToken, requestDto.getReason());
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 회원탈퇴 여부 체크
+     * @param customUserDetails AuthenticationPrincipal 어노테이션을 통해 주입받은 유저 정보
+     */
+    @GetMapping("/delcheck")
+    public ResponseEntity<WithdrawalCheckResDto> checkWithdrawal(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ) {
+        return ResponseEntity.ok(authService.getWithdrawalStatus(customUserDetails.getUserId()));
     }
 }
