@@ -72,7 +72,11 @@ public enum ErrorCode {
     FAIL_DELETE_FILE(400, "파일 삭제 실패" ),
 
     // 검색 관련
-    SEARCH_HISTORY_NOT_FOUND(404, "검색기록이 존재하지 않습니다.");
+    SEARCH_HISTORY_NOT_FOUND(404, "검색기록이 존재하지 않습니다."),
+
+    // 신고 관련
+    SELF_REPORT_NOT_ALLOWED(400, "본인이 등록한 물건 게시글은 신고할 수 없습니다."),
+    ALREADY_REPORTED_ITEM(400, "이미 신고 접수된 게시글입니다.");
 
     private final int status;
     private final String message;
