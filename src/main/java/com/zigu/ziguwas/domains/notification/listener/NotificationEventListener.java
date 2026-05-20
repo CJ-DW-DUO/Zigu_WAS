@@ -3,6 +3,7 @@ package com.zigu.ziguwas.domains.notification.listener;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -21,6 +22,7 @@ public class NotificationEventListener {
      *
      * @param event 알림 생성 이벤트
      */
+    @Async // 비동기 처리를 통해 알림 생성이 메인 트랜잭션에 영향을 주지 않도록 합니다.
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleNotificationCreated(NotificationCreatedEvent event) {
         // 1. 실제 알림 저장 로직은 NotificationService에 위임

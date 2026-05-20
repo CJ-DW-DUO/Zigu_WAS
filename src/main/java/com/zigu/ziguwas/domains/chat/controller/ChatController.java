@@ -130,6 +130,9 @@ public class ChatController implements ChatApi {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
         }
 
+        // 2. /sub/chat/room/{roomId}를 구독중인 사용자들에게 메시지 전달
+        messagingTemplate.convertAndSend("/sub/chat/room/" + chatRoomId, dto);
+
         // 2. 메시지 저장 임시
          chatService.saveMessage(
                  dto.getMessage(),
@@ -137,8 +140,7 @@ public class ChatController implements ChatApi {
                  chatRoomId
          );
 
-        // 2. /sub/chat/room/{roomId}를 구독중인 사용자들에게 메시지 전달
-        messagingTemplate.convertAndSend("/sub/chat/room/" + chatRoomId, dto);
+
     }
 
 //    @DeleteMapping("/api/v1/chatrooms/{chatRoomId}")
