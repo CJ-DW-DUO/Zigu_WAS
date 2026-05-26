@@ -1,9 +1,12 @@
 package com.zigu.ziguwas.domains.chat.controller;
 
 import com.zigu.ziguwas.domains.chat.api.ChatApi;
-import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageSendReqDto;
+import com.zigu.ziguwas.domains.chat.dto.ChatSendInfoDto;
+import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
 import com.zigu.ziguwas.domains.chat.service.ChatService;
+import com.zigu.ziguwas.domains.user.entity.User;
+import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.security.CustomUserDetails;
@@ -32,6 +35,7 @@ public class ChatController implements ChatApi {
 
     private final SimpMessageSendingOperations messagingTemplate;
     private final ChatService chatService;
+    private final UserRepository userRepository;
 
     /**
      * 채팅방(미리보기) 목록 조회 API
@@ -120,7 +124,7 @@ public class ChatController implements ChatApi {
     @MessageMapping("/chat/v1/chatrooms/{chatRoomId}")
     public void message(
             @DestinationVariable Long chatRoomId,
-            ChatMessageSendReqDto dto,
+            ChatMessageReqDto dto,
             StompHeaderAccessor headerAccessor
     ){
         // 1. 이메일 추출
@@ -130,17 +134,26 @@ public class ChatController implements ChatApi {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
         }
 
-        // 2. /sub/chat/room/{roomId}를 구독중인 사용자들에게 메시지 전달
-        messagingTemplate.convertAndSend("/sub/chat/room/" + chatRoomId, dto);
+        // 2. 유저 찾기
+        User sender = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 2. 메시지 저장 임시
+        // 3. /sub/chat/room/{roomId}를 구독중인 사용자들에게 메시지 전달
+        messagingTemplate.convertAndSend("/sub/chat/room/" + chatRoomId,
+                ChatSendInfoDto.builder()
+                        .senderId(sender.getId())
+                        .chatRoomId(chatRoomId)
+                        .senderNickname(sender.getNickname())
+                        .message(dto.getMessage())
+                        .build()
+                );
+
+        // 4. 메시지 저장
          chatService.saveMessage(
                  dto.getMessage(),
                  email,
                  chatRoomId
          );
-
-
     }
 
 //    @DeleteMapping("/api/v1/chatrooms/{chatRoomId}")
