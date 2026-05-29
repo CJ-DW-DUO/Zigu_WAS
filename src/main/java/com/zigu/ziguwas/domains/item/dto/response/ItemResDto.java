@@ -36,6 +36,9 @@ public class ItemResDto {
     @Schema(description = "아이템을 등록한 사용자의 닉네임", example = "코딩하는지구인")
     private final String nickname;
 
+    @Schema(description = "업로드된 아이템 이미지 고유 ID 목록", example = "[1, 2]")
+    private final List<Long> imageIds;
+
     @Schema(description = "업로드된 아이템 이미지 URL 목록", example = "[\"https://s3.ap-northeast-2.amazonaws.com/bucket/image1.jpg\", \"https://s3.ap-northeast-2.amazonaws.com/bucket/image2.jpg\"]")
     private final List<String> imageUrl;
 
@@ -47,6 +50,8 @@ public class ItemResDto {
 
     public static ItemResDto fromEntity(Item item,Long currentUserId) {
         boolean isMine = currentUserId != null && item.getUser().getId().equals(currentUserId);
+        List<ItemImage> itemImages = item.getImageUrl().stream().toList();
+
         return ItemResDto.builder()
                 .itemId(item.getId())
                 .writerId(item.getUser().getId())
@@ -55,7 +60,8 @@ public class ItemResDto {
                 .categoryName(item.getCategory().getDescription())
                 .dayPerPrice(item.getDayPerPrice())
                 .nickname(item.getUser().getNickname())
-                .imageUrl(item.getImageUrl().stream().map(ItemImage::getImageUrl).toList())
+                .imageIds(itemImages.stream().map(ItemImage::getImageId).toList())
+                .imageUrl(itemImages.stream().map(ItemImage::getImageUrl).toList())
                 .title(item.getTitle())
                 .description(item.getDescription())
                 .build();
