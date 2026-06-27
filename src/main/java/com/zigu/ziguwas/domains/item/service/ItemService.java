@@ -116,16 +116,16 @@ public class ItemService {
         Item item = itemImages.get(0).getItem();
         boolean isMainDeleted = itemImages.stream().anyMatch(ItemImage::isMainImageUrl);
 
-        // S3 파일 삭제 및 DB 리스트 제거
+        // S3 파일 삭제 (컬렉션에서 remove하면 orphanRemoval + @SQLDelete로 소프트딜리트 되므로 제거하지 않음)
         for (ItemImage img : itemImages) {
             s3Service.deleteFile(img.getImageUrl());
-            item.getImageUrl().remove(img);
         }
 
+        // JPQL 벌크 삭제 → @SQLDelete 우회하여 하드딜리트
         itemImageRepository.deleteAllInBatch(itemImages);
 
-        // 메인 이미지가 삭제 목록에 있었다면? 새로운 메인 지정
-        if (isMainDeleted && !item.getImageUrl().isEmpty()) {
+        // 메인 이미지가 삭제 목록에 있었다면 DB에서 직접 조회하여 새로운 메인 지정
+        if (isMainDeleted) {
             itemImageRepository.findFirstByItemOrderByImageIdAsc(item)
                     .ifPresent(nextMain -> nextMain.updateMain(true));
         }

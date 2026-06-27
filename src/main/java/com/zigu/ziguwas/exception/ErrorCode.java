@@ -42,6 +42,7 @@ public enum ErrorCode {
     ITEM_ALREADY_RENTING(400, "이미 해당 매물은 대여중입니다."),
     ITEM_NOT_RENTING(400, "해당 매물이 현재 대여중이지 않습니다."),
     WITHDRAWN_USER_ITEM(404, "탈퇴한 작성자의 매물 게시글은 상세 정보를 확인할 수 없습니다."),
+    DELETED_ITEM(404, "이미 삭제된 item입니다."),
 
     // 거래 관련
     TRADE_NOT_FOUND(404, "해당 거래내역을 찾을 수 없습니다." ),
