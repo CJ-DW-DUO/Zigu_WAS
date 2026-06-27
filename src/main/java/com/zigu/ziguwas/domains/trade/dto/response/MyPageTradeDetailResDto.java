@@ -55,17 +55,18 @@ public class MyPageTradeDetailResDto {
                 trade.getEndDate().format(DateTimeFormatter.ofPattern("yyyy.M.d"))
         );
         String role = trade.getRentee().getId().equals(userId) ? "RENTEE" : "RENTER";
+        boolean itemDeleted = trade.getItem() == null;
 
         return MyPageTradeDetailResDto.builder()
-                .title(trade.getItem().getTitle())
+                .title(itemDeleted ? "삭제된 게시글입니다." : trade.getItem().getTitle())
                 .nickName(trade.getRenter().getNickname())
                 .tradeStatus(trade.getTradeStatus().getDescription())
                 .totalPeriod(formattedPeriod)
                 .tradeReqDate(trade.getTradeReqdate())
                 .tradeResDate(trade.getTradeResdate())
-                .dayPerPrice(trade.getItem().getDayPerPrice())
+                .dayPerPrice(itemDeleted ? null : trade.getItem().getDayPerPrice())
                 .period(trade.getPeriod())
-                .totalPrice(trade.calculateTotalPrice())
+                .totalPrice(itemDeleted ? 0L : trade.calculateTotalPrice())
                 .myRole(role)
                 .build();
     }

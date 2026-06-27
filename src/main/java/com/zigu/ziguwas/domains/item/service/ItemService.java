@@ -8,6 +8,8 @@ import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemImage;
 import com.zigu.ziguwas.domains.item.repository.ItemImageRepository;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
+import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
+import com.zigu.ziguwas.domains.trade.repository.TradeRepository;
 import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
@@ -28,6 +30,7 @@ public class ItemService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     private final ItemImageRepository itemImageRepository;
+    private final TradeRepository tradeRepository;
     private final S3Service s3Service;
 
     /**
@@ -116,16 +119,16 @@ public class ItemService {
         Item item = itemImages.get(0).getItem();
         boolean isMainDeleted = itemImages.stream().anyMatch(ItemImage::isMainImageUrl);
 
-        // S3 파일 삭제 및 DB 리스트 제거
+        // S3 파일 삭제 (컬렉션에서 remove하면 orphanRemoval + @SQLDelete로 소프트딜리트 되므로 제거하지 않음)
         for (ItemImage img : itemImages) {
             s3Service.deleteFile(img.getImageUrl());
-            item.getImageUrl().remove(img);
         }
 
+        // JPQL 벌크 삭제 → @SQLDelete 우회하여 하드딜리트
         itemImageRepository.deleteAllInBatch(itemImages);
 
-        // 메인 이미지가 삭제 목록에 있었다면? 새로운 메인 지정
-        if (isMainDeleted && !item.getImageUrl().isEmpty()) {
+        // 메인 이미지가 삭제 목록에 있었다면 DB에서 직접 조회하여 새로운 메인 지정
+        if (isMainDeleted) {
             itemImageRepository.findFirstByItemOrderByImageIdAsc(item)
                     .ifPresent(nextMain -> nextMain.updateMain(true));
         }
@@ -176,6 +179,15 @@ public class ItemService {
         if (!item.getUser().getId().equals(userId)) {
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
+
+        // 대기 중(REQUESTED) 또는 대여 중(IN_PROGRESS)인 거래가 있으면 삭제 불가
+        boolean hasActiveTrade = tradeRepository.existsByItemAndTradeStatusIn(
+                item, List.of(TradeStatus.REQUESTED, TradeStatus.IN_PROGRESS)
+        );
+        if (hasActiveTrade) {
+            throw new CustomException(ErrorCode.ACTIVE_TRADE_EXISTS);
+        }
+
         itemRepository.delete(item);
     }
 

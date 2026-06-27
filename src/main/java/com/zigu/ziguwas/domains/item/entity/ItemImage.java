@@ -12,12 +12,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
+import java.time.LocalDateTime;
 
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Builder
+@SQLDelete(sql = "UPDATE item_image SET is_deleted = true, deleted_at = NOW() WHERE image_id = ?")
+@SQLRestriction("is_deleted = false")
 public class ItemImage {
 
     @Id
@@ -34,6 +40,13 @@ public class ItemImage {
 
     @Column(name = "is_main_image_url", nullable = false)
     private boolean isMainImageUrl;
+
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     public ItemImage(String imageUrl, boolean isMainImageUrl) {
         this.imageUrl = imageUrl;

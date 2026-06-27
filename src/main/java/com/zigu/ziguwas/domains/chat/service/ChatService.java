@@ -326,9 +326,9 @@ public class ChatService {
         // 3. 참가자 유효성 검증
         validateParticipant(chatRoom, user);
 
-        // 4. 채팅방과 연결된 아이템 조회
+        // 4. 채팅방과 연결된 아이템 조회 (소프트 딜리트된 아이템이면 DELETED_ITEM 반환)
         Item item = itemRepository.findById(chatRoom.getItemId()).orElseThrow(
-                () -> new CustomException(ErrorCode.ITEM_NOT_FOUND)
+                () -> new CustomException(ErrorCode.DELETED_ITEM)
         );
 
         // 5. 거래상태 조회 (아이템 + 사용자 기준)
