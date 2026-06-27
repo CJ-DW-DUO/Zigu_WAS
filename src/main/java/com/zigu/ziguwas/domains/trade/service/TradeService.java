@@ -3,6 +3,7 @@ package com.zigu.ziguwas.domains.trade.service;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemStatus;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
+import jakarta.persistence.EntityNotFoundException;
 import com.zigu.ziguwas.domains.notification.entity.NotificationType;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.trade.dto.request.TradeOfferReqDto;
@@ -133,10 +134,15 @@ public class TradeService {
         // 2. 거래 조회
         Trade trade = getCurrentTrade(tradeId);
 
-        // 3. 매물 조회
-        Item item = trade.getItem();
+        // 3. 매물 조회 (소프트 딜리트된 아이템이면 DELETED_ITEM 반환)
+        Item item;
+        try {
+            item = trade.getItem();
+        } catch (EntityNotFoundException e) {
+            throw new CustomException(ErrorCode.DELETED_ITEM);
+        }
         if(item == null){
-            throw new CustomException(ErrorCode.ITEM_NOT_FOUND);
+            throw new CustomException(ErrorCode.DELETED_ITEM);
         }
 
         // 4. 임대인 일치 확인
@@ -217,10 +223,15 @@ public class TradeService {
         // 2. 거래조회
         Trade trade = getCurrentTrade(tradeId);
 
-        // 3. 매물 조회
-        Item item = trade.getItem();
+        // 3. 매물 조회 (소프트 딜리트된 아이템이면 DELETED_ITEM 반환)
+        Item item;
+        try {
+            item = trade.getItem();
+        } catch (EntityNotFoundException e) {
+            throw new CustomException(ErrorCode.DELETED_ITEM);
+        }
         if(item == null){
-            throw new CustomException(ErrorCode.ITEM_NOT_FOUND);
+            throw new CustomException(ErrorCode.DELETED_ITEM);
         }
 
         // 4. 임대인 일치 확인

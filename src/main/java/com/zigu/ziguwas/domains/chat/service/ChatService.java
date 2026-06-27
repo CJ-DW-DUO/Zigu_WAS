@@ -12,6 +12,7 @@ import com.zigu.ziguwas.domains.chat.repository.ChatParticipantRepository;
 import com.zigu.ziguwas.domains.chat.repository.ChatRoomRepository;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
+import jakarta.persistence.EntityNotFoundException;
 import com.zigu.ziguwas.domains.notification.entity.NotificationType;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.trade.entity.Trade;
@@ -298,10 +299,15 @@ public class ChatService {
         // 3. 참가자 유효성 검증
         validateParticipant(chatRoom, user);
 
-        // 4. 채팅방과 연결된 아이템 조회
-        Item item = chatRoom.getItem();
+        // 4. 채팅방과 연결된 아이템 조회 (소프트 딜리트된 아이템이면 DELETED_ITEM 반환)
+        Item item;
+        try {
+            item = chatRoom.getItem();
+        } catch (EntityNotFoundException e) {
+            throw new CustomException(ErrorCode.DELETED_ITEM);
+        }
         if (item == null) {
-            throw new CustomException(ErrorCode.ITEM_NOT_FOUND);
+            throw new CustomException(ErrorCode.DELETED_ITEM);
         }
 
         // 5. 거래상태 조회 (채팅방 기준)
