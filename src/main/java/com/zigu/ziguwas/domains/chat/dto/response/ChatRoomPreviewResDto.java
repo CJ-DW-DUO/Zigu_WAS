@@ -10,7 +10,8 @@ import java.time.LocalDateTime;
 public class ChatRoomPreviewResDto {
 
     // 방 ID
-    private Long roomId;
+    // MongoDB 형태에 맞춰 Long에서 String으로 변경
+    private String roomId;
 
     // 상대 사용자 이름(방이름)
     private String roomName;
