@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -20,6 +22,8 @@ import java.util.List;
 @Getter
 @Builder
 @EntityListeners(AuditingEntityListener.class)
+@SQLDelete(sql = "UPDATE item SET is_deleted = true, deleted_at = NOW() WHERE item_id = ?")
+@SQLRestriction("is_deleted = false")
 public class Item {
 
     @Id
@@ -59,6 +63,13 @@ public class Item {
     @Builder.Default
     @Column(name = "view_count")
     private Long viewCount = 0L;
+
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false, nullable = false)
