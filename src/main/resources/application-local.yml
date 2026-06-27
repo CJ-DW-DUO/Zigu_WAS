@@ -9,6 +9,8 @@ spring:
     redis:
       host: localhost
       port: 6379
+    mongodb:
+      uri: ${MONGO_LOCAL_DB_URI}
 
   jpa:
     hibernate.ddl-auto: update

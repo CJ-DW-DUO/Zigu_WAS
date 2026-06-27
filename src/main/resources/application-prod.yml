@@ -9,6 +9,8 @@ spring:
     redis:
       host: ${REDIS_HOST} # 실제 서버용 Redis 주소
       port: 6379
+    mongodb:
+      uri: ${MONGO_DB_URI}
 
   jpa:
     hibernate.ddl-auto: update
