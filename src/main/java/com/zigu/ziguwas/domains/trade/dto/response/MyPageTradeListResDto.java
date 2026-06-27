@@ -35,13 +35,14 @@ public class MyPageTradeListResDto {
     private final String tradeStatus;
 
     public static MyPageTradeListResDto fromEntity(Trade trade) {
+        boolean itemDeleted = trade.getItem() == null;
         return MyPageTradeListResDto.builder()
                 .tradeId(trade.getId())
-                .itemId(trade.getItem().getId())
-                .title(trade.getItem().getTitle())
+                .itemId(itemDeleted ? null : trade.getItem().getId())
+                .title(itemDeleted ? "삭제된 게시글입니다." : trade.getItem().getTitle())
                 .period(trade.getPeriod())
-                .totalPrice(trade.calculateTotalPrice())
-                .mainImageUrl(trade.getItem().getImageUrl().stream()
+                .totalPrice(itemDeleted ? 0L : trade.calculateTotalPrice())
+                .mainImageUrl(itemDeleted ? null : trade.getItem().getImageUrl().stream()
                         .filter(ItemImage::isMainImageUrl)
                         .map(ItemImage::getImageUrl)
                         .findFirst()
