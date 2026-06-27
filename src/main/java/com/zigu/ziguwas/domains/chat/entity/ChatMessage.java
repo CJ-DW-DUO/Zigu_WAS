@@ -1,45 +1,33 @@
 package com.zigu.ziguwas.domains.chat.entity;
 
-import com.zigu.ziguwas.domains.user.entity.User;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Entity
+//@Entity
+@Document("chat_messages")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 public class ChatMessage {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "message_id")
-    private Long messageId;
+    private String id;
 
-    @ManyToOne
-    @JoinColumn(name = "chat_id" , nullable = false)
-    private ChatRoom chatRoom; // 채팅방 ID
+    // RDB와 NoSQL PK 타입 차이로 인하여 String
+    private String chatRoomId;
 
-    @ManyToOne
-    @JoinColumn(name = "sender_id", nullable = false)
-    private User sender; // 작성자ID
+    // RDB와 NoSQL PK 타입 차이로 인하여 Long
+    private Long senderId;
 
-    @Column
     private String message;
 
-    @Column(nullable = false)
     private LocalDateTime timestamp;
 
-    @Column(name = "image_url")
     private String imageUrl;
 
 }
