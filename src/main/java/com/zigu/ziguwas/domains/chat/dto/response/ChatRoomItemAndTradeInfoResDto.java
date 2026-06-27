@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class ChatRoomItemAndTradeInfoResDto {
 
     // 채팅방 ID
-    private Long chatroomId;
+    private String chatroomId;
 
     // 물건 ID
     private Long itemId;

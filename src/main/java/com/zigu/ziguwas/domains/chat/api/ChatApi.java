@@ -35,7 +35,7 @@ public interface ChatApi {
     })
     ResponseEntity<?> getChatroomDetail(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
-            @PathVariable Long chatRoomId,
+            @PathVariable String chatRoomId,
             @RequestParam Integer page,
             @RequestParam Integer size
     );
@@ -78,7 +78,7 @@ public interface ChatApi {
     })
     ResponseEntity<?> getChatroomItemInfo(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
-            @Parameter(description = "조회할 채팅방 ID", required = true, example = "1") @PathVariable Long chatRoomId
+            @Parameter(description = "조회할 채팅방 ID", required = true, example = "1") @PathVariable String chatRoomId
     );
 
     @Operation(summary = "1대1 채팅방 생성", description = "특정 상대방과의 1대1 채팅방을 생성합니다.")

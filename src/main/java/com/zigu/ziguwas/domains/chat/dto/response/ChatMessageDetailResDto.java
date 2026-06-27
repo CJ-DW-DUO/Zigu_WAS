@@ -8,10 +8,10 @@ import lombok.Data;
 public class ChatMessageDetailResDto {
 
     // 메시지 ID
-    private Long messageId;
+    private String messageId;
 
     // 채팅방 ID
-    private Long chatRoomId;
+    private String chatRoomId;
 
     // 보낸이 ID
     private Long senderId;

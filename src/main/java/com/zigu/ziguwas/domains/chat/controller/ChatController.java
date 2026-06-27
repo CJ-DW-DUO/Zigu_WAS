@@ -64,7 +64,7 @@ public class ChatController implements ChatApi {
     @GetMapping("/api/v1/chatrooms/{chatRoomId}")
     public ResponseEntity<?> getChatroomDetail(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
-            @PathVariable Long chatRoomId,
+            @PathVariable String chatRoomId,
             @RequestParam Integer page,
             @RequestParam Integer size
     ){
@@ -83,7 +83,7 @@ public class ChatController implements ChatApi {
     @GetMapping("/api/v1/chatrooms/{chatRoomId}/item-trade-info")
     public ResponseEntity<?> getChatroomItemInfo(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
-            @PathVariable Long chatRoomId
+            @PathVariable String chatRoomId
     ){
         return ResponseEntity.ok(chatService.getChatroomItemAndTradeInfo(customUserDetails, chatRoomId));
     }
@@ -101,7 +101,7 @@ public class ChatController implements ChatApi {
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @RequestBody CreateChatRoomReqDto dto
     ){
-        Long created = chatService.createChatRoom(customUserDetails, dto);
+        String created = chatService.createChatRoom(customUserDetails, dto);
 
         if(created == null) {
             throw new CustomException(ErrorCode.CHATROOM_NOT_CREATED);
@@ -123,7 +123,7 @@ public class ChatController implements ChatApi {
      */
     @MessageMapping("/chat/v1/chatrooms/{chatRoomId}")
     public void message(
-            @DestinationVariable Long chatRoomId,
+            @DestinationVariable String chatRoomId,
             ChatMessageReqDto dto,
             StompHeaderAccessor headerAccessor
     ){
@@ -149,11 +149,11 @@ public class ChatController implements ChatApi {
                 );
 
         // 4. 메시지 저장
-         chatService.saveMessage(
-                 dto.getMessage(),
-                 email,
-                 chatRoomId
-         );
+        chatService.saveMessage(
+                dto.getMessage(),
+                email,
+                chatRoomId
+        );
     }
 
 //    @DeleteMapping("/api/v1/chatrooms/{chatRoomId}")

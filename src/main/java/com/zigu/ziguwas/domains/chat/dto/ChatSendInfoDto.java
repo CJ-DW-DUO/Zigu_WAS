@@ -15,7 +15,7 @@ public class ChatSendInfoDto {
 
     @Schema(description = "채팅방 ID", example = "1")
     @NotBlank
-    private Long chatRoomId;
+    private String chatRoomId;
 
     @Schema(description = "보내는 사람의 닉네임", example = "지구")
     @NotBlank
