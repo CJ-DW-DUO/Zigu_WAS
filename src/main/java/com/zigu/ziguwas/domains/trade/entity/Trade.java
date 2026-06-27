@@ -1,6 +1,5 @@
 package com.zigu.ziguwas.domains.trade.entity;
 
-import com.zigu.ziguwas.domains.chat.entity.ChatRoom;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemStatus;
 import com.zigu.ziguwas.domains.user.entity.User;
@@ -45,10 +44,6 @@ public class Trade {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rentee_id", nullable = false)
     private User rentee; // 임차인ID
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chatroom_id")
-    private ChatRoom chatRoom;
 
     @Column(name = "period", nullable = false)
     private Long period; // 대여기간
