@@ -8,6 +8,8 @@ import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemImage;
 import com.zigu.ziguwas.domains.item.repository.ItemImageRepository;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
+import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
+import com.zigu.ziguwas.domains.trade.repository.TradeRepository;
 import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
@@ -28,6 +30,7 @@ public class ItemService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     private final ItemImageRepository itemImageRepository;
+    private final TradeRepository tradeRepository;
     private final S3Service s3Service;
 
     /**
@@ -176,6 +179,15 @@ public class ItemService {
         if (!item.getUser().getId().equals(userId)) {
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
+
+        // 대기 중(REQUESTED) 또는 대여 중(IN_PROGRESS)인 거래가 있으면 삭제 불가
+        boolean hasActiveTrade = tradeRepository.existsByItemAndTradeStatusIn(
+                item, List.of(TradeStatus.REQUESTED, TradeStatus.IN_PROGRESS)
+        );
+        if (hasActiveTrade) {
+            throw new CustomException(ErrorCode.ACTIVE_TRADE_EXISTS);
+        }
+
         itemRepository.delete(item);
     }
 

@@ -34,4 +34,6 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
             @Param("userId") Long userId,
             @Param("status") TradeStatus status
     );
+
+    boolean existsByItemAndTradeStatusIn(Item item, List<TradeStatus> statuses);
 }
