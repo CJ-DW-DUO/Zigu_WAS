@@ -4,7 +4,6 @@ import com.zigu.ziguwas.domains.notification.dto.response.NotificationListResDto
 import com.zigu.ziguwas.domains.notification.entity.Notification;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.notification.repository.NotificationRepository;
-import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +16,6 @@ import org.springframework.stereotype.Service;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
-    private final UserRepository userRepository;
 
     /**
      * 이벤트 페이로드를 바탕으로 알림을 생성합니다.
@@ -75,6 +73,7 @@ public class NotificationService {
 
         // 2. 읽음 상태 업데이트
         notification.markAsRead();
+        notificationRepository.save(notification);
     }
 }
 
