@@ -112,7 +112,7 @@ public interface NotificationApi {
     })
     ResponseEntity<?> markAsRead(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
-            @Parameter(description = "읽음 처리할 알림 ID") @PathVariable Long notificationId
+            @Parameter(description = "읽음 처리할 알림 ID") @PathVariable String notificationId
     );
 }
 
