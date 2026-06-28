@@ -1,12 +1,10 @@
 package com.zigu.ziguwas.domains.notification.controller;
 
 import com.zigu.ziguwas.domains.notification.api.NotificationApi;
-import com.zigu.ziguwas.domains.notification.dto.response.NotificationListResDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationUnreadCountResDto;
 import com.zigu.ziguwas.domains.notification.service.NotificationService;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -67,7 +65,7 @@ public class NotificationController implements NotificationApi {
     @PatchMapping("/{notificationId}/read")
     public ResponseEntity<?> markAsRead(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
-            @PathVariable Long notificationId
+            @PathVariable String notificationId
     ) {
         // 1. 본인 소유 알림인지 검증 후 읽음 처리
         notificationService.markAsRead(customUserDetails.getUserId(), notificationId);

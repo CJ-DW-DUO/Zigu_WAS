@@ -11,6 +11,7 @@ spring:
       port: 6379
     mongodb:
       uri: ${MONGO_LOCAL_DB_URI}
+      auto-index-creation: true
 
   jpa:
     hibernate.ddl-auto: update

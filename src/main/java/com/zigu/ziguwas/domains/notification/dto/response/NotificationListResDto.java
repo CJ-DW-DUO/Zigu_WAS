@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class NotificationListResDto {
 
     @Schema(description = "알림 ID", example = "12")
-    private final Long notificationId;
+    private final String notificationId;
 
     @Schema(description = "알림 타입", example = "RENTAL_REQUEST")
     private final String type;
@@ -44,7 +44,7 @@ public class NotificationListResDto {
     public static NotificationListResDto fromEntity(Notification notification) {
         // 1. 엔티티 필드를 응답 스키마에 맞게 매핑
         return NotificationListResDto.builder()
-                .notificationId(notification.getNotiId())
+                .notificationId(notification.getId())
                 .type(notification.getNotificationType().name())
                 .title(notification.getNotiTitle())
                 .content(notification.getNotiContent())
