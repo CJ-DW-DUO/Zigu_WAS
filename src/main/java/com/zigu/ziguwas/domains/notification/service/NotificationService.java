@@ -1,7 +1,9 @@
 package com.zigu.ziguwas.domains.notification.service;
 
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationListResDto;
+import com.zigu.ziguwas.domains.notification.dto.response.NotificationSettingResDto;
 import com.zigu.ziguwas.domains.notification.entity.Notification;
+import com.zigu.ziguwas.domains.notification.entity.NotificationCategory;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.notification.repository.NotificationRepository;
 import com.zigu.ziguwas.domains.user.entity.User;
@@ -85,6 +87,20 @@ public class NotificationService {
         // 2. 읽음 상태 업데이트
         notification.markAsRead();
         notificationRepository.save(notification);
+    }
+
+    public NotificationSettingResDto getNotificationSettings(Long userId) {
+
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        return NotificationSettingResDto.builder()
+                .userId(userId)
+                .chatNotiEnabled(user.getNotificationSetting().isAllowed(NotificationCategory.CHAT))
+                .tradeNotiEnabled(user.getNotificationSetting().isAllowed(NotificationCategory.TRADE))
+                .marketingNotiEnabled(user.getNotificationSetting().isAllowed(NotificationCategory.MARKETING))
+                .build();
     }
 }
 

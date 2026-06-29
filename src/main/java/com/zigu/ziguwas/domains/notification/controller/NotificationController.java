@@ -72,6 +72,15 @@ public class NotificationController implements NotificationApi {
         // 2. 본문 없는 성공 응답
         return ResponseEntity.ok().build();
     }
+
+
+
+    @GetMapping("/settings")
+    public ResponseEntity<?> getSettings(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ){
+        return ResponseEntity.ok(notificationService.getNotificationSettings(customUserDetails.getUserId()));
+    }
 }
 
 
