@@ -2,6 +2,7 @@ package com.zigu.ziguwas.domains.user.entity;
 
 import com.zigu.ziguwas.domains.university.entity.University;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -70,6 +71,9 @@ public class User {
 
     @Column(name = "del_reson")
     private String delReson;
+
+    @Embedded
+    private NotificationSetting notificationSetting;
 
     public void updateNickname(String nickname){
         this.nickname = nickname;
