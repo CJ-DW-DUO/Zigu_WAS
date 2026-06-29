@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.notification.api;
 
+import com.zigu.ziguwas.domains.notification.dto.request.NotificationSettingReqDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationSettingResDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationUnreadCountResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "Notification API", description = "알림 관련 API 입니다.")
 public interface NotificationApi {
@@ -138,6 +140,31 @@ public interface NotificationApi {
     })
     ResponseEntity<?> getSettings(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
+    @Operation(summary = "알림 수신 설정 변경", description = "로그인 사용자의 알림 수신 설정(채팅/거래/마케팅)을 변경합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "변경 성공",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = NotificationSettingResDto.class),
+                            examples = {
+                                    @ExampleObject(name = "변경 성공", value = """
+                                            {
+                                              "userId": 1,
+                                              "chatNotiEnabled": false,
+                                              "tradeNotiEnabled": true,
+                                              "marketingNotiEnabled": true
+                                            }
+                                            """)
+                            })),
+            @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 404, \"message\": \"사용자를 찾을 수 없습니다.\"}")
+                    }))
+    })
+    ResponseEntity<?> updateSettings(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestBody NotificationSettingReqDto dto
     );
 }
 
