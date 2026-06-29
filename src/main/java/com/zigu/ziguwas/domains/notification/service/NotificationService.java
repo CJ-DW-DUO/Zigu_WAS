@@ -4,6 +4,8 @@ import com.zigu.ziguwas.domains.notification.dto.response.NotificationListResDto
 import com.zigu.ziguwas.domains.notification.entity.Notification;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.notification.repository.NotificationRepository;
+import com.zigu.ziguwas.domains.user.entity.User;
+import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
 
     /**
      * 이벤트 페이로드를 바탕으로 알림을 생성합니다.
@@ -23,7 +26,15 @@ public class NotificationService {
      * @param event 알림 생성 이벤트
      */
     public void createNotification(NotificationCreatedEvent event) {
-        // 1. 알림 엔티티 생성
+
+        // 1. 해당 알림을 유저가 켰는지 확인
+        User user = userRepository.findById(event.receiverUserId()).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if(!user.getNotificationSetting().isAllowed(event.type().getCategory())) {
+            return;
+        }
+
+        // 2. 알림 엔티티 생성
         Notification notification = Notification.create(
                 event.receiverUserId(),
                 event.type(),
@@ -31,7 +42,7 @@ public class NotificationService {
                 event.content()
         );
 
-        // 2. 알림 저장
+        // 3. 알림 저장
         notificationRepository.save(notification);
     }
 
