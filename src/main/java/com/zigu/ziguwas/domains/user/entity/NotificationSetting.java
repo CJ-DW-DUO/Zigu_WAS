@@ -40,4 +40,14 @@ public class NotificationSetting {
         };
     }
 
+    public void updateNotificationSetting(boolean chatNotiEnabled, boolean tradeNotiEnabled, boolean marketingNotiEnabled) {
+        this.chatNotiEnabled = chatNotiEnabled;
+        this.tradeNotiEnabled = tradeNotiEnabled;
+        // 마케팅 수신 비동의로 바뀔 시에 날짜를 null 처리
+        if (this.marketingNotiEnabled != marketingNotiEnabled) {
+            this.marketingConsentAt = marketingNotiEnabled ? LocalDateTime.now() : null;
+        }
+        this.marketingNotiEnabled = marketingNotiEnabled;
+    }
+
 }
