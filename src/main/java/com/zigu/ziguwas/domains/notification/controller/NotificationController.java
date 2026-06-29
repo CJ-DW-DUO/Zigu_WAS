@@ -74,7 +74,12 @@ public class NotificationController implements NotificationApi {
     }
 
 
-
+    /**
+     * 사용자 알림 수신 여부를 가져옵니다.
+     *
+     * @param customUserDetails 인증 사용자 정보
+     * @return 사용자 알림 수신 설정 정보
+     */
     @GetMapping("/settings")
     public ResponseEntity<?> getSettings(
             @AuthenticationPrincipal CustomUserDetails customUserDetails
