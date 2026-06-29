@@ -19,24 +19,24 @@ public class NotificationSetting {
 
     @Builder.Default
     @Column(name = "chat_noti_enabled", nullable = false)
-    private boolean chatEnabled = true;
+    private boolean chatNotiEnabled = true;
 
     @Builder.Default
     @Column(name = "trade_noti_enabled", nullable = false)
-    private boolean tradeEnabled = true;
+    private boolean tradeNotiEnabled = true;
 
     @Builder.Default
     @Column(name = "marketing_noti_enabled", nullable = false)
-    private boolean marketingEnabled = false;
+    private boolean marketingNotiEnabled = false;
 
     @Column(name = "marketing_consent_at")
     private LocalDateTime marketingConsentAt = null;
 
     public boolean isAllowed(NotificationCategory category) {
         return switch (category) {
-            case CHAT -> chatEnabled;
-            case TRADE -> tradeEnabled;
-            case MARKETING -> marketingEnabled;
+            case CHAT -> chatNotiEnabled;
+            case TRADE -> tradeNotiEnabled;
+            case MARKETING -> marketingNotiEnabled;
         };
     }
 
