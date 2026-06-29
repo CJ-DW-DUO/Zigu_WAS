@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.notification.service;
 
+import com.zigu.ziguwas.domains.notification.dto.request.NotificationSettingReqDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationListResDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationSettingResDto;
 import com.zigu.ziguwas.domains.notification.entity.Notification;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -95,6 +97,40 @@ public class NotificationService {
                 () -> new CustomException(ErrorCode.USER_NOT_FOUND)
         );
 
+        return NotificationSettingResDto.builder()
+                .userId(userId)
+                .chatNotiEnabled(user.getNotificationSetting().isAllowed(NotificationCategory.CHAT))
+                .tradeNotiEnabled(user.getNotificationSetting().isAllowed(NotificationCategory.TRADE))
+                .marketingNotiEnabled(user.getNotificationSetting().isAllowed(NotificationCategory.MARKETING))
+                .build();
+    }
+
+    /**
+     * 사용자 알림 수신 여부를 업데이트합니다.
+     * @param userId 사용자 ID
+     * @param dto 변경할 알림들
+     * @return 변경 사항들
+     */
+    @Transactional
+    public NotificationSettingResDto updateNotificationSettings(Long userId, NotificationSettingReqDto dto) {
+
+        // 1. 사용자 불러오기
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        // 2. 알림 설정 업데이트
+        user.getNotificationSetting().updateNotificationSetting(
+                dto.isChatNotiEnabled(),
+                dto.isTradeNotiEnabled(),
+                dto.isMarketingNotiEnabled()
+        );
+
+
+        // 3. 반영
+        userRepository.save(user);
+
+        // 4. 변경사항들 반환
         return NotificationSettingResDto.builder()
                 .userId(userId)
                 .chatNotiEnabled(user.getNotificationSetting().isAllowed(NotificationCategory.CHAT))

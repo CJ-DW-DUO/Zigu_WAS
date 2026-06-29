@@ -1,8 +1,10 @@
 package com.zigu.ziguwas.domains.notification.controller;
 
 import com.zigu.ziguwas.domains.notification.api.NotificationApi;
+import com.zigu.ziguwas.domains.notification.dto.request.NotificationSettingReqDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationUnreadCountResDto;
 import com.zigu.ziguwas.domains.notification.service.NotificationService;
+import com.zigu.ziguwas.domains.user.entity.NotificationSetting;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -11,6 +13,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -85,6 +88,21 @@ public class NotificationController implements NotificationApi {
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ){
         return ResponseEntity.ok(notificationService.getNotificationSettings(customUserDetails.getUserId()));
+    }
+
+
+    /**
+     * 사용자 알림 수신 여부를 업데이트합니다.
+     *
+     * @param customUserDetails 인증 사용자 정보
+     * @return 처리 성공 응답
+     */
+    @PatchMapping("/settings")
+    public ResponseEntity<?> updateSettings(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestBody NotificationSettingReqDto dto
+    ){
+        return ResponseEntity.ok(notificationService.updateNotificationSettings(customUserDetails.getUserId(), dto));
     }
 }
 
