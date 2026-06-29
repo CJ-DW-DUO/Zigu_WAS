@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.notification.api;
 
+import com.zigu.ziguwas.domains.notification.dto.response.NotificationSettingResDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationUnreadCountResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -113,6 +114,30 @@ public interface NotificationApi {
     ResponseEntity<?> markAsRead(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @Parameter(description = "읽음 처리할 알림 ID") @PathVariable String notificationId
+    );
+
+    @Operation(summary = "알림 수신 설정 조회", description = "로그인 사용자의 알림 수신 설정(채팅/거래/마케팅)을 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = NotificationSettingResDto.class),
+                            examples = {
+                                    @ExampleObject(name = "조회 성공", value = """
+                                            {
+                                              "userId": 1,
+                                              "chatNotiEnabled": true,
+                                              "tradeNotiEnabled": true,
+                                              "marketingNotiEnabled": false
+                                            }
+                                            """)
+                            })),
+            @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 404, \"message\": \"사용자를 찾을 수 없습니다.\"}")
+                    }))
+    })
+    ResponseEntity<?> getSettings(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
     );
 }
 
