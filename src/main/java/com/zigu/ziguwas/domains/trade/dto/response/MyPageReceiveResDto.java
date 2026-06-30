@@ -44,6 +44,14 @@ public class MyPageReceiveResDto {
     @Schema(description = "요청날짜", example = "2026.03.30")
     private final LocalDate tradeReqDate;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy.MM.dd", timezone = "Asia/Seoul")
+    @Schema(description = "대여 시작일", example = "2026.04.01")
+    private final LocalDate tradeStdate;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy.MM.dd", timezone = "Asia/Seoul")
+    @Schema(description = "대여 종료일", example = "2026.04.30")
+    private final LocalDate tradeEndate;
+
     public static MyPageReceiveResDto fromEntity(Trade trade) {
         boolean itemDeleted = trade.getItem() == null;
         return MyPageReceiveResDto.builder()
@@ -60,6 +68,8 @@ public class MyPageReceiveResDto {
                         .orElse(null))
                 .tradeStatus(trade.getTradeStatus().getDescription())
                 .tradeReqDate(trade.getTradeReqdate())
+                .tradeStdate(trade.getTradeStdate())
+                .tradeEndate(trade.getTradeEndate())
                 .build();
     }
 
