@@ -4,7 +4,6 @@ import com.zigu.ziguwas.domains.notification.api.NotificationApi;
 import com.zigu.ziguwas.domains.notification.dto.request.NotificationSettingReqDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationUnreadCountResDto;
 import com.zigu.ziguwas.domains.notification.service.NotificationService;
-import com.zigu.ziguwas.domains.user.entity.NotificationSetting;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
