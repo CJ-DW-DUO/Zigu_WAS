@@ -2,8 +2,6 @@ package com.zigu.ziguwas.domains.user.dto.mypage.response;
 
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemImage;
-import com.zigu.ziguwas.exception.CustomException;
-import com.zigu.ziguwas.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,7 +33,7 @@ public class MyRegisteredItemResDto {
                         .filter(ItemImage::isMainImageUrl)
                         .map(ItemImage::getImageUrl)
                         .findFirst()
-                        .orElseThrow(() -> new CustomException(ErrorCode.IMAGE_NOT_FOUND)))
+                        .orElse(null))
                 .dayPerPrice(item.getDayPerPrice())
                 .build();
     }
