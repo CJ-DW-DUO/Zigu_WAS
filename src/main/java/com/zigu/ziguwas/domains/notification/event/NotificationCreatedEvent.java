@@ -12,7 +12,9 @@ public record NotificationCreatedEvent(
         Long receiverUserId,
         NotificationType type,
         String title,
-        String content
+        String content,
+        // 알림을 눌렀을 때 이동할 대상의 PK (채팅방ID 또는 거래ID 등, 타입에 따라 의미가 다름)
+        String referenceId
 ) {
 }
 
