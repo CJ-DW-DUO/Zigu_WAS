@@ -41,4 +41,28 @@ public class MyPageTradeDetailService {
 
         return MyPageTradeDetailResDto.fromEntity(trade,userId);
     }
+
+    /**
+     * findDetailItem 메소드와 동일하나, 임대인 전용입니다.
+     * 알림 창에서 즉시 접속하는 용도
+     *
+     * @param tradeId 거래ID
+     * @param userId 임대인ID
+     * @return 임대인용 상세 내역 DTO
+     */
+    @Transactional(readOnly = true)
+    public MyPageTradeDetailResDto findDetailItemForRenter(Long tradeId, Long userId) {
+
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        Trade trade = myPageTradeDetailRepository.findByIdAndRenter(tradeId, user)
+                .orElseThrow(() -> new CustomException(ErrorCode.TRADE_NOT_FOUND));
+
+        // 임대인인지 검증하는 로직 포함
+        if(!trade.getRenter().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        return MyPageTradeDetailResDto.fromEntity(trade, userId);
+    }
 }
