@@ -22,4 +22,7 @@ public class LoginResDto {
 
     @Schema(example = "1fmdivy283yfo1m....")
     private String refreshToken;
+
+    @Schema(example = "한동대학교")
+    private String university;
 }
