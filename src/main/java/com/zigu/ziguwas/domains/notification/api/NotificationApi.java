@@ -38,7 +38,8 @@ public interface NotificationApi {
                                                   "content": "홍길동님이 카메라 대여를 요청했어요.",
                                                   "receivedAt": "2026-04-27T14:30:00",
                                                   "isRead": false,
-                                                  "readAt": null
+                                                  "readAt": null,
+                                                  "referenceId": "42"
                                                 }
                                               ],
                                               "pageable": {

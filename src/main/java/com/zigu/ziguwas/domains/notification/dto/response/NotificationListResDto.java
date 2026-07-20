@@ -35,6 +35,9 @@ public class NotificationListResDto {
     @Schema(description = "읽음 처리 시각", example = "2026-04-27T15:00:00", nullable = true)
     private final LocalDateTime readAt;
 
+    @Schema(description = "알림 클릭 시 이동할 대상의 PK. type이 CHAT이면 채팅방ID, 그 외(거래 관련)면 거래ID입니다.", example = "42", nullable = true)
+    private final String referenceId;
+
     /**
      * 알림 엔티티를 목록 응답 DTO로 변환합니다.
      *
@@ -51,6 +54,7 @@ public class NotificationListResDto {
                 .receivedAt(notification.getRecTime())
                 .isRead(notification.getIsRead())
                 .readAt(notification.getReadAt())
+                .referenceId(notification.getReferenceId())
                 .build();
     }
 }
