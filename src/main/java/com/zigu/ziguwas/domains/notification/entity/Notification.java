@@ -50,6 +50,9 @@ public class Notification {
 
     private LocalDateTime readAt;
 
+    // 알림을 눌렀을 때 이동할 대상의 PK (채팅방ID 또는 거래ID 등, notificationType에 따라 참조 대상이 다름)
+    private String referenceId;
+
     /**
      * 알림 생성 시 사용하는 정적 팩토리 메서드입니다.
      *
@@ -60,7 +63,8 @@ public class Notification {
             Long userId,
             NotificationType notificationType,
             String notiTitle,
-            String notiContent
+            String notiContent,
+            String referenceId
     ) {
         return Notification.builder()
                 .userId(userId)
@@ -69,6 +73,7 @@ public class Notification {
                 .notiContent(notiContent)
                 .recTime(LocalDateTime.now())
                 .isRead(false)
+                .referenceId(referenceId)
                 .build();
     }
 
