@@ -250,6 +250,7 @@ public class AuthService {
                 .nickname(user.getNickname())
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .university(user.getUniv().getUnivName())
                 .build();
     }
 
