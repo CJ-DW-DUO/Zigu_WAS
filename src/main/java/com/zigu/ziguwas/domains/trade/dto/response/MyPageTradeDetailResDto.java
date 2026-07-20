@@ -19,7 +19,7 @@ public class MyPageTradeDetailResDto {
     @Schema(description = "제목", example = "제목입니다!!")
     private final String title;
 
-    @Schema(description = "닉네임", example = "물건주인 닉네임")
+    @Schema(description = "상대방 닉네임 (조회자가 임차인이면 임대인 닉네임, 임대인이면 임차인 닉네임)", example = "상대방 닉네임")
     private final String nickName;
 
     @Schema(description = "대여상태", example = "대여중")
@@ -54,12 +54,18 @@ public class MyPageTradeDetailResDto {
                 trade.getTradeStdate().format(DateTimeFormatter.ofPattern("yyyy.M.d")),
                 trade.getEndDate().format(DateTimeFormatter.ofPattern("yyyy.M.d"))
         );
-        String role = trade.getRentee().getId().equals(userId) ? "RENTEE" : "RENTER";
+        boolean isRentee = trade.getRentee().getId().equals(userId);
+        String role = isRentee ? "RENTEE" : "RENTER";
         boolean itemDeleted = trade.getItem() == null;
+
+        // 조회자 본인이 아닌 상대방의 닉네임을 보여줘야 하므로, 역할에 따라 반대편 닉네임을 선택
+        String counterpartNickname = isRentee
+                ? trade.getRenter().getNickname()
+                : trade.getRentee().getNickname();
 
         return MyPageTradeDetailResDto.builder()
                 .title(itemDeleted ? "삭제된 게시글입니다." : trade.getItem().getTitle())
-                .nickName(trade.getRenter().getNickname())
+                .nickName(counterpartNickname)
                 .tradeStatus(trade.getTradeStatus().getDescription())
                 .totalPeriod(formattedPeriod)
                 .tradeReqDate(trade.getTradeReqdate())
