@@ -33,4 +33,21 @@ public class MyPageTradeDetailController implements MyPageTradeDetailApi {
         MyPageTradeDetailResDto myPageTradeDetailResDto = myPageTradeDetailService.findDetailItem(tradeId, customUserDetails.getUserId());
         return ResponseEntity.ok(myPageTradeDetailResDto);
     }
+
+
+    /**
+     * 알림에서 거래 물건에 대한 상세 조회를 위한 API
+     *
+     * @param tradeId 거래ID
+     * @param customUserDetails 인증된 객체 정보
+     * @return 빌려준 물건 상세
+     */
+    @GetMapping("/renter/trade/{tradeId}")
+    public ResponseEntity<MyPageTradeDetailResDto> getDetailItemForRenter(
+            @PathVariable Long tradeId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ){
+        MyPageTradeDetailResDto myPageTradeDetailResDto = myPageTradeDetailService.findDetailItemForRenter(tradeId, customUserDetails.getUserId());
+        return ResponseEntity.ok(myPageTradeDetailResDto);
+    }
 }
