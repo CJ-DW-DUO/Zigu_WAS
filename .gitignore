@@ -41,3 +41,5 @@ out/
 zigu.pem
 zigu11.pem
 keystore.p12
+
+sql/
