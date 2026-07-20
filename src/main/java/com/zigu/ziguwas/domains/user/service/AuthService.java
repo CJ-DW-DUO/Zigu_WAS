@@ -13,6 +13,7 @@ import com.zigu.ziguwas.domains.user.dto.auth.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.LoginResDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.OngoingTradeResDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.WithdrawalCheckResDto;
+import com.zigu.ziguwas.domains.user.entity.NotificationSetting;
 import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.entity.VerificationStatus;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
@@ -193,6 +194,7 @@ public class AuthService {
                 .univ(univ)
                 .profilePhotoUrl(null)
                 .veriStatus(VerificationStatus.CERTIFIED)
+                .notificationSetting(NotificationSetting.builder().build())
                 .build());
     }
 
