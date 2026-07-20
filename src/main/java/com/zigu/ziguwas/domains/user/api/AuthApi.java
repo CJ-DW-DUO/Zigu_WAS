@@ -92,6 +92,7 @@ public interface AuthApi {
                                         "nickname": "지구헌내기",
                                         "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
                                         "refreshToken": "eyJhbGciOiJIUzI1NiJ9..."
+                                        "university": "한동대학교"
                                     }
                                     """)
                     })),
