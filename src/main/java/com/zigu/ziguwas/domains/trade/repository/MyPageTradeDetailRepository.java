@@ -17,4 +17,15 @@ public interface MyPageTradeDetailRepository extends JpaRepository<Trade, Long> 
      */
     @EntityGraph(attributePaths = {"item", "renter"})
     Optional<Trade> findByIdAndRentee(Long tradeId, User rentee);
+
+
+    /**
+     * 거래 ID와 사용자(임대인)를 조건으로 빌려줄(빌려준) 거래를 조회합니다.
+     *
+     * @param tradeId 거래 ID
+     * @param renter 빌려준(줄) 사람
+     * @return 필터링된 거래 정보 Optional
+     */
+    @EntityGraph(attributePaths = {"item", "rentee"})
+    Optional<Trade> findByIdAndRenter(Long tradeId, User renter);
 }
