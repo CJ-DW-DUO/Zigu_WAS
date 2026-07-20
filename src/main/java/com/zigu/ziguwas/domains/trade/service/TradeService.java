@@ -107,7 +107,8 @@ public class TradeService {
                 renter.getId(),
                 NotificationType.RENTAL_REQUEST,
                 "새로운 대여 요청",
-                rentee.getNickname() + "님이 " + item.getTitle() + " 대여를 요청했어요."
+                rentee.getNickname() + "님이 " + item.getTitle() + " 대여를 요청했어요.",
+                saved.getId().toString()
         ));
 
         // 6. 거래ID 반환
@@ -201,7 +202,8 @@ public class TradeService {
                 trade.getRentee().getId(),
                 notificationType,
                 title,
-                content
+                content,
+                trade.getId().toString()
         ));
     }
 
@@ -262,7 +264,8 @@ public class TradeService {
                 trade.getRentee().getId(),
                 NotificationType.RETURN_COMPLETE,
                 "반납 처리 완료",
-                item.getTitle() + "의 반납 처리가 완료되었습니다."
+                item.getTitle() + "의 반납 처리가 완료되었습니다.",
+                trade.getId().toString()
         ));
     }
 }
