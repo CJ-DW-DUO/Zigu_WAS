@@ -45,4 +45,29 @@ public interface MyPageTradeDetailApi {
             @Parameter(description = "조회할 거래 ID", example = "1") @PathVariable Long tradeId,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
     );
+
+    @Operation(
+            summary = "빌려준 물건 상세 내역 조회 (임대인용)",
+            description = "마이페이지 또는 알림에서 내가 빌려준(빌려줄) 특정 물건의 상세 내역(대여 일정, 금액, 상태 등)을 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "상세 조회 성공",
+                    content = @Content(schema = @Schema(implementation = MyPageTradeDetailResDto.class))
+            ),
+            @ApiResponse(responseCode = "400", description = "권한 없음 또는 잘못된 요청",
+                    content = @Content(examples = @ExampleObject(name = "권한 오류", value = """
+                        { "status": 400, "message": "해당 거래에 대한 접근 권한이 없습니다." }
+                        """))
+            ),
+            @ApiResponse(responseCode = "404", description = "거래 정보를 찾을 수 없음",
+                    content = @Content(examples = @ExampleObject(name = "조회 실패", value = """
+                        { "status": 404, "message": "존재하지 않는 거래 정보입니다." }
+                        """))
+            )
+    })
+    @GetMapping("/renter/trade/{tradeId}")
+    ResponseEntity<MyPageTradeDetailResDto> getDetailItemForRenter(
+            @Parameter(description = "조회할 거래 ID", example = "1") @PathVariable Long tradeId,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
 }
