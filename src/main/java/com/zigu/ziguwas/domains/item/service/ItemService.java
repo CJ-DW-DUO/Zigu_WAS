@@ -198,7 +198,7 @@ public class ItemService {
      * @return 해당 item 정보
      */
     @Transactional
-    public ItemResDto getItemDetail(Long itemId, Long userId) {
+    public ItemResDto getItemDetail(Long itemId, Long userId, Long univId) {
 
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
@@ -208,6 +208,12 @@ public class ItemService {
             if (item.getUser() == null || item.getUser().isDeleted()) {
                 throw new CustomException(ErrorCode.WITHDRAWN_USER_ITEM);
             }
+
+            // 허용된 대학의 인원이 아니라면(univId가 다르다면)
+            if (!item.getUser().getUniv().getUnivId().equals(univId)) {
+                throw new CustomException(ErrorCode.DIFFERENT_UNIVERSITY_ACCESS);
+            }
+
         } catch (EntityNotFoundException e) {
             // 하이버네이트 프록시가 유저를 찾지 못할 때 (이미 탈퇴한 경우) 발생하는 에러 처리
             throw new CustomException(ErrorCode.WITHDRAWN_USER_ITEM);

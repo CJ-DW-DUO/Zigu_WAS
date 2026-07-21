@@ -123,10 +123,10 @@ public class ItemController implements ItemApi {
      */
     @GetMapping("/{itemId}")
     public ResponseEntity<ItemResDto> getItemDetail(
-            @PathVariable("itemId") Long itemId,
+            @PathVariable Long itemId,
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
-        ItemResDto response = itemService.getItemDetail(itemId, customUserDetails.getUserId());
+        ItemResDto response = itemService.getItemDetail(itemId, customUserDetails.getUserId(), customUserDetails.getUnivId());
         return ResponseEntity.ok(response);
     }
 
