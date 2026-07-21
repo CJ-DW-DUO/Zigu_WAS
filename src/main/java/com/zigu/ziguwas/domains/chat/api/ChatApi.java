@@ -84,7 +84,12 @@ public interface ChatApi {
     @Operation(summary = "1대1 채팅방 생성", description = "특정 상대방과의 1대1 채팅방을 생성합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "채팅방 생성 성공"),
-            @ApiResponse(responseCode = "400", description = "채팅방 생성 실패")
+            @ApiResponse(responseCode = "400", description = "채팅방 생성 실패"),
+            @ApiResponse(responseCode = "403", description = "다른 대학교 매물에 대한 채팅 생성 시도",
+                    content = @Content(examples = @ExampleObject(value = """
+                            { "status": 403, "message": "해당 대학에 대한 권한이 없습니다." }
+                            """))
+            )
     })
     ResponseEntity<?> createChatroom(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,

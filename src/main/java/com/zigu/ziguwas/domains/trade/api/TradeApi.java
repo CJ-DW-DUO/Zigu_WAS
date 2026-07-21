@@ -20,6 +20,10 @@ public interface TradeApi {
     @Operation(summary = "거래 제안", description = "임차인이 특정 매물에 대해 대여 거래를 제안합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "거래 제안 성공"),
+            @ApiResponse(responseCode = "403", description = "다른 대학교 매물에 대한 거래 제안 시도",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(name = "대학 불일치", value = "{\"status\": 403, \"message\": \"해당 대학에 대한 권한이 없습니다.\"}")
+                    })),
             @ApiResponse(responseCode = "404", description = "사용자 또는 아이템을 찾을 수 없음",
                     content = @Content(mediaType = "application/json", examples = {
                             @ExampleObject(name = "사용자 없음", value = "{\"status\": 404, \"message\": \"사용자를 찾을 수 없습니다.\"}"),
