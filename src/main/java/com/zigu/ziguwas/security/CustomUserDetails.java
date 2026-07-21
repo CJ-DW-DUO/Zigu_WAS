@@ -16,6 +16,7 @@ public class CustomUserDetails implements UserDetails {
     private final Long userId;
     private final String email;
     private final String password;
+    private final Long univId; // 인증정보에 대학 세션으로 구분되어야함
 
     /**
      * User 엔티티를 받아 CustomUserDetails 객체를 생성합니다.
@@ -26,6 +27,7 @@ public class CustomUserDetails implements UserDetails {
         this.userId = user.getId();
         this.email = user.getEmail();
         this.password = user.getPassword();
+        this.univId = user.getUniv().getUnivId();
     }
 
 
@@ -43,6 +45,8 @@ public class CustomUserDetails implements UserDetails {
         // 시큐리티의 규격상 ID 역할을 하는 email을 반환
         return email;
     }
+
+    public Long getUnivId() { return univId; }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
