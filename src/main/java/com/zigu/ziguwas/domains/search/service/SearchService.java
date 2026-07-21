@@ -2,6 +2,7 @@ package com.zigu.ziguwas.domains.search.service;
 
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
+import com.zigu.ziguwas.domains.item.repository.spec.ItemSpecs;
 import com.zigu.ziguwas.domains.search.dto.request.ItemSearchReqDto;
 import com.zigu.ziguwas.domains.search.dto.response.ItemSearchResDto;
 import com.zigu.ziguwas.domains.search.dto.response.SearchHistoryResDto;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,7 +42,7 @@ public class SearchService {
      * @return 페이징 및 정렬된 검색 결과
      */
     @Transactional
-    public Page<ItemSearchResDto> searchItems(Long userId, ItemSearchReqDto reqDto, Pageable pageable) {
+    public Page<ItemSearchResDto> searchItems(Long userId, Long univId, ItemSearchReqDto reqDto, Pageable pageable) {
         // 1. 검색 히스토리 저장
         if (reqDto.getKeyword() != null && !reqDto.getKeyword().isBlank()) {
             saveSearchHistory(userId, reqDto.getKeyword().trim());
@@ -51,18 +53,17 @@ public class SearchService {
 
         Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
-        // 3. 검색 수행
-        Page<Item> items;
-        if (reqDto.getCategory() == null) {
-            items = itemRepository.findByTitleContainingIgnoreCase(reqDto.getKeyword(), sortedPageable);
-        } else {
-            items = itemRepository.findByTitleContainingIgnoreCaseAndCategory(
-                    reqDto.getKeyword(),
-                    reqDto.getCategory(),
-                    sortedPageable
-            );
-        }
+        // 3. 검색 조건 조합 및 조회 : 키워드 + 카테고리 + 대학ID 기반으로 조회
+        Specification<Item> spec = Specification.allOf(
+                ItemSpecs.withTitleContains(reqDto.getKeyword()),
+                ItemSpecs.withCategory(reqDto.getCategory()),
+                ItemSpecs.withUniversity(univId)
+        );
 
+        // 4. 검색 수행
+        Page<Item> items = itemRepository.findAll(spec, sortedPageable);
+
+        // 5. 반환
         return items.map(item -> ItemSearchResDto.fromEntity(item, userId));
     }
 
