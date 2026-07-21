@@ -14,4 +14,13 @@ public class ItemSpecs {
             return builder.equal(root.get("category"), category);
         };
     }
+
+
+    public static Specification<Item> withUniversity(Long univId) {
+        return (root, query, builder) -> {
+            if (univId == null) return null;
+            // get으로 이어지는 구문이 테이블들이 모두 조인되는 현상임.
+            return builder.equal(root.get("user").get("univ").get("univId"), univId);
+        };
+    }
 }

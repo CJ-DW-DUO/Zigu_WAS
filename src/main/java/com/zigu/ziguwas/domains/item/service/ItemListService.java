@@ -21,7 +21,8 @@ public class ItemListService {
     private final ItemListRepository itemListRepository;
 
     @Transactional(readOnly = true)
-    public Page<ItemListResDto> getItemList(ItemSearchCond cond, Pageable pageable , Long userId) {
+    public Page<ItemListResDto> getItemList(ItemSearchCond cond, Pageable pageable ,
+                                            Long userId, Long univId) {
 
         // 1. 정렬 조건 결정
         Sort sort = Sort.by(Sort.Direction.DESC, "id"); // 기본값: 최신순
@@ -34,8 +35,13 @@ public class ItemListService {
 
         Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
-        // 2. 검색 조건 조합 및 조회
-        Specification<Item> spec = ItemSpecs.withCategory(cond.getCategory());
+        // 2. 검색 조건 조합 및 조회 : 카테고리와 대학ID기반으로 조회
+        Specification<Item> spec = Specification.allOf(
+                ItemSpecs.withCategory(cond.getCategory()),
+                ItemSpecs.withUniversity(univId)
+        );
+
+
         // 카테고리조건 + 정렬
         Page<Item> items = itemListRepository.findAll(spec, sortedPageable);
 
