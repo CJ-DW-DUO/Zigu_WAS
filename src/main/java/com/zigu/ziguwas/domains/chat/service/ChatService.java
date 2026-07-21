@@ -255,14 +255,21 @@ public class ChatService {
                 () -> new CustomException(ErrorCode.ITEM_NOT_FOUND)
         );
 
+        // 채팅을 만드려고 하는 사람(임차인)이 해당 물품을 업로드한 사람(임대인)의 대학과 다르면 접근 제한
+        if(!item.getUser().getUniv().getUnivId().equals(details.getUnivId())) {
+            throw new CustomException(ErrorCode.DIFFERENT_UNIVERSITY_ACCESS);
+        }
+
         // 2. 사용자 조회
         User sender = userRepository.findByEmail(details.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        // ID 누락여부 확인
         if(dto.getReceiverId() == null) {
             throw new CustomException(ErrorCode.MISS_USER_ID);
         }
 
+        // 대화 대상자 조회
         User receiver = userRepository.findById(dto.getReceiverId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
