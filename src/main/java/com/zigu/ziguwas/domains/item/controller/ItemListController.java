@@ -37,6 +37,13 @@ public class ItemListController implements ItemListApi {
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
 
-        return ResponseEntity.ok(itemListService.getItemList(cond, pageable , customUserDetails.getUserId()));
+        return ResponseEntity.ok(
+                itemListService.getItemList(
+                        cond,
+                        pageable ,
+                        customUserDetails.getUserId(),
+                        customUserDetails.getUnivId()
+                )
+        );
     }
 }

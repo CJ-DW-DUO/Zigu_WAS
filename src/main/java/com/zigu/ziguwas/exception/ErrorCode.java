@@ -33,6 +33,7 @@ public enum ErrorCode {
 
     // 대학 관련
     UNIVERSITY_NOT_FOUND(404, "해당 대학교는 존재하지 않습니다."),
+    DIFFERENT_UNIVERSITY_ACCESS(403, "해당 대학에 대한 권한이 없습니다."),
 
     // 기타 관련
     INTERNAL_SERVER_ERROR(500, "내부 서버 오류입니다."),

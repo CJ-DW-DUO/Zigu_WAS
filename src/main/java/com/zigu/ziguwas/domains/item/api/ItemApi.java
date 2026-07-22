@@ -195,6 +195,11 @@ public interface ItemApi {
                     content = @Content(examples = @ExampleObject(value = """
                         { "status": 404, "message": "탈퇴한 작성자의 매물 게시글은 상세 정보를 확인할 수 없습니다." }
                         """))
+            ),
+            @ApiResponse(responseCode = "403", description = "다른 대학교 아이템 접근 시도",
+                    content = @Content(examples = @ExampleObject(value = """
+                        { "status": 403, "message": "해당 대학에 대한 권한이 없습니다." }
+                        """))
             )
     })
     @GetMapping("/{itemId}")

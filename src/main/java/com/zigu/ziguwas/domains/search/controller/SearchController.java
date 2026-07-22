@@ -35,7 +35,12 @@ public class SearchController implements SearchApi {
             @Valid @ModelAttribute ItemSearchReqDto reqDto,
             @PageableDefault(size = 12) Pageable pageable
     ) {
-        return ResponseEntity.ok(searchService.searchItems(userDetails.getUserId(), reqDto, pageable));
+        return ResponseEntity.ok(
+                searchService.searchItems(
+                        userDetails.getUserId(), userDetails.getUnivId(),
+                        reqDto, pageable
+                )
+        );
     }
 
     @GetMapping("/history")
