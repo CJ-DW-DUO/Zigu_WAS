@@ -53,16 +53,16 @@ public class Trade {
     private TradeStatus tradeStatus;
 
     @Column(name = "trade_stdate", nullable = false)
-    private LocalDate tradeStdate; // 거래 시작일
+    private LocalDate tradeStdate; // 대여 시작일
 
     @Column(name = "trade_endate", nullable = false)
-    private LocalDate tradeEndate; // 거래 종료일
+    private LocalDate tradeEndate; // 대여 종료일
 
     @Column(name = "trade_reqdate", nullable = false)
-    private LocalDate tradeReqdate; // 거래 요청일 (거래요청시 Trade Entity 생성되니까 거래요청은 NOT NULL)
+    private LocalDate tradeReqdate; // 대여 요청일 (거래요청시 Trade Entity 생성되니까 거래요청은 NOT NULL)
 
     @Column(name = "trade_resdate")
-    private LocalDate tradeResdate; // 거래 수락일
+    private LocalDate tradeResdate; // 대여 수락일
 
     /**
      * 거래 상태를 변경하고 아이템의 상태도 함께 제어합니다.

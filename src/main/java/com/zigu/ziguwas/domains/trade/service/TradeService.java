@@ -176,8 +176,8 @@ public class TradeService {
 
             // 7A - 2. 거래 시작일, 마감일, 수락일 설정
             // 거래 시작일과 수락일에 대한 분리가 필요함, 수정 필수
-            trade.setDates(LocalDate.now(), LocalDate.now(),
-                    LocalDate.now().plusDays(trade.getPeriod()));
+            trade.setDates(LocalDate.now(), LocalDate.now().plusDays(trade.getPeriod()),
+                    LocalDate.now());
 
             // 7A - 3. 매물 상태 변경
             item.updateItemStatus(ItemStatus.RENTING);
