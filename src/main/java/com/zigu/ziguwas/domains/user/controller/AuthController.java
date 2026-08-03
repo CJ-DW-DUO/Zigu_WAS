@@ -6,6 +6,7 @@ import com.zigu.ziguwas.domains.user.dto.auth.request.EmailVerifyReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.LoginReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.NicknameReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.PassWordUpdateReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.request.PasswordResetReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.WithdrawReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.WithdrawalCheckResDto;
@@ -111,6 +112,42 @@ public class AuthController implements AuthApi {
 
     // 로그아웃
 
+
+    /**
+     * 비밀번호 재설정을 위한 이메일 인증코드 발송 API
+     *
+     * @param dto 이메일
+     * @return 이메일 전송 성공여부
+     */
+    @PostMapping("/password/reset/email/send")
+    public ResponseEntity<?> passwordResetEmailSend(@Valid @RequestBody EmailReqDto dto) {
+        authService.passwordResetEmailSend(dto);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 비밀번호 재설정을 위한 이메일 인증번호 확인 API
+     *
+     * @param dto 이메일, 인증코드
+     * @return 인증코드 일치 성공 || 인증코드 불일치 || 인증코드 미존재 결과
+     */
+    @PostMapping("/password/reset/email/verify")
+    public ResponseEntity<?> passwordResetEmailVerify(@Valid @RequestBody EmailVerifyReqDto dto) {
+        authService.passwordResetEmailVerify(dto);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 인증 완료된 이메일의 비밀번호를 새 비밀번호로 즉시 변경하는 API
+     *
+     * @param dto 이메일, 새 비밀번호, 확인용 비밀번호
+     * @return 성공 여부를 담은 응답
+     */
+    @PostMapping("/password/reset")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody PasswordResetReqDto dto) {
+        authService.resetPassword(dto);
+        return ResponseEntity.ok().build();
+    }
 
     /**
      * 사용자의 비밀번호를 변경합니다.
