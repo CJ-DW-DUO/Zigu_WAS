@@ -5,6 +5,7 @@ import com.zigu.ziguwas.domains.user.dto.auth.request.EmailVerifyReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.LoginReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.NicknameReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.PassWordUpdateReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.request.PasswordResetReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.WithdrawReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.WithdrawalCheckResDto;
@@ -106,6 +107,48 @@ public interface AuthApi {
                     }))
     })
     ResponseEntity<?> login(@Valid @RequestBody LoginReqDto dto, HttpServletResponse res);
+
+    @Operation(summary = "비밀번호 재설정 인증코드 발송", description = "가입된 이메일인지 확인 후 비밀번호 재설정을 위한 인증코드를 발송합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "이메일 전송 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 이메일 형식",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 400, \"message\": \"이메일 형식을 맞춰주세요\"}")
+                    })),
+            @ApiResponse(responseCode = "404", description = "가입되지 않은 이메일",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 404, \"message\": \"사용자를 찾을 수 없습니다.\"}")
+                    }))
+    })
+    ResponseEntity<?> passwordResetEmailSend(@Valid @RequestBody EmailReqDto dto);
+
+    @Operation(summary = "비밀번호 재설정 인증번호 확인", description = "사용자가 입력한 인증번호가 유효한지 확인합니다. 성공 시 바로 새 비밀번호를 반영할 수 있는 상태가 됩니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "인증 성공"),
+            @ApiResponse(responseCode = "400", description = "인증번호 불일치",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 400, \"message\": \"인증코드가 일치하지 않습니다.\"}")
+                    })),
+            @ApiResponse(responseCode = "404", description = "인증코드 미발급 혹은 만료",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 404, \"message\": \"인증코드를 발급하지 않은 이메일 입니다.\"}")
+                    }))
+    })
+    ResponseEntity<?> passwordResetEmailVerify(@Valid @RequestBody EmailVerifyReqDto dto);
+
+    @Operation(summary = "비밀번호 재설정", description = "이메일 인증이 완료된 상태에서 새 비밀번호로 즉시 변경합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "비밀번호 재설정 성공"),
+            @ApiResponse(responseCode = "401", description = "이메일 인증 미완료 혹은 새 비밀번호 확인 불일치",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 401, \"message\": \"해당 이메일은 인증되지 않았습니다.\"}")
+                    })),
+            @ApiResponse(responseCode = "404", description = "가입되지 않은 이메일",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 404, \"message\": \"사용자를 찾을 수 없습니다.\"}")
+                    }))
+    })
+    ResponseEntity<?> resetPassword(@Valid @RequestBody PasswordResetReqDto dto);
 
     @Operation(
             summary = "비밀번호 변경",
