@@ -9,6 +9,7 @@ import com.zigu.ziguwas.domains.user.dto.auth.request.EmailReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.EmailVerifyReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.LoginReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.PassWordUpdateReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.request.PasswordResetReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.LoginResDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.OngoingTradeResDto;
@@ -38,6 +39,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    // 회원가입용 이메일 인증 Redis key(이메일 그대로)와 겹치지 않도록 분리한 prefix
+    private static final String PW_RESET_PREFIX = "PWRESET:";
 
     private final UserRepository userRepository;
     private final UniversityRepository universityRepository;
@@ -142,6 +146,87 @@ public class AuthService {
     }
 
     /**
+     * 비밀번호 재설정을 위한 이메일 인증코드 발송
+     *
+     * 회원가입과 반대로, 이미 가입되어 있는 이메일인지 확인 후 코드를 발송합니다.
+     *
+     * @param dto 이메일
+     */
+    @Transactional
+    public void passwordResetEmailSend(EmailReqDto dto) {
+        // 1. 가입된 유저인지 확인
+        if(!userRepository.existsByEmail(dto.getEmail())){
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        // 2. 인증코드 생성 및 레디스 저장 (회원가입용 key와 구분되는 prefix 사용)
+        String verificationCode = String.valueOf((int)(Math.random() * 899999) + 100000);
+        redisService.setDataExpire(PW_RESET_PREFIX + dto.getEmail(), verificationCode, 300 * 1000);
+
+        // 3. 이메일 발송
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(dto.getEmail());
+        message.setSubject("[Zigu] 비밀번호 재설정 인증 번호 안내");
+        message.setText("인증 번호는 [" + verificationCode + "] 입니다. 5분 내에 입력해주세요.");
+        mailSender.send(message);
+    }
+
+    /**
+     * 비밀번호 재설정을 위한 이메일 인증코드 확인
+     *
+     * @param dto 이메일, 인증코드
+     */
+    @Transactional
+    public void passwordResetEmailVerify(EmailVerifyReqDto dto) {
+        String key = PW_RESET_PREFIX + dto.getEmail();
+
+        // 1. Redis에 저장된 인증코드 불러오기
+        String savedCode = redisService.getData(key);
+        if(savedCode == null){
+            throw new CustomException(ErrorCode.VERIFY_CODE_NOT_FOUND);
+        }
+
+        // 2. 인증코드 매치 확인
+        if(savedCode.equals(dto.getCode())){
+            // 인증 코드는 삭제하고, 인증된 상태를 10분간 유지
+            redisService.deleteData(key);
+            redisService.setDataExpire(key, "DONE", 600 * 1000);
+        } else {
+            throw new CustomException(ErrorCode.VERIFY_CODE_NOT_MATCHED);
+        }
+    }
+
+    /**
+     * 인증 완료된 이메일의 비밀번호를 새 비밀번호로 즉시 변경
+     *
+     * 회원가입 때와 동일하게, 인증 완료 상태(Redis의 "DONE")를 확인한 뒤 바로 반영합니다.
+     *
+     * @param dto 이메일, 새 비밀번호, 확인용 비밀번호
+     */
+    @Transactional
+    public void resetPassword(PasswordResetReqDto dto) {
+        String key = PW_RESET_PREFIX + dto.getEmail();
+
+        // 1. 해당 이메일이 인증 완료 상태인지 확인
+        if(!"DONE".equals(redisService.getData(key))){
+            throw new CustomException(ErrorCode.EMAIL_NOT_VERIFIED);
+        }
+
+        // 2. 새 비밀번호와 확인용 비밀번호 일치 확인
+        if(!dto.getNewPassword().equals(dto.getConfirmPassword())){
+            throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
+        }
+
+        // 3. 유저 조회 후 비밀번호 반영
+        User user = userRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        user.updatePassWord(passwordEncoder.encode(dto.getNewPassword()));
+
+        // 4. 인증 상태 정리
+        redisService.deleteData(key);
+    }
+
+    /**
      * 닉네임 검증 단독 서비스
      *
      * 닉네임의 중복 여부만 판단하는 API를 위한 서비스입니다.
@@ -219,6 +304,10 @@ public class AuthService {
         if(!passwordEncoder.matches(dto.getPassword(), user.getPassword())){
             throw new CustomException(ErrorCode.INCORRECT_PASSWORD);
         }
+
+        // 기존 비밀번호를 기억해 로그인에 성공했다면, 이전에 요청했던 비밀번호 재설정 인증 상태(코드 발송/DONE)는 철회
+        // (재설정을 요청했지만 실제로는 비밀번호를 기억해서 그냥 로그인한 케이스 방어)
+        redisService.deleteData(PW_RESET_PREFIX + dto.getEmail());
 
         // 3. JWT 토큰 발급
         String accessToken = createAccessToken(dto.getEmail());
