@@ -103,9 +103,11 @@ public class ChatService {
             // 만약 채팅방이 여러명으로 이뤄진다면 해당 부분은 수정 필요
             for(ChatParticipant p : participant) {
                 if(!p.getUserId().equals(user.getId())) {
-                    roomName = userRepository.findById(p.getUserId()).orElseThrow(
-                            () -> new CustomException(ErrorCode.USER_NOT_FOUND)
-                    ).getNickname();
+                    // 문제가 지금 ChatParticipant에서는 탈퇴한 User가 존재하는데 그거 기반으로 userRepository에서 검색이 안되는 상황임.
+
+                    roomName = userRepository.findById(p.getUserId())
+                            .map(User::getNickname)
+                            .orElse("탈퇴한 사용자");
                 }
             }
 
@@ -180,9 +182,9 @@ public class ChatService {
                             .senderId(cm.getSenderId())
                             .messageId(cm.getId())
                             // 보낸사람을 검색해서 그 사람의 닉네임을 붙이기
-                            .senderName(userRepository.findById(cm.getSenderId()).orElseThrow(
-                                    () -> new CustomException(ErrorCode.USER_NOT_FOUND)
-                            ).getNickname())
+                            .senderName(userRepository.findById(cm.getSenderId())
+                                    .map(User::getNickname)
+                                    .orElse("탈퇴한 사용자"))
                             .message(cm.getMessage())
                             .timestamp(cm.getTimestamp().toString())
                             .imageUrl(cm.getImageUrl())
