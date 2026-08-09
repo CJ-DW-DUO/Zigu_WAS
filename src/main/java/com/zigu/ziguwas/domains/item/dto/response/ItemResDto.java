@@ -3,6 +3,7 @@ package com.zigu.ziguwas.domains.item.dto.response;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemCategory;
 import com.zigu.ziguwas.domains.item.entity.ItemImage;
+import com.zigu.ziguwas.domains.item.entity.ItemStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
@@ -29,6 +30,12 @@ public class ItemResDto {
 
     @Schema(description = "카테고리 한글 표시명", example = "전자기기")
     private final String categoryName;
+
+    @Schema(description = "아이템 상태", example = "REGISTERED", allowableValues = {"REGISTERED", "RENTING"})
+    private final ItemStatus itemStatus;
+
+    @Schema(description = "아이템 상태 한글 표시명", example = "등록됨")
+    private final String itemStatusKor;
 
     @Schema(description = "1일 대여 가격 (원)", example = "5000")
     private final Long dayPerPrice;
@@ -58,6 +65,8 @@ public class ItemResDto {
                 .isMine(isMine)
                 .itemCategory(item.getCategory())
                 .categoryName(item.getCategory().getDescription())
+                .itemStatus(item.getItemStatus())
+                .itemStatusKor(item.getItemStatus().getDescription())
                 .dayPerPrice(item.getDayPerPrice())
                 .nickname(item.getUser().getNickname())
                 .imageIds(itemImages.stream().map(ItemImage::getImageId).toList())
