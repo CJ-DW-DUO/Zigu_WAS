@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,4 +34,10 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
     );
 
     boolean existsByItemAndTradeStatusIn(Item item, List<TradeStatus> statuses);
+
+    /**
+     * 반납 예정일이 지났는데 아직 반납 처리(IN_PROGRESS)되지 않은 거래 목록을 조회합니다.
+     * 반납기한 초과 알림 스케줄러에서 사용합니다.
+     */
+    List<Trade> findAllByTradeStatusAndTradeEndateBefore(TradeStatus tradeStatus, LocalDate date);
 }
