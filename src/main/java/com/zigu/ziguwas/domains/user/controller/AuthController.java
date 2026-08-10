@@ -110,7 +110,22 @@ public class AuthController implements AuthApi {
         return ResponseEntity.ok().body(authService.tryLogin(dto, res));
     }
 
-    // 로그아웃
+    /**
+     * 로그아웃 API
+     *
+     * @param customUserDetails 인증 사용자 정보
+     * @param request 현재 액세스 토큰을 꺼내기 위한 요청 객체
+     * @return 성공 시 상태 코드 반환
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            HttpServletRequest request
+    ) {
+        String accessToken = jwtUtil.resolveToken(request);
+        authService.logout(customUserDetails.getUserId(), accessToken);
+        return ResponseEntity.noContent().build();
+    }
 
 
     /**

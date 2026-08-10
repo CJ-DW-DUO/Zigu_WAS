@@ -399,6 +399,24 @@ public class AuthService {
 
 
     /**
+     * 로그아웃 처리합니다.
+     *
+     * JWT는 서버가 상태를 들고 있지 않고 서명만으로 검증하는 방식이라, 새 토큰을 발급해도
+     * 기존에 발급된 액세스 토큰은 만료 시각 전까지 그 자체로 계속 유효합니다 (재발급으로 "덮어쓰기"가 안 됨).
+     * 그래서 탈퇴 처리와 동일한 방식으로, 남은 유효시간만큼 Redis 블랙리스트에 등록해
+     * JwtAuthenticationFilter가 매 요청마다 걸러내도록 합니다.
+     *
+     * @param userId 로그아웃할 사용자 ID
+     * @param accessToken 현재 액세스 토큰
+     */
+    public void logout(Long userId, String accessToken) {
+        tokenService.deleteRefreshToken(userId);
+
+        long remainingTime = jwtUtil.getExpiration(accessToken);
+        redisService.setDataExpire("BLACKLIST:" + accessToken, "logout", remainingTime);
+    }
+
+    /**
      * 탈퇴 가능 상태를 조회하여 진행 중인 거래 목록을 반환합니다.
      * @param userId 유저 식별자
      * @return 탈퇴 가능 여부 및 상세 거래 정보
