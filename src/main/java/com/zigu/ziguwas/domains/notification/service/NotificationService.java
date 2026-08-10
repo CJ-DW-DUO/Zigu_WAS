@@ -23,6 +23,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final PushNotificationService pushNotificationService;
 
     /**
      * 이벤트 페이로드를 바탕으로 알림을 생성합니다.
@@ -50,6 +51,9 @@ public class NotificationService {
 
         // 3. 알림 저장
         notificationRepository.save(notification);
+
+        // 4. 저장된 알림을 바탕으로 등록된 기기에 푸시 발송
+        pushNotificationService.send(notification);
     }
 
     /**
