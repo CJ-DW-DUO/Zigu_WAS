@@ -131,7 +131,9 @@ public interface ItemApi {
 
     @Operation(summary = "아이템 수정", description = "기존에 등록된 아이템의 정보를 수정합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "수정 성공"),
+            @ApiResponse(responseCode = "200", description = "수정 성공",
+                    content = @Content(schema = @Schema(implementation = ItemResDto.class))
+            ),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 파라미터"),
             @ApiResponse(responseCode = "404", description = "아이템을 찾을 수 없음")
     })

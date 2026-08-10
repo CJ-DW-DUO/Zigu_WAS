@@ -22,6 +22,9 @@ public class ItemResDto {
     @Schema(description = "작성자 고유 ID", example = "10")
     private final Long writerId;
 
+    @Schema(description = "작성자 프로필 사진")
+    private final String profileImageUrl;
+
     @Schema(description = "본인 게시글 여부", example = "true")
     private final boolean isMine;
 
@@ -62,6 +65,7 @@ public class ItemResDto {
         return ItemResDto.builder()
                 .itemId(item.getId())
                 .writerId(item.getUser().getId())
+                .profileImageUrl(item.getUser().getProfilePhotoUrl())
                 .isMine(isMine)
                 .itemCategory(item.getCategory())
                 .categoryName(item.getCategory().getDescription())

@@ -7,6 +7,7 @@ import com.zigu.ziguwas.domains.search.dto.response.SearchHistoryResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -49,7 +50,9 @@ public interface SearchApi {
 
     @Operation(summary = "검색 기록 조회", description = "사용자의 최근 검색 기록을 최신 활동순으로 최대 20개 조회합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공")
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = SearchHistoryResDto.class)))
+            )
     })
     @GetMapping("/history")
     ResponseEntity<List<SearchHistoryResDto>> getSearchHistory(
