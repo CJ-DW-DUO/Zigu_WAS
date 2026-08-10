@@ -1,5 +1,8 @@
 package com.zigu.ziguwas.websocket;
 
+import com.zigu.ziguwas.domains.chat.repository.ChatParticipantRepository;
+import com.zigu.ziguwas.domains.user.entity.User;
+import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.security.JwtUtil;
@@ -18,9 +21,13 @@ import java.util.Map;
 public class StompHandler implements ChannelInterceptor {
 
     private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
+    private final ChatParticipantRepository chatParticipantRepository;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
+
+        // 접근자 객체
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
 
         // 연결 요청 시 JWT 토큰 검증
@@ -47,6 +54,41 @@ public class StompHandler implements ChannelInterceptor {
                 throw new CustomException(ErrorCode.TOKEN_NOT_FOUND);
             }
         }
+
+        // 해당 채팅방에 대해 구독상태인지 확인
+        if (StompCommand.SUBSCRIBE == accessor.getCommand()) {
+            String destination = accessor.getDestination();
+
+            if (destination != null && destination.startsWith("/sub/chat/room/")) {
+                // 앞의 부분만큼 제거하고 실제 채팅방 ID를 가져옴
+                String chatRoomId = destination.substring("/sub/chat/room/".length());
+
+                // 세션 정보들 가져오기
+                Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
+
+                // 세션 정보에서 이메일 정보 꺼내기
+                String email = sessionAttributes != null
+                        ? (String) sessionAttributes.get("userEmail") : null;
+
+                if (email == null) {
+                    throw new CustomException(ErrorCode.USER_NOT_FOUND);
+                }
+
+                User user = userRepository.findByEmail(email).orElseThrow(
+                        () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+                );
+
+                // 이 채팅방의 참여자가 맞는지 검사
+                boolean isParticipant = chatParticipantRepository.existsByChatRoomIdAndUserId(
+                        chatRoomId, user.getId()
+                );
+
+                if (!isParticipant) {
+                    throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+                }
+            }
+        }
+
         return message;
     }
 }
