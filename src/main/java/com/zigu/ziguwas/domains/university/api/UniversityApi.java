@@ -1,6 +1,10 @@
 package com.zigu.ziguwas.domains.university.api;
 
+import com.zigu.ziguwas.domains.university.response.UniversitiesResDto;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,13 +16,17 @@ public interface UniversityApi {
 
     @Operation(summary = "모든 대학 정보 목록 조회", description = "시스템에 등록된 모든 대학교의 목록을 조회합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공")
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = UniversitiesResDto.class)))
+            )
     })
     ResponseEntity<?> getAllUniversities();
 
     @Operation(summary = "대학 검색 정보 조회", description = "대학교 이름을 기반으로 검색된 대학교 목록을 조회합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공")
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = UniversitiesResDto.class)))
+            )
     })
     ResponseEntity<?> getUniversities(@RequestParam String name);
 }

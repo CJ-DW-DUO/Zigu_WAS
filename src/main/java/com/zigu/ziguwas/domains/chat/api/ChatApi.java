@@ -1,10 +1,13 @@
 package com.zigu.ziguwas.domains.chat.api;
 
 import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
+import com.zigu.ziguwas.domains.chat.dto.response.ChatMessageDetailResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomItemAndTradeInfoResDto;
+import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomPreviewResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -22,7 +25,9 @@ public interface ChatApi {
 
     @Operation(summary = "채팅방 목록 조회", description = "사용자가 참여 중인 모든 채팅방의 미리보기 목록을 조회합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공")
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = ChatRoomPreviewResDto.class)))
+            )
     })
     ResponseEntity<?> getChatroomsPreview(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
@@ -30,7 +35,9 @@ public interface ChatApi {
 
     @Operation(summary = "채팅방 상세 조회", description = "특정 채팅방의 상세 대화 내역 및 정보를 조회합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = ChatMessageDetailResDto.class)))
+            ),
             @ApiResponse(responseCode = "404", description = "채팅방을 찾을 수 없음")
     })
     ResponseEntity<?> getChatroomDetail(

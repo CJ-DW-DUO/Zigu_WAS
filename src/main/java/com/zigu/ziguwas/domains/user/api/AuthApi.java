@@ -8,6 +8,7 @@ import com.zigu.ziguwas.domains.user.dto.auth.request.PassWordUpdateReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.PasswordResetReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.WithdrawReqDto;
+import com.zigu.ziguwas.domains.user.dto.auth.response.LoginResDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.WithdrawalCheckResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -85,7 +86,9 @@ public interface AuthApi {
     @Operation(summary = "로그인", description = "이메일과 비밀번호를 통해 로그인을 수행하고 토큰을 발급합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "로그인 성공",
-                    content = @Content(mediaType = "application/json", examples = {
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = LoginResDto.class),
+                            examples = {
                             @ExampleObject(value = """
                                     {
                                         "userId": 1,
