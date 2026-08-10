@@ -2,16 +2,22 @@ package com.zigu.ziguwas.domains.notification.controller;
 
 import com.zigu.ziguwas.domains.notification.api.NotificationApi;
 import com.zigu.ziguwas.domains.notification.dto.request.NotificationSettingReqDto;
+import com.zigu.ziguwas.domains.notification.dto.request.PushTokenDeleteReqDto;
+import com.zigu.ziguwas.domains.notification.dto.request.PushTokenRegisterReqDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationUnreadCountResDto;
 import com.zigu.ziguwas.domains.notification.service.NotificationService;
+import com.zigu.ziguwas.domains.notification.service.PushTokenService;
 import com.zigu.ziguwas.security.CustomUserDetails;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificationController implements NotificationApi {
 
     private final NotificationService notificationService;
+    private final PushTokenService pushTokenService;
 
     /**
      * 내 알림 목록을 페이지 단위로 조회합니다.
@@ -102,6 +109,38 @@ public class NotificationController implements NotificationApi {
             @RequestBody NotificationSettingReqDto dto
     ){
         return ResponseEntity.ok(notificationService.updateNotificationSettings(customUserDetails.getUserId(), dto));
+    }
+
+    /**
+     * 푸시 토큰을 등록합니다. 동일 토큰이 이미 있으면 갱신됩니다.
+     *
+     * @param customUserDetails 인증 사용자 정보
+     * @param dto 등록할 푸시 토큰 정보
+     * @return 등록 성공 응답
+     */
+    @PostMapping("/push-tokens")
+    public ResponseEntity<?> registerPushToken(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @Valid @RequestBody PushTokenRegisterReqDto dto
+    ) {
+        pushTokenService.register(customUserDetails.getUserId(), dto);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 푸시 토큰을 삭제합니다. 로그아웃하거나 토큰이 더 이상 유효하지 않을 때 호출합니다.
+     *
+     * @param customUserDetails 인증 사용자 정보
+     * @param dto 삭제할 푸시 토큰 정보
+     * @return 삭제 성공 응답
+     */
+    @DeleteMapping("/push-tokens")
+    public ResponseEntity<?> deletePushToken(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @Valid @RequestBody PushTokenDeleteReqDto dto
+    ) {
+        pushTokenService.delete(customUserDetails.getUserId(), dto.getToken());
+        return ResponseEntity.ok().build();
     }
 }
 

@@ -238,7 +238,8 @@ public class ChatService {
                     NotificationType.CHAT,
                     "새 채팅 메시지",
                     sender.getNickname() + "님: " + message,
-                    chatRoom.getId()
+                    chatRoom.getId(),
+                    chatRoom.getItemId()
             ));
         }
     }

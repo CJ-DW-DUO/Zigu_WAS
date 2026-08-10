@@ -111,6 +111,19 @@ public interface AuthApi {
     })
     ResponseEntity<?> login(@Valid @RequestBody LoginReqDto dto, HttpServletResponse res);
 
+    @Operation(summary = "로그아웃", description = "현재 액세스 토큰을 블랙리스트에 등록하고 리프레시 토큰을 삭제합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "로그아웃 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 401, \"message\": \"인증되지 않은 사용자 입니다.\"}")
+                    }))
+    })
+    ResponseEntity<Void> logout(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            HttpServletRequest request
+    );
+
     @Operation(summary = "비밀번호 재설정 인증코드 발송", description = "가입된 이메일인지 확인 후 비밀번호 재설정을 위한 인증코드를 발송합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "이메일 전송 성공"),

@@ -1,6 +1,8 @@
 package com.zigu.ziguwas.domains.notification.api;
 
 import com.zigu.ziguwas.domains.notification.dto.request.NotificationSettingReqDto;
+import com.zigu.ziguwas.domains.notification.dto.request.PushTokenDeleteReqDto;
+import com.zigu.ziguwas.domains.notification.dto.request.PushTokenRegisterReqDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationSettingResDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationUnreadCountResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
@@ -166,6 +168,36 @@ public interface NotificationApi {
     ResponseEntity<?> updateSettings(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @RequestBody NotificationSettingReqDto dto
+    );
+
+    @Operation(summary = "푸시 토큰 등록", description = "로그인 사용자의 기기 푸시 토큰을 등록합니다. 동일 토큰이 이미 등록되어 있으면 새로 만들지 않고 소유자/플랫폼만 갱신합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "등록 성공"),
+            @ApiResponse(responseCode = "400", description = "요청값 검증 실패",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 400, \"message\": \"토큰은 필수 입력입니다.\"}")
+                    })),
+            @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 404, \"message\": \"사용자를 찾을 수 없습니다.\"}")
+                    }))
+    })
+    ResponseEntity<?> registerPushToken(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestBody PushTokenRegisterReqDto dto
+    );
+
+    @Operation(summary = "푸시 토큰 삭제", description = "로그아웃하거나 토큰이 더 이상 유효하지 않을 때 본인 소유 푸시 토큰을 삭제합니다. 이미 없는 토큰이어도 에러 없이 처리됩니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "삭제 성공(토큰이 없었어도 200)"),
+            @ApiResponse(responseCode = "400", description = "요청값 검증 실패",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 400, \"message\": \"토큰은 필수 입력입니다.\"}")
+                    }))
+    })
+    ResponseEntity<?> deletePushToken(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestBody PushTokenDeleteReqDto dto
     );
 }
 
