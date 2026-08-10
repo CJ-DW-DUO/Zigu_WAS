@@ -64,7 +64,8 @@ public class TradeReturnReminderScheduler {
                 NotificationType.RETURN_OVERDUE_RENTER,
                 "반납 확인 필요",
                 trade.getItem().getTitle() + "을(를) 받았나요? 반납을 확인해 주세요.",
-                trade.getId().toString()
+                trade.getId().toString(),
+                trade.getItem().getId()
         ));
     }
 
@@ -77,7 +78,8 @@ public class TradeReturnReminderScheduler {
                 NotificationType.RETURN_OVERDUE_RENTEE,
                 "반납 기한 초과",
                 trade.getItem().getTitle() + " 반납 기간이 지났어요. 반납해 주세요.",
-                trade.getId().toString()
+                trade.getId().toString(),
+                trade.getItem().getId()
         ));
     }
 }

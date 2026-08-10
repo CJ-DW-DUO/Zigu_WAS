@@ -14,7 +14,9 @@ public record NotificationCreatedEvent(
         String title,
         String content,
         // 알림을 눌렀을 때 이동할 대상의 PK (채팅방ID 또는 거래ID 등, 타입에 따라 의미가 다름)
-        String referenceId
+        String referenceId,
+        // 알림과 연관된 매물 PK (푸시 알림 payload 구성 시 사용)
+        Long itemId
 ) {
 }
 

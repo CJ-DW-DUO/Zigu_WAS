@@ -53,6 +53,9 @@ public class Notification {
     // 알림을 눌렀을 때 이동할 대상의 PK (채팅방ID 또는 거래ID 등, notificationType에 따라 참조 대상이 다름)
     private String referenceId;
 
+    // 알림과 연관된 매물 PK (푸시 알림 payload 구성 시 사용)
+    private Long itemId;
+
     /**
      * 알림 생성 시 사용하는 정적 팩토리 메서드입니다.
      *
@@ -64,7 +67,8 @@ public class Notification {
             NotificationType notificationType,
             String notiTitle,
             String notiContent,
-            String referenceId
+            String referenceId,
+            Long itemId
     ) {
         return Notification.builder()
                 .userId(userId)
@@ -74,6 +78,7 @@ public class Notification {
                 .recTime(LocalDateTime.now())
                 .isRead(false)
                 .referenceId(referenceId)
+                .itemId(itemId)
                 .build();
     }
 

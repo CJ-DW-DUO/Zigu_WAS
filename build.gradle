@@ -58,9 +58,6 @@ dependencies {
     // WebSocket
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
-    // Firebase Admin SDK (FCM 전송용)
-    implementation 'com.google.firebase:firebase-admin:9.8.0'
-
     // MongoDB
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
 }
