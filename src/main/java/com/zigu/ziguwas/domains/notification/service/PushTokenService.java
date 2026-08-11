@@ -48,4 +48,19 @@ public class PushTokenService {
     public void delete(Long userId, String token) {
         pushTokenRepository.deleteByTokenAndUserId(token, userId);
     }
+
+    /**
+     * Expo가 더 이상 유효하지 않다고 응답한(DeviceNotRegistered) 토큰을 삭제합니다.
+     *
+     * 반드시 별도 빈을 통해 호출되어야 합니다. 알림 발송은 트랜잭션이 이미 끝난
+     * AFTER_COMMIT 리스너 안에서 실행되기 때문에, 이 메서드 자체가 새 트랜잭션을 열어야
+     * 삭제 쿼리가 정상적으로 실행됩니다(같은 클래스 안에서 self-invocation으로 호출하면
+     * 프록시를 안 거쳐서 @Transactional이 적용되지 않으니 주의).
+     *
+     * @param token 삭제할 토큰
+     */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public void deleteInvalidToken(String token) {
+        pushTokenRepository.deleteByToken(token);
+    }
 }
