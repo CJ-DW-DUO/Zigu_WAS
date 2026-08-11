@@ -24,6 +24,7 @@ import java.util.Map;
 public class PushNotificationService {
 
     private final PushTokenRepository pushTokenRepository;
+    private final PushTokenService pushTokenService;
     private final ExpoPushClient expoPushClient;
 
     public void send(Notification notification) {
@@ -70,7 +71,8 @@ public class PushNotificationService {
     private void removeInvalidTokens(List<PushToken> tokens, List<ExpoPushTicket> tickets) {
         for (int i = 0; i < tickets.size() && i < tokens.size(); i++) {
             if (tickets.get(i).isDeviceNotRegistered()) {
-                pushTokenRepository.deleteByToken(tokens.get(i).getToken());
+                // PushTokenService(별도 빈)를 거쳐야 새 트랜잭션이 열려 삭제가 실제로 반영됨
+                pushTokenService.deleteInvalidToken(tokens.get(i).getToken());
                 log.info("유효하지 않은 푸시 토큰 삭제. token={}", tokens.get(i).getToken());
             }
         }
