@@ -137,7 +137,9 @@ public class ChatService {
                 lastMessageContent = "대화 내역이 없습니다.";
             } else {
                 lastSendTime = lastMessage.getTimestamp();
-                lastMessageContent = lastMessage.getMessage();
+                lastMessageContent = (lastMessage.getImageUrl() != null && !lastMessage.getImageUrl().isEmpty())
+                        ? "사진을 보냈습니다."
+                        : lastMessage.getMessage();
             }
 
             // 3-5. dto에 담기
