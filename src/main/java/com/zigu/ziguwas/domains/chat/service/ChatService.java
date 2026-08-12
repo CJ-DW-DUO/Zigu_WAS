@@ -1,5 +1,7 @@
 package com.zigu.ziguwas.domains.chat.service;
 
+import com.zigu.ziguwas.domains.chat.dto.ChatSendInfoDto;
+import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatMessageDetailResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomItemAndTradeInfoResDto;
@@ -27,6 +29,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
+import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -48,6 +51,8 @@ public class ChatService {
     private final ApplicationEventPublisher eventPublisher;
     private final TradeRepository tradeRepository;
     private final ItemRepository itemRepository;
+
+    private final SimpMessageSendingOperations messagingTemplate;
 
     /**
      * 채팅방에 해당 유저가 존재하는지 확인하는 서비스
@@ -198,11 +203,12 @@ public class ChatService {
     /**
      * 실시간 메시지 저장
      *
-     * @param message 메시지
+     * @param content 메시지
      * @param email 이메일
      * @param chatRoomId 채팅방ID
+     * @param hasImage 이미지 포함 여부
      */
-    public void saveMessage(String message, String email, String chatRoomId) {
+    private void saveMessage(String content, String email, String chatRoomId, boolean hasImage) {
         // 1. 발신자 정보 조회
         User sender = userRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -214,18 +220,19 @@ public class ChatService {
         // 3. 참여자 권한 검증 (선택 사항: 보낸 사람이 해당 방의 참여자인지 확인)
         validateParticipant(chatRoom, sender);
 
-        // 4. 메시지 엔티티 생성 및 저장
+        // 4. 메시지인지 이미지인지 분기
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatRoomId(chatRoom.getId())
                 .senderId(sender.getId())
-                .message(message)
+                .message(hasImage ? null : content)
+                .imageUrl(hasImage ? content : null)
                 .timestamp(LocalDateTime.now())
-                .imageUrl(null) // 이미지 URL 필드는 필요 시 추가 처리
                 .build();
 
+        // 5. 채팅 저장
         chatMessageRepository.save(chatMessage);
 
-        // 5. 같은 채팅방의 참여자 중 발신자를 제외한 사용자에게 알림 이벤트 발행
+        // 6. 같은 채팅방의 참여자 중 발신자를 제외한 사용자에게 알림 이벤트 발행
         List<ChatParticipant> participants = chatParticipantRepository.findAllByChatRoomId(chatRoom.getId());
         for (ChatParticipant participant : participants) {
             if (participant.getUserId().equals(sender.getId())) {
@@ -233,15 +240,59 @@ public class ChatService {
             }
 
             // 5-1. 실제 알림 저장은 NotificationEventListener가 AFTER_COMMIT 시점에 처리
+
             eventPublisher.publishEvent(new NotificationCreatedEvent(
                     participant.getUserId(),
                     NotificationType.CHAT,
                     "새 채팅 메시지",
-                    sender.getNickname() + "님: " + message,
+                    (hasImage) ? sender.getNickname() + "님이 이미지를 전송했습니다."
+                            : sender.getNickname() + "님: " + content,
                     chatRoom.getId(),
                     chatRoom.getItemId()
             ));
         }
+    }
+
+
+    /**
+     * 텍스트/이미지 메시지 분기 처리
+     *
+     * @param chatRoomId 채팅방 ID
+     * @param dto 채팅메시지
+     * @param email 발신자 이메일 (세션에서 추출된 값, 컨트롤러 책임)
+     */
+    public void branchMessage(
+            String chatRoomId,
+            ChatMessageReqDto dto,
+            String email
+    ){
+        // 1. 메시지 유효성 검증
+        if(!dto.validateMessage()){
+            throw new CustomException(ErrorCode.INVALID_MESSAGE);
+        }
+
+        // 2. 유저 찾기
+        User sender = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 3. 메시지 전송
+        messagingTemplate.convertAndSend("/sub/chat/room/" + chatRoomId,
+                ChatSendInfoDto.builder()
+                        .senderId(sender.getId())
+                        .chatRoomId(chatRoomId)
+                        .senderNickname(sender.getNickname())
+                        .message(!dto.hasImage() ? dto.getMessage() : null)
+                        .imageUrl(dto.hasImage() ? dto.getImageUrl() : null)
+                        .build()
+        );
+
+        // 4. 메시지 저장
+        saveMessage(
+                dto.hasImage() ? dto.getImageUrl() : dto.getMessage(),
+                email,
+                chatRoomId,
+                dto.hasImage()
+        );
     }
 
     /**
