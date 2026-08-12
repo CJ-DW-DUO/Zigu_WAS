@@ -1,8 +1,10 @@
 package com.zigu.ziguwas.domains.chat.service;
 
+import com.zigu.ziguwas.S3.S3Service;
 import com.zigu.ziguwas.domains.chat.dto.ChatSendInfoDto;
 import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
+import com.zigu.ziguwas.domains.chat.dto.response.ChatImageUploadResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatMessageDetailResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomItemAndTradeInfoResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomPreviewResDto;
@@ -31,6 +33,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -53,6 +56,7 @@ public class ChatService {
     private final ItemRepository itemRepository;
 
     private final SimpMessageSendingOperations messagingTemplate;
+    private final S3Service s3Service;
 
     /**
      * 채팅방에 해당 유저가 존재하는지 확인하는 서비스
@@ -199,6 +203,45 @@ public class ChatService {
         return dtos;
     }
 
+
+    /**
+     * 채팅 이미지 업로드
+     *
+     * S3에 이미지를 업로드하고 URL만 반환한다. 실제 메시지 전송/저장은
+     * 이 URL을 담아 별도의 STOMP SEND({@link ChatMessageReqDto#getImageUrl()})로 이어져야 한다.
+     *
+     * @param customUserDetails 로그인정보
+     * @param chatRoomId 채팅방 ID
+     * @param image 업로드할 이미지 파일
+     * @return 업로드된 이미지 URL
+     */
+    public ChatImageUploadResDto uploadChatImage(CustomUserDetails customUserDetails, String chatRoomId, MultipartFile image) {
+
+        // 1. 사용자 조회
+        User user = userRepository.findByEmail(customUserDetails.getUsername()).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        // 2. 채팅방 존재 여부 확인
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(
+                () -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND)
+        );
+
+        // 3. 참가자 유효성 검증
+        validateParticipant(chatRoom, user);
+
+        // 4. 파일 존재 여부 확인
+        if (image == null || image.isEmpty()) {
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAIL);
+        }
+
+        // 5. S3 업로드
+        String imageUrl = s3Service.uploadSingleFile(image);
+
+        return ChatImageUploadResDto.builder()
+                .imageUrl(imageUrl)
+                .build();
+    }
 
     /**
      * 실시간 메시지 저장

@@ -1,6 +1,7 @@
 package com.zigu.ziguwas.domains.chat.api;
 
 import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
+import com.zigu.ziguwas.domains.chat.dto.response.ChatImageUploadResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatMessageDetailResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomItemAndTradeInfoResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomPreviewResDto;
@@ -19,6 +20,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "Chat API", description = "채팅 관련 API 입니다.")
 public interface ChatApi {
@@ -101,5 +103,20 @@ public interface ChatApi {
     ResponseEntity<?> createChatroom(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @RequestBody CreateChatRoomReqDto dto
+    );
+
+    @Operation(summary = "채팅 이미지 업로드", description = "이미지를 S3에 업로드하고 URL을 반환합니다. 반환된 URL은 실제 메시지 전송 시 STOMP SEND 페이로드의 imageUrl로 담아 보내야 합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "업로드 성공",
+                    content = @Content(schema = @Schema(implementation = ChatImageUploadResDto.class))
+            ),
+            @ApiResponse(responseCode = "400", description = "파일 업로드 실패 (파일 없음/S3 업로드 오류)"),
+            @ApiResponse(responseCode = "403", description = "채팅방 참여자가 아님"),
+            @ApiResponse(responseCode = "404", description = "채팅방을 찾을 수 없음")
+    })
+    ResponseEntity<?> uploadChatImage(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @Parameter(description = "채팅방 ID", required = true) @PathVariable String chatRoomId,
+            @Parameter(description = "업로드할 이미지 파일", required = true) MultipartFile image
     );
 }

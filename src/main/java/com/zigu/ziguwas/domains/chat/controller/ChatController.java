@@ -8,6 +8,7 @@ import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -19,7 +20,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
 
@@ -104,6 +107,26 @@ public class ChatController implements ChatApi {
         return ResponseEntity.created(URI.create("/api/v1/chatrooms/" + created)).build();
     }
 
+
+    /**
+     * 채팅 이미지 업로드 API
+     *
+     * 이미지를 S3에 업로드하고 URL만 반환한다. 실제 채팅 메시지 전송은
+     * 이 URL을 담아 기존 STOMP 전송 경로(/pub/chat/v1/chatrooms/{chatRoomId})로 별도 진행해야 한다.
+     *
+     * @param customUserDetails 로그인정보
+     * @param chatRoomId 채팅방 ID
+     * @param image 업로드할 이미지 파일
+     * @return 업로드된 이미지 URL
+     */
+    @PostMapping(value = "/api/v1/chatrooms/{chatRoomId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadChatImage(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable String chatRoomId,
+            @RequestPart("image") MultipartFile image
+    ){
+        return ResponseEntity.ok(chatService.uploadChatImage(customUserDetails, chatRoomId, image));
+    }
 
     /**
      * 메시지 전송 STOMP
