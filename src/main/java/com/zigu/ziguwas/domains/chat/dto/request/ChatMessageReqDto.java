@@ -15,4 +15,8 @@ public class ChatMessageReqDto {
     public boolean hasImage() {
         return imageUrl != null && !imageUrl.isEmpty();
     }
+
+    public boolean validateMessage() {
+        return (message != null && !message.isEmpty()) || hasImage();
+    }
 }
