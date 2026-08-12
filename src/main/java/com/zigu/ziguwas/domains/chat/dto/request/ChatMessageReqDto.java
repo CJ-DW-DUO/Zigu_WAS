@@ -7,6 +7,12 @@ import lombok.Getter;
 @Getter
 public class ChatMessageReqDto {
     @Schema(description = "채팅메시지", example = "지구야 안녕")
-    @NotBlank(message = "메시지는 비울 수 없습니다.")
     private String message;
+
+    @Schema(description = "채팅 이미지 URL", example = "https://example.com/image.jpg")
+    private String imageUrl;
+
+    public boolean hasImage() {
+        return imageUrl != null && !imageUrl.isEmpty();
+    }
 }
