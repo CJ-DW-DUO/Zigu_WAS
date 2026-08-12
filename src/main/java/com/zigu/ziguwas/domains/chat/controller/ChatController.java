@@ -1,20 +1,17 @@
 package com.zigu.ziguwas.domains.chat.controller;
 
 import com.zigu.ziguwas.domains.chat.api.ChatApi;
-import com.zigu.ziguwas.domains.chat.dto.ChatSendInfoDto;
 import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
 import com.zigu.ziguwas.domains.chat.service.ChatService;
-import com.zigu.ziguwas.domains.user.entity.User;
-import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,7 +20,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
 
@@ -33,9 +32,7 @@ import java.net.URI;
 @RequestMapping
 public class ChatController implements ChatApi {
 
-    private final SimpMessageSendingOperations messagingTemplate;
     private final ChatService chatService;
-    private final UserRepository userRepository;
 
     /**
      * 채팅방(미리보기) 목록 조회 API
@@ -112,6 +109,26 @@ public class ChatController implements ChatApi {
 
 
     /**
+     * 채팅 이미지 업로드 API
+     *
+     * 이미지를 S3에 업로드하고 URL만 반환한다. 실제 채팅 메시지 전송은
+     * 이 URL을 담아 기존 STOMP 전송 경로(/pub/chat/v1/chatrooms/{chatRoomId})로 별도 진행해야 한다.
+     *
+     * @param customUserDetails 로그인정보
+     * @param chatRoomId 채팅방 ID
+     * @param image 업로드할 이미지 파일
+     * @return 업로드된 이미지 URL
+     */
+    @PostMapping(value = "/api/v1/chatrooms/{chatRoomId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadChatImage(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable String chatRoomId,
+            @RequestPart("image") MultipartFile image
+    ){
+        return ResponseEntity.ok(chatService.uploadChatImage(customUserDetails, chatRoomId, image));
+    }
+
+    /**
      * 메시지 전송 STOMP
      *
      * 매개변수의 @PathVariable 대신 @DestinationVariable로 대체
@@ -127,33 +144,13 @@ public class ChatController implements ChatApi {
             ChatMessageReqDto dto,
             StompHeaderAccessor headerAccessor
     ){
-        // 1. 이메일 추출
         String email = (String) headerAccessor.getSessionAttributes().get("userEmail");
 
-        if(email == null){
+        if (email == null) {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
         }
 
-        // 2. 유저 찾기
-        User sender = userRepository.findByEmail(email)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        // 3. /sub/chat/room/{roomId}를 구독중인 사용자들에게 메시지 전달
-        messagingTemplate.convertAndSend("/sub/chat/room/" + chatRoomId,
-                ChatSendInfoDto.builder()
-                        .senderId(sender.getId())
-                        .chatRoomId(chatRoomId)
-                        .senderNickname(sender.getNickname())
-                        .message(dto.getMessage())
-                        .build()
-                );
-
-        // 4. 메시지 저장
-        chatService.saveMessage(
-                dto.getMessage(),
-                email,
-                chatRoomId
-        );
+        chatService.branchMessage(chatRoomId, dto, email);
     }
 
 //    @DeleteMapping("/api/v1/chatrooms/{chatRoomId}")
