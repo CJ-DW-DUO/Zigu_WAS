@@ -95,10 +95,6 @@ public class Item {
         this.description = description;
     }
 
-    public void increaseViewCount() {
-        this.viewCount++;
-    }
-
     public void updateItemStatus(ItemStatus itemStatus) {
         this.itemStatus = itemStatus;
     }

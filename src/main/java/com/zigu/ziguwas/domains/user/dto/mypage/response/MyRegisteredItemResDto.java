@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Getter
 @RequiredArgsConstructor
 @Builder
@@ -25,6 +27,9 @@ public class MyRegisteredItemResDto {
     @Schema(description = "가격", example = "3000")
     private final Long dayPerPrice;
 
+    @Schema(description = "등록 날짜", example = "2026-08-20T12:34:56")
+    private final LocalDateTime createdAt;
+
     public static MyRegisteredItemResDto fromEntity(Item item) {
         return MyRegisteredItemResDto.builder()
                 .itemId(item.getId())
@@ -35,6 +40,7 @@ public class MyRegisteredItemResDto {
                         .findFirst()
                         .orElse(null))
                 .dayPerPrice(item.getDayPerPrice())
+                .createdAt(item.getCreatedAt())
                 .build();
     }
 }

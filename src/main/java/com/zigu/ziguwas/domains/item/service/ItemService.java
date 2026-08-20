@@ -6,6 +6,7 @@ import com.zigu.ziguwas.domains.item.dto.request.ItemUpdateReqDto;
 import com.zigu.ziguwas.domains.item.dto.response.ItemResDto;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemImage;
+import com.zigu.ziguwas.domains.item.event.ItemImagesDeletedEvent;
 import com.zigu.ziguwas.domains.item.repository.ItemImageRepository;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
 import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
@@ -16,12 +17,15 @@ import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -32,6 +36,7 @@ public class ItemService {
     private final ItemImageRepository itemImageRepository;
     private final TradeRepository tradeRepository;
     private final S3Service s3Service;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 새로운 아이템을 등록합니다.
@@ -118,11 +123,7 @@ public class ItemService {
 
         Item item = itemImages.get(0).getItem();
         boolean isMainDeleted = itemImages.stream().anyMatch(ItemImage::isMainImageUrl);
-
-        // S3 파일 삭제 (컬렉션에서 remove하면 orphanRemoval + @SQLDelete로 소프트딜리트 되므로 제거하지 않음)
-        for (ItemImage img : itemImages) {
-            s3Service.deleteFile(img.getImageUrl());
-        }
+        List<String> imageUrlsToDelete = itemImages.stream().map(ItemImage::getImageUrl).toList();
 
         // JPQL 벌크 삭제 → @SQLDelete 우회하여 하드딜리트
         itemImageRepository.deleteAllInBatch(itemImages);
@@ -132,6 +133,9 @@ public class ItemService {
             itemImageRepository.findFirstByItemOrderByImageIdAsc(item)
                     .ifPresent(nextMain -> nextMain.updateMain(true));
         }
+
+        // S3 파일 삭제는 DB 커밋 이후로 분리 (S3 호출이 느려져도 DB 트랜잭션/락을 붙잡지 않도록)
+        eventPublisher.publishEvent(new ItemImagesDeletedEvent(imageUrlsToDelete));
     }
 
     /**
@@ -188,7 +192,12 @@ public class ItemService {
             throw new CustomException(ErrorCode.ACTIVE_TRADE_EXISTS);
         }
 
+        List<String> imageUrlsToDelete = item.getImageUrl().stream().map(ItemImage::getImageUrl).toList();
+
         itemRepository.delete(item);
+
+        // S3 파일 삭제는 DB 커밋 이후로 분리 (S3 호출이 느려져도 DB 트랜잭션/락을 붙잡지 않도록)
+        eventPublisher.publishEvent(new ItemImagesDeletedEvent(imageUrlsToDelete));
     }
 
     /**
@@ -219,7 +228,14 @@ public class ItemService {
             throw new CustomException(ErrorCode.WITHDRAWN_USER_ITEM);
         }
 
-        item.increaseViewCount();
+        // 조회수 증가는 상세조회 결과에 영향을 주지 않는 부가 기능이므로,
+        // 실패하더라도 상세조회 자체는 정상 응답하도록 best-effort로 처리
+        try {
+            itemRepository.increaseViewCount(itemId);
+        } catch (Exception e) {
+            log.warn("조회수 증가 실패 - itemId: {}", itemId, e);
+        }
+
         return ItemResDto.fromEntity(item, userId);
     }
 
