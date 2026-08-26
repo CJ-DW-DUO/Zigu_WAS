@@ -271,13 +271,12 @@ public class AuthService {
         );
 
         // 5. 회원가입
-        // 아직 프로필사진 업로드 기능이 구현되지 않았습니다.
         return userRepository.save(User.builder()
                 .nickname(dto.getNickname())
                 .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword()))
                 .univ(univ)
-                .profilePhotoUrl(null)
+                .profilePhotoUrl(dto.getProfileImageUrl())
                 .veriStatus(VerificationStatus.CERTIFIED)
                 .notificationSetting(NotificationSetting.builder().build())
                 .build());
