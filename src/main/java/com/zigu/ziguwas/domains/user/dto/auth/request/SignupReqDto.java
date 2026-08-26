@@ -21,4 +21,7 @@ public class SignupReqDto {
     @NotBlank(message = "비밀번호는 필수 입력입니다.")
     private String password;
 
+    @Schema(description = "프로필 이미지 URL", example = "https://s3.ap-northeast-2.amazonaws.com/bucket/profile.jpg")
+    private String profileImageUrl;
+
 }
