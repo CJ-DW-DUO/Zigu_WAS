@@ -46,7 +46,7 @@ public class Trade {
     private User rentee; // 임차인ID
 
     @Column(name = "period", nullable = false)
-    private Long period; // 대여기간
+    private Long period; // 대여기간, 시작일부터 종료일까지의 기간을 포함.
 
     @Enumerated(EnumType.STRING)
     @Column(name = "trade_status", nullable = false)
@@ -92,12 +92,13 @@ public class Trade {
 
     /**
      * 대여 종료일을 계산합니다.
+     * period는 시작일과 종료일을 모두 포함한 일수이므로 (period - 1)을 더한다.
      */
     public LocalDate getEndDate() {
         if (tradeStdate == null || period == null){
             return null;
         }
-        return tradeStdate.plusDays(period);
+        return tradeStdate.plusDays(period - 1);
     }
 
     public void setDates(LocalDate startDate, LocalDate endDate, LocalDate resDate) {

@@ -100,7 +100,8 @@ public class TradeService {
                 .rentee(rentee) // 임차인 연결
                 .tradeStdate(dto.getStartDate()) // 거래 시작 예정일 우선 기입
                 .tradeEndate(dto.getEndDate()) // 거래 종료 예정일 우선 기입
-                .period(ChronoUnit.DAYS.between(dto.getStartDate(), dto.getEndDate())) // 대여 기간
+                // 거래 기간 계산 (시작일, 종료일 모두 포함한 일수를 포함해야 하므로 +1를 해서 기간을 보정한다)
+                .period(ChronoUnit.DAYS.between(dto.getStartDate(), dto.getEndDate()) + 1)
                 .tradeStatus(TradeStatus.REQUESTED) // 요청됨
                 .tradeReqdate(LocalDate.now()) // 요청은 지금 보내는 것
                 .build();
@@ -177,7 +178,8 @@ public class TradeService {
 
             // 7A - 2. 거래 시작일, 마감일, 수락일 설정
             // 거래 시작일과 수락일에 대한 분리가 필요함, 수정 필수
-            trade.setDates(LocalDate.now(), LocalDate.now().plusDays(trade.getPeriod()),
+            // 해당 기간만큼 더해버리면 하루가 더 지나므로, 1일을 빼주어야 함
+            trade.setDates(LocalDate.now(), LocalDate.now().plusDays(trade.getPeriod() - 1),
                     LocalDate.now());
 
             // 7A - 3. 매물 상태 변경
