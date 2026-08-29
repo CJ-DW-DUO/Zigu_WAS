@@ -7,6 +7,7 @@ import com.zigu.ziguwas.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -52,6 +53,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/user/login").permitAll()
                         .requestMatchers("/api/v1/user/signup/**").permitAll()
                         .requestMatchers("/api/v1/universities/**").permitAll()
+                        // /api/v1/auth/** 는 기본적으로 permitAll이지만, 아래 4개는 실제로는
+                        // @AuthenticationPrincipal(인증 필요)을 사용하므로 명시적으로 인증을 요구한다.
+                        // 로그인 하지 않은 유저가 로그아웃, 비밀번호변경, 회원탈퇴 등을 시도할 경우의 오류 방지를 위함.
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/auth").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/delcheck").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/auth/password").authenticated()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/email/**").permitAll()
                         .requestMatchers("/api/v1/verify/**").permitAll()
