@@ -13,6 +13,7 @@ import com.zigu.ziguwas.domains.user.dto.auth.request.PasswordResetReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.LoginResDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.OngoingTradeResDto;
+import com.zigu.ziguwas.domains.user.dto.auth.response.TokenReissueResDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.WithdrawalCheckResDto;
 import com.zigu.ziguwas.domains.user.entity.NotificationSetting;
 import com.zigu.ziguwas.domains.user.entity.User;
@@ -23,6 +24,8 @@ import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.redis.RedisService;
 import com.zigu.ziguwas.security.JwtUtil;
 import com.zigu.ziguwas.security.TokenService;
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -316,12 +319,12 @@ public class AuthService {
         tokenService.saveRefreshToken(user.getId(), refreshToken);
 
         // 4. 리프레쉬 토큰 헤더에 붙이는 작업
-        ResponseCookie responseCookie = ResponseCookie.from("refreshToken", refreshToken)
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
                 .path("/")
                 .maxAge(7*24*60*60) // 일주일
                 .build();
-        res.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
+        res.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         // 5. 액세스 토큰 헤더에 붙이는 작업
         ResponseCookie accessCookie = ResponseCookie.from("accessToken", accessToken)
@@ -360,6 +363,72 @@ public class AuthService {
      */
     public String createRefreshToken(String email) {
         return jwtUtil.createRefreshToken(email);
+    }
+
+    /**
+     * 리프레시 토큰으로 액세스 토큰을 재발급합니다.
+     * 쿠키의 리프레시 토큰이 (1) 서명/만료 검증을 통과하고 (2) type이 refresh이며
+     * (3) Redis에 저장된 값과 일치할 때만 재발급을 허용합니다.
+     * 재발급 시 리프레시 토큰도 함께 회전(rotate)시켜 Redis 값을 갱신합니다.
+     *
+     * @param request 리프레시 토큰 쿠키를 읽기 위한 요청 객체
+     * @param res 새 토큰을 쿠키로 내려주기 위한 응답 객체
+     * @return 재발급된 AccessToken
+     */
+    @Transactional
+    public TokenReissueResDto reissueToken(HttpServletRequest request, HttpServletResponse res) {
+        // 1. 쿠키에서 리프레시 토큰 추출
+        String refreshToken = jwtUtil.extractRefreshTokenFromCookie(request);
+        if (refreshToken == null) {
+            throw new CustomException(ErrorCode.TOKEN_NOT_FOUND);
+        }
+
+        // 2. 서명/만료 검증 및 토큰 타입 확인
+        String email;
+        try {
+            if (!jwtUtil.isRefreshToken(refreshToken)) {
+                throw new CustomException(ErrorCode.UNAUTHENTICATED_ACCESS);
+            }
+            email = jwtUtil.getEmailFromToken(refreshToken);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new CustomException(ErrorCode.JWT_TOKEN_PARSING_ERROR);
+        }
+
+        // 3. 유저 조회 (탈퇴 등으로 이미 없어졌을 수 있음)
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 4. Redis에 저장된 리프레시 토큰과 일치하는지 확인 (로그아웃/탈퇴로 무효화된 토큰 차단)
+        String savedRefreshToken = tokenService.getRefreshToken(user.getId());
+        if (savedRefreshToken == null || !savedRefreshToken.equals(refreshToken)) {
+            throw new CustomException(ErrorCode.UNAUTHENTICATED_ACCESS);
+        }
+
+        // 5. 새 토큰 발급 및 리프레시 토큰 회전
+        String newAccessToken = createAccessToken(email);
+        String newRefreshToken = createRefreshToken(email);
+        tokenService.saveRefreshToken(user.getId(), newRefreshToken);
+
+        // 6. 쿠키 갱신
+
+        // 리프레쉬 토큰 또한 계송 갱신시키는 회전형 토큰 전략 적용
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", newRefreshToken)
+                .httpOnly(true)
+                .path("/")
+                .maxAge(7 * 24 * 60 * 60)
+                .build();
+        res.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+        ResponseCookie accessCookie = ResponseCookie.from("accessToken", newAccessToken)
+                .httpOnly(true)
+                .path("/")
+                .maxAge(12 * 60 * 60)
+                .build();
+        res.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+
+        return TokenReissueResDto.builder()
+                .accessToken(newAccessToken)
+                .build();
     }
 
 

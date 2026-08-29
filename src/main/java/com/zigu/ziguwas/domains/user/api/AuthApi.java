@@ -9,6 +9,7 @@ import com.zigu.ziguwas.domains.user.dto.auth.request.PasswordResetReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.SignupReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.request.WithdrawReqDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.LoginResDto;
+import com.zigu.ziguwas.domains.user.dto.auth.response.TokenReissueResDto;
 import com.zigu.ziguwas.domains.user.dto.auth.response.WithdrawalCheckResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -110,6 +111,37 @@ public interface AuthApi {
                     }))
     })
     ResponseEntity<?> login(@Valid @RequestBody LoginReqDto dto, HttpServletResponse res);
+
+    @Operation(summary = "액세스 토큰 재발급", description = "쿠키에 담긴 리프레시 토큰을 검증하여 새로운 액세스 토큰과 리프레시 토큰을 재발급합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "재발급 성공",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = TokenReissueResDto.class),
+                            examples = {
+                            @ExampleObject(value = """
+                                    {
+                                        "accessToken": "eyJhbGciOiJIUzI1NiJ9..."
+                                    }
+                                    """)
+                    })),
+            @ApiResponse(responseCode = "400", description = "리프레시 토큰 만료 혹은 파싱 실패",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 400, \"message\": \"토큰 만료 혹은 파싱 에러\"}")
+                    })),
+            @ApiResponse(responseCode = "401", description = "access 토큰 오용 또는 로그아웃/탈퇴 등으로 무효화된 리프레시 토큰",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 401, \"message\": \"인증 정보가 올바르지 않습니다.\"}")
+                    })),
+            @ApiResponse(responseCode = "403", description = "리프레시 토큰 쿠키 없음",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 403, \"message\": \"인증 토큰이 존재하지 않습니다.\"}")
+                    })),
+            @ApiResponse(responseCode = "404", description = "토큰 정보에 해당하는 사용자를 찾을 수 없음",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 404, \"message\": \"사용자를 찾을 수 없습니다.\"}")
+                    }))
+    })
+    ResponseEntity<?> reissue(HttpServletRequest request, HttpServletResponse res);
 
     @Operation(summary = "로그아웃", description = "현재 액세스 토큰을 블랙리스트에 등록하고 리프레시 토큰을 삭제합니다.")
     @ApiResponses({
