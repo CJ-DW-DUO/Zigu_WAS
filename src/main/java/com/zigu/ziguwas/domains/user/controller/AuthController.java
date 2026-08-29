@@ -111,6 +111,21 @@ public class AuthController implements AuthApi {
     }
 
     /**
+     * 액세스 토큰 재발급 API
+     *
+     * @param request 리프레시 토큰 쿠키를 읽기 위한 요청 객체
+     * @param res 재발급된 토큰을 쿠키로 내려주기 위한 응답 객체
+     * @return 재발급된 AccessToken
+     */
+    @PostMapping("/reissue")
+    public ResponseEntity<?> reissue(
+            HttpServletRequest request,
+            HttpServletResponse res
+    ) {
+        return ResponseEntity.ok().body(authService.reissueToken(request, res));
+    }
+
+    /**
      * 로그아웃 API
      *
      * @param customUserDetails 인증 사용자 정보
