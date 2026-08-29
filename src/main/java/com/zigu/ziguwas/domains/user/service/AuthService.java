@@ -46,6 +46,9 @@ public class AuthService {
     // 회원가입용 이메일 인증 Redis key(이메일 그대로)와 겹치지 않도록 분리한 prefix
     private static final String PW_RESET_PREFIX = "PWRESET:";
 
+    // 현재 서비스 약관 버전 (약관 개정 시 갱신)
+    private static final String CURRENT_TERMS_VERSION = "v1.0";
+
     private final UserRepository userRepository;
     private final UniversityRepository universityRepository;
     private final JavaMailSender mailSender;
@@ -280,6 +283,8 @@ public class AuthService {
                 .password(passwordEncoder.encode(dto.getPassword()))
                 .univ(univ)
                 .profilePhotoUrl(dto.getProfileImageUrl())
+                .termsAgreed(dto.isTermsAgreed())
+                .termsVersion(CURRENT_TERMS_VERSION)
                 .veriStatus(VerificationStatus.CERTIFIED)
                 .notificationSetting(NotificationSetting.builder().build())
                 .build());

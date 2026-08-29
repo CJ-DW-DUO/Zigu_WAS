@@ -1,6 +1,7 @@
 package com.zigu.ziguwas.domains.user.dto.auth.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
@@ -23,5 +24,9 @@ public class SignupReqDto {
 
     @Schema(description = "프로필 이미지 URL", example = "https://s3.ap-northeast-2.amazonaws.com/bucket/profile.jpg")
     private String profileImageUrl;
+
+    @Schema(description = "약관 동의 여부 (동의해야 가입 가능)", example = "true")
+    @AssertTrue(message = "약관에 동의해야 합니다.")
+    private boolean termsAgreed;
 
 }

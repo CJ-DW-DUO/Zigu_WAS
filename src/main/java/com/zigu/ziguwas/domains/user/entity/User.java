@@ -72,6 +72,15 @@ public class User {
     @Column(name = "del_reson")
     private String delReson;
 
+    // 약관 동의 여부
+    @Builder.Default
+    @Column(name = "terms_agreed", nullable = false)
+    private boolean termsAgreed = false;
+
+    // 동의한 약관 버전 (예: v1.0)
+    @Column(name = "terms_version")
+    private String termsVersion;
+
     @Embedded
     private NotificationSetting notificationSetting;
 
