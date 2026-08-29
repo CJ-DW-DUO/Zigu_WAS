@@ -27,24 +27,39 @@ public class JwtUtil {
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
+    private static final String TOKEN_TYPE_CLAIM = "type";
+    private static final String ACCESS_TOKEN_TYPE = "access";
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
+
     // 1. Access 토큰 발급
     public String createAccessToken(String email) {
-        return generateToken(email, accessValid);
+        return generateToken(email, accessValid, ACCESS_TOKEN_TYPE);
     }
     // 2. Refresh 토큰 발급
     public String createRefreshToken(String email) {
-        return generateToken(email, refreshValid);
+        return generateToken(email, refreshValid, REFRESH_TOKEN_TYPE);
     }
 
     // 토큰 발급 종합
-    private String generateToken(String email, long validTime) {
+    private String generateToken(String email, long validTime, String type) {
         return Jwts.builder()
                 .subject(email)
+                .claim(TOKEN_TYPE_CLAIM, type) // 토큰 페이로드에 토큰 타입을 추가
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + validTime))
-//                .signWith(Keys.hmacShaKeyFor(secretKey.getEncoded()), SignatureAlgorithm.HS256)
                 .signWith(secretKey, Jwts.SIG.HS256)
                 .compact();
+    }
+
+    // 리프레시 토큰인지 확인 (재발급 엔드포인트에서 access 토큰이 잘못 들어오는 것을 방지)
+    public boolean isRefreshToken(String token) {
+        String type = Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get(TOKEN_TYPE_CLAIM, String.class);
+        return REFRESH_TOKEN_TYPE.equals(type);
     }
 
     public String getEmailFromToken(String token) {
