@@ -36,4 +36,12 @@ public class TokenService {
 
         redisService.deleteData(RT_PREFIX + userId);
     }
+
+    /**
+     * 재발급 시 쿠키로 들어온 리프레시 토큰과 대조하기 위해 Redis에 저장된 값을 조회
+     * (로그아웃/탈퇴로 이미 삭제됐다면 null이 반환되어 재발급이 거부됨)
+     */
+    public String getRefreshToken(Long userId) {
+        return redisService.getData(RT_PREFIX + userId);
+    }
 }
