@@ -52,6 +52,7 @@ public enum ErrorCode {
     TRADE_STATUS_NOT_INPROGRESSED(400, "거래가 대여중 상태가 아닙니다."),
     SELF_TRADE_NOT_ALLOWED(400, "자기 자신의 물건을 빌릴 수 없습니다."),
     ACTIVE_TRADE_EXISTS(400, "진행중인 거래가 있습니다." ),
+    TRADE_PERIOD_CONFLICT(409, "선택한 기간은 이미 대여 중입니다."),
 
     // 아이템 이미지 관련
     IMAGE_NOT_FOUND(404, "이미지를 찾을 수 없습니다." ),
