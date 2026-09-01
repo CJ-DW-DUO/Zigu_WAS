@@ -77,6 +77,22 @@ public class ChatService {
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
     }
+
+    /**
+     * 채팅방에 현재 참여중인(나가지 않은) 참여자 정보를 조회하는 서비스
+     *
+     * 참여자별 조회 하한선(visibleFrom)이 필요한 경우 {@link #validateParticipant} 대신 사용한다.
+     *
+     * @param chatRoomId 채팅방ID
+     * @param userId 사용자ID
+     * @return 참여자 엔티티
+     */
+    private ChatParticipant getActiveParticipant(String chatRoomId, Long userId) {
+        ChatParticipant participant = chatParticipantRepository.findByChatRoomIdAndUserId(chatRoomId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED_ACCESS));
+
+        if (participant.hasLeft()) {
+            // 이미 나간 채팅방이므로 접근 제한
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
 
