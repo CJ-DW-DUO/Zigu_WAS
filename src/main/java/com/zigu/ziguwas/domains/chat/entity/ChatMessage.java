@@ -3,6 +3,7 @@ package com.zigu.ziguwas.domains.chat.entity;
 import lombok.Builder;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -34,6 +35,9 @@ public class ChatMessage {
 
     private String message;
 
+    // 보관기간이 지난 메시지를 찾는 배치(ChatMessageRetentionScheduler)가 채팅방과 무관하게
+    // timestamp만으로 조회하므로, 복합 인덱스(chatRoomId + timestamp)와 별개로 단일 인덱스가 필요하다.
+    @Indexed
     private LocalDateTime timestamp;
 
     private String imageUrl;
