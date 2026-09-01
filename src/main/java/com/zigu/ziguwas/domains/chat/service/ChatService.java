@@ -98,6 +98,18 @@ public class ChatService {
 
         return participant;
     }
+
+    /**
+     * 참여자별 메시지 조회 하한선을 계산하는 서비스
+     *
+     * 나간 이력이 없다면 기준 시각을 반환하여 전체 대화 내역이 조회되도록 한다.
+     *
+     * @param participant 참여자
+     * @return 이 시각 이후의 메시지만 조회 대상이 된다
+     */
+    private LocalDateTime resolveVisibleFrom(ChatParticipant participant) {
+        // 나간 이력이 없을때 자바에서 최초 시각을 저장하는 MESSAGE_EPOCH을 반환하여 전체 대화 내역이 조회되도록 한다.
+        return (participant.getVisibleFrom() != null) ? participant.getVisibleFrom() : MESSAGE_EPOCH;
     }
 
     /**
