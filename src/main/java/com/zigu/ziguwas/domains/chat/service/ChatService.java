@@ -533,15 +533,58 @@ public class ChatService {
                 .build();
     }
 
-//    @Transactional
-//    public void deleteChatRoom(Long chatRoomId) {
-//
-//        if(!chatRoomRepository.existsById(chatRoomId)) {
-//            throw new CustomException(ErrorCode.CHATROOM_NOT_FOUND);
-//        }
-//
-//        chatRoomRepository.deleteById(chatRoomId);
-//    }
+    /**
+     * 채팅방 나가기
+     *
+     * 채팅방을 실제로 삭제하지 않고, 요청한 사용자의 참여 정보에 나간 시각만 기록하여
+     * 해당 사용자의 목록에서만 숨긴다. 이후 상대방이 새 메시지를 보내면 채팅방이 다시
+     * 활성화되며, 이때 나가기 이전의 대화 내역은 보이지 않는다.
+     *
+     * 단, 모든 참여자가 나간 채팅방은 아무도 메시지를 보낼 수 없어 다시 활성화될 방법이
+     * 없으므로 메시지와 함께 실제로 삭제한다.
+     *
+     * @param customUserDetails 로그인정보
+     * @param chatRoomId 채팅방ID
+     */
+    public void leaveChatRoom(CustomUserDetails customUserDetails, String chatRoomId) {
+
+        // 1. 사용자 조회
+        User user = userRepository.findByEmail(customUserDetails.getUsername()).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        // 2. 채팅방 존재 여부 확인
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(
+                () -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND)
+        );
+
+        // 3. 참여자 조회 (해당 채팅방에 속하지 않은 사용자라면 접근 제한)
+        ChatParticipant participant = chatParticipantRepository.findByChatRoomIdAndUserId(chatRoom.getId(), user.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED_ACCESS));
+
+        // 4. 이미 나간 채팅방인지 확인
+        if (participant.hasLeft()) {
+            throw new CustomException(ErrorCode.ALREADY_LEFT_CHATROOM);
+        }
+
+        // 5. 나간 시각 기록 (이 시각이 곧 다음 입장 시의 조회 하한선이 된다)
+        participant.leave(LocalDateTime.now());
+        chatParticipantRepository.save(participant);
+
+        // 6. 남아있는 참여자가 있는지 확인
+        boolean hasRemainingParticipant = chatParticipantRepository.findAllByChatRoomId(chatRoom.getId())
+                .stream()
+                .anyMatch(p -> !p.hasLeft());
+
+        // 7. 모두 나갔다면 채팅방을 실제로 정리
+        // 참여 정보보다 채팅방을 먼저 지우면 갈 곳 없는 참여 정보가 남아 목록 조회 전체가 실패할 수 있으므로
+        // 메시지 -> 참여 정보 -> 채팅방 순서로 삭제한다.
+        if (!hasRemainingParticipant) {
+            chatMessageRepository.deleteAllByChatRoomId(chatRoom.getId());
+            chatParticipantRepository.deleteAllByChatRoomId(chatRoom.getId());
+            chatRoomRepository.deleteById(chatRoom.getId());
+        }
+    }
 
 
 }
