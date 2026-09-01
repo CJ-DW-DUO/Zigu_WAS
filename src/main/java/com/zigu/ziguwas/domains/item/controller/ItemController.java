@@ -6,6 +6,8 @@ import com.zigu.ziguwas.domains.item.dto.request.ItemRegisterReqDto;
 import com.zigu.ziguwas.domains.item.dto.request.ItemUpdateReqDto;
 import com.zigu.ziguwas.domains.item.dto.response.ItemResDto;
 import com.zigu.ziguwas.domains.item.service.ItemService;
+import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockRangeResDto;
+import com.zigu.ziguwas.domains.trade.service.TradeService;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ import java.util.List;
 public class ItemController implements ItemApi {
 
     private final ItemService itemService;
+    private final TradeService tradeService;
 
     /**
      * 아이템의 기본 텍스트 정보를 먼저 등록합니다.
@@ -130,6 +133,19 @@ public class ItemController implements ItemApi {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * 아이템의 대여 불가 기간 목록을 조회합니다.
+     * @param itemId 조회할 아이템 ID
+     * @param customUserDetails 현재 로그인한 사용자의 시큐리티 인증 정보
+     * @return 대여 불가 기간 목록
+     */
+    @GetMapping("/{itemId}/block-ranges")
+    public ResponseEntity<ItemBlockRangeResDto> getItemBlockRanges(
+            @PathVariable("itemId") Long itemId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        return ResponseEntity.ok(tradeService.getBlockRanges(itemId));
+    }
 
 }
 

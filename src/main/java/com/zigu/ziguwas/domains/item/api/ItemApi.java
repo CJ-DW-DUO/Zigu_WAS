@@ -4,6 +4,7 @@ import com.zigu.ziguwas.domains.item.dto.request.ItemDelReqDto;
 import com.zigu.ziguwas.domains.item.dto.request.ItemRegisterReqDto;
 import com.zigu.ziguwas.domains.item.dto.request.ItemUpdateReqDto;
 import com.zigu.ziguwas.domains.item.dto.response.ItemResDto;
+import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockRangeResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -206,6 +207,29 @@ public interface ItemApi {
     })
     @GetMapping("/{itemId}")
     ResponseEntity<ItemResDto> getItemDetail(
+            @Parameter(description = "조회할 아이템 ID", required = true, example = "1")
+            @PathVariable("itemId") Long itemId,
+
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
+    @Operation(
+            summary = "아이템 대여 불가 기간 조회",
+            description = "승인/진행 중인 거래로 인해 대여가 불가능한 기간 목록을 반환합니다. " +
+                    "예약 캘린더에서 이미 차단된 날짜를 표시하는 데 사용합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = ItemBlockRangeResDto.class))
+            ),
+            @ApiResponse(responseCode = "404", description = "아이템 없음",
+                    content = @Content(examples = @ExampleObject(value = """
+                        { "status": 404, "message": "아이템을 찾을 수 없습니다." }
+                        """))
+            )
+    })
+    @GetMapping("/{itemId}/block-ranges")
+    ResponseEntity<ItemBlockRangeResDto> getItemBlockRanges(
             @Parameter(description = "조회할 아이템 ID", required = true, example = "1")
             @PathVariable("itemId") Long itemId,
 
