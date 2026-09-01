@@ -467,6 +467,12 @@ public class ChatService {
                         chatParticipantRepository.save(participant);
                     });
 
+            // 5-2. 모두 나가서 폐쇄된 채팅방이었다면 폐쇄를 해제해 삭제 대상에서 제외한다.
+            if (room.isClosed()) {
+                room.reopen();
+                chatRoomRepository.save(room);
+            }
+
             return room.getId();
         }
 
@@ -540,8 +546,10 @@ public class ChatService {
      * 해당 사용자의 목록에서만 숨긴다. 이후 상대방이 새 메시지를 보내면 채팅방이 다시
      * 활성화되며, 이때 나가기 이전의 대화 내역은 보이지 않는다.
      *
-     * 단, 모든 참여자가 나간 채팅방은 아무도 메시지를 보낼 수 없어 다시 활성화될 방법이
-     * 없으므로 메시지와 함께 실제로 삭제한다.
+     * 단, 모든 참여자가 나간 채팅방은 아무도 메시지를 보낼 수 없어 사실상 버려진 방이므로
+     * 폐쇄 시각을 기록해 둔다. 이 시각으로부터 보관기간이 지나면 배치가 메시지와 함께 삭제한다.
+     * 즉시 삭제하지 않는 이유는, 마지막 한 명이 나가는 순간 그동안의 대화 내역이
+     * 곧바로 사라지는 것을 막기 위함이다.
      *
      * @param customUserDetails 로그인정보
      * @param chatRoomId 채팅방ID
@@ -576,13 +584,11 @@ public class ChatService {
                 .stream()
                 .anyMatch(p -> !p.hasLeft());
 
-        // 7. 모두 나갔다면 채팅방을 실제로 정리
-        // 참여 정보보다 채팅방을 먼저 지우면 갈 곳 없는 참여 정보가 남아 목록 조회 전체가 실패할 수 있으므로
-        // 메시지 -> 참여 정보 -> 채팅방 순서로 삭제한다.
+        // 7. 마지막 참여자였다면 채팅방을 폐쇄 상태로 표시
+        // 실제 삭제는 보관기간이 지난 뒤 ChatRoomRetentionScheduler가 처리한다.
         if (!hasRemainingParticipant) {
-            chatMessageRepository.deleteAllByChatRoomId(chatRoom.getId());
-            chatParticipantRepository.deleteAllByChatRoomId(chatRoom.getId());
-            chatRoomRepository.deleteById(chatRoom.getId());
+            chatRoom.close(LocalDateTime.now());
+            chatRoomRepository.save(chatRoom);
         }
     }
 
