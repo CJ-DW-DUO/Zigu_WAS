@@ -14,6 +14,7 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -153,13 +154,24 @@ public class ChatController implements ChatApi {
         chatService.branchMessage(chatRoomId, dto, email);
     }
 
-//    @DeleteMapping("/api/v1/chatrooms/{chatRoomId}")
-//    public ResponseEntity<?> deleteChatroom(
-//            @PathVariable Long chatRoomId
-//    ){
-//        chatService.deleteChatRoom(chatRoomId);
-//        return ResponseEntity.ok().build();
-//    }
+    /**
+     * 채팅방 나가기 API
+     *
+     * 채팅방을 실제로 삭제하는 것이 아니라 요청한 사용자의 목록에서만 숨긴다.
+     * 상대방이 새 메시지를 보내면 채팅방이 다시 나타나며, 이때 나가기 이전의 대화는 보이지 않는다.
+     *
+     * @param customUserDetails 로그인정보
+     * @param chatRoomId 채팅방ID
+     * @return 응답 본문 없음
+     */
+    @DeleteMapping("/api/v1/chatrooms/{chatRoomId}")
+    public ResponseEntity<?> leaveChatroom(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable String chatRoomId
+    ){
+        chatService.leaveChatRoom(customUserDetails, chatRoomId);
+        return ResponseEntity.noContent().build();
+    }
 
 
 }

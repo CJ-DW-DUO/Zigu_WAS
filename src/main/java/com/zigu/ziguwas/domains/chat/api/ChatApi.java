@@ -25,7 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Tag(name = "Chat API", description = "채팅 관련 API 입니다.")
 public interface ChatApi {
 
-    @Operation(summary = "채팅방 목록 조회", description = "사용자가 참여 중인 모든 채팅방의 미리보기 목록을 조회합니다.")
+    @Operation(summary = "채팅방 목록 조회", description = "사용자가 참여 중인 모든 채팅방의 미리보기 목록을 조회합니다. 나간 채팅방은 목록에 포함되지 않습니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = ChatRoomPreviewResDto.class)))
@@ -35,7 +35,7 @@ public interface ChatApi {
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
     );
 
-    @Operation(summary = "채팅방 상세 조회", description = "특정 채팅방의 상세 대화 내역 및 정보를 조회합니다.")
+    @Operation(summary = "채팅방 상세 조회", description = "특정 채팅방의 상세 대화 내역 및 정보를 조회합니다. 이전에 채팅방을 나간 적이 있다면 나간 시각 이후의 메시지만 조회됩니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = ChatMessageDetailResDto.class)))
@@ -118,5 +118,41 @@ public interface ChatApi {
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @Parameter(description = "채팅방 ID", required = true) @PathVariable String chatRoomId,
             @Parameter(description = "업로드할 이미지 파일", required = true) MultipartFile image
+    );
+
+    @Operation(summary = "채팅방 나가기", description = """
+            요청한 사용자의 채팅방 목록에서 해당 채팅방을 숨깁니다.
+
+            - 채팅방이 즉시 삭제되지는 않으며, 상대방에게는 나갔다는 사실이 표시되지 않습니다.
+            - 나간 뒤에는 채팅방 목록 조회/상세 조회/메시지 전송/구독이 모두 차단됩니다.
+            - 상대방이 새 메시지를 보내면 채팅방이 다시 목록에 나타나며, 이때 나가기 이전의 대화 내역은 보이지 않고 새로 받은 메시지부터 보입니다.
+            - 두 참여자가 모두 나간 경우에는 채팅방과 메시지가 실제로 삭제됩니다.
+            """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "나가기 성공 (응답 본문 없음)"),
+            @ApiResponse(responseCode = "400", description = "이미 나간 채팅방",
+                    content = @Content(examples = @ExampleObject(value = """
+                            { "status": 400, "message": "이미 나간 채팅방입니다." }
+                            """))
+            ),
+            @ApiResponse(responseCode = "403", description = "채팅방 참여자가 아님",
+                    content = @Content(examples = @ExampleObject(value = """
+                            { "status": 403, "message": "허용되지 않은 접근입니다." }
+                            """))
+            ),
+            @ApiResponse(responseCode = "404", description = "채팅방 또는 사용자 정보를 찾을 수 없음",
+                    content = @Content(examples = {
+                            @ExampleObject(name = "사용자 없음", value = """
+                                    { "status": 404, "message": "사용자를 찾을 수 없습니다." }
+                                    """),
+                            @ExampleObject(name = "채팅방 없음", value = """
+                                    { "status": 404, "message": "해당 채팅방은 존재하지 않습니다." }
+                                    """)
+                    })
+            )
+    })
+    ResponseEntity<?> leaveChatroom(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @Parameter(description = "나갈 채팅방 ID", required = true) @PathVariable String chatRoomId
     );
 }
