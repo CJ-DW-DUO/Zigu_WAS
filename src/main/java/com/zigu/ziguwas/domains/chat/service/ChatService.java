@@ -58,17 +58,58 @@ public class ChatService {
     private final SimpMessageSendingOperations messagingTemplate;
     private final S3Service s3Service;
 
+    // 채팅방을 나간 적이 없는 참여자의 조회 하한선으로 사용하는 기준 시각.
+    // 모든 메시지의 timestamp는 이 시각보다 뒤이므로, 하한선이 없는 경우와 동일하게 동작한다.
+    // (하한선 유무에 따라 쿼리를 분기하지 않고 하나의 인덱스만 사용하기 위함)
+    private static final LocalDateTime MESSAGE_EPOCH = LocalDateTime.of(1970, 1, 1, 0, 0);
+
     /**
      * 채팅방에 해당 유저가 존재하는지 확인하는 서비스
+     *
+     * 채팅방을 나간 사용자는 목록에서 해당 방이 숨겨진 상태이므로 참여자로 보지 않는다.
      *
      * @param room 채팅방
      * @param user 사용자
      */
     private void validateParticipant(ChatRoom room, User user) {
-        if (!chatParticipantRepository.existsByChatRoomIdAndUserId(room.getId(), user.getId())) {
-            // 채팅방에 해당 유저가 없으므로 접근 제한
+        if (!chatParticipantRepository.existsByChatRoomIdAndUserIdAndLeftAtIsNull(room.getId(), user.getId())) {
+            // 채팅방에 해당 유저가 없거나 이미 나갔으므로 접근 제한
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
+    }
+
+    /**
+     * 채팅방에 현재 참여중인(나가지 않은) 참여자 정보를 조회하는 서비스
+     *
+     * 참여자별 조회 하한선(visibleFrom)이 필요한 경우 {@link #validateParticipant} 대신 사용한다.
+     *
+     * @param chatRoomId 채팅방ID
+     * @param userId 사용자ID
+     * @return 참여자 엔티티
+     */
+    private ChatParticipant getActiveParticipant(String chatRoomId, Long userId) {
+        ChatParticipant participant = chatParticipantRepository.findByChatRoomIdAndUserId(chatRoomId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED_ACCESS));
+
+        if (participant.hasLeft()) {
+            // 이미 나간 채팅방이므로 접근 제한
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        return participant;
+    }
+
+    /**
+     * 참여자별 메시지 조회 하한선을 계산하는 서비스
+     *
+     * 나간 이력이 없다면 기준 시각을 반환하여 전체 대화 내역이 조회되도록 한다.
+     *
+     * @param participant 참여자
+     * @return 이 시각 이후의 메시지만 조회 대상이 된다
+     */
+    private LocalDateTime resolveVisibleFrom(ChatParticipant participant) {
+        // 나간 이력이 없을때 자바에서 최초 시각을 저장하는 MESSAGE_EPOCH을 반환하여 전체 대화 내역이 조회되도록 한다.
+        return (participant.getVisibleFrom() != null) ? participant.getVisibleFrom() : MESSAGE_EPOCH;
     }
 
     /**
@@ -84,8 +125,8 @@ public class ChatService {
                 () -> new CustomException(ErrorCode.USER_NOT_FOUND)
         );
 
-        // 2. 사용자가 속한 채팅방 조회
-        List<ChatParticipant> participants = chatParticipantRepository.findAllByUserId(user.getId());
+        // 2. 사용자가 속한 채팅방 조회 (나간 채팅방은 목록에서 제외)
+        List<ChatParticipant> participants = chatParticipantRepository.findAllByUserIdAndLeftAtIsNull(user.getId());
 
         // 3. 사용자가 속한 방 목록 조회
         List<ChatRoomPreviewResDto> dtos = new ArrayList<>();
@@ -126,7 +167,11 @@ public class ChatService {
             }
 
             // 3-3. 마지막으로 보낸 메시지 조회
-            ChatMessage lastMessage = chatMessageRepository.findFirstByChatRoomIdOrderByTimestampDesc(chatParticipant.getChatRoomId()).orElse(null);
+            // 나갔다가 다시 활성화된 채팅방이라면 나가기 이전의 메시지는 미리보기에 노출하지 않는다.
+            ChatMessage lastMessage = chatMessageRepository.findFirstByChatRoomIdAndTimestampAfterOrderByTimestampDesc(
+                    chatParticipant.getChatRoomId(),
+                    resolveVisibleFrom(chatParticipant)
+            ).orElse(null);
 
             // 3-4. 마지막으로 대화한 시각 조회
 
@@ -157,6 +202,8 @@ public class ChatService {
     /**
      * 채팅방 상세조회
      *
+     * 이전에 채팅방을 나간 적이 있다면, 나간 시각 이후의 메시지만 조회된다.
+     *
      * @param customUserDetails 로그인정보
      * @param chatRoomId 채팅방ID
      * @param page 페이지
@@ -175,15 +222,19 @@ public class ChatService {
                 () -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND)
         );
 
-        // 3. 참가자 유효성 검증
-        validateParticipant(room, user);
+        // 3. 참가자 유효성 검증 (조회 하한선을 알아내기 위해 참여자 정보까지 함께 가져온다)
+        ChatParticipant participant = getActiveParticipant(room.getId(), user.getId());
 
         // 4. 페이지 범위 설정하기
         Pageable pageable = PageRequest.of(page, size,
                 Sort.by("timestamp").descending());
 
-        // 5. 채팅방의 메시지 가져오기
-        Slice<ChatMessage> messages = chatMessageRepository.findByChatRoomId(room.getId(), pageable);
+        // 5. 채팅방의 메시지 가져오기 (나가기 이전의 대화 내역은 제외)
+        Slice<ChatMessage> messages = chatMessageRepository.findByChatRoomIdAndTimestampAfter(
+                room.getId(),
+                resolveVisibleFrom(participant),
+                pageable
+        );
         List<ChatMessageDetailResDto> dtos = new ArrayList<>();
 
         // 6. 메시지 dto에 붙이기
@@ -249,23 +300,15 @@ public class ChatService {
      * 실시간 메시지 저장
      *
      * @param content 메시지
-     * @param email 이메일
-     * @param chatRoomId 채팅방ID
+     * @param sender 발신자
+     * @param chatRoom 채팅방
      * @param hasImage 이미지 포함 여부
      */
-    private void saveMessage(String content, String email, String chatRoomId, boolean hasImage) {
-        // 1. 발신자 정보 조회
-        User sender = userRepository.findByEmail(email)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    private void saveMessage(String content, User sender, ChatRoom chatRoom, boolean hasImage) {
 
-        // 2. 해당 채팅방 존재 여부 확인
-        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND));
+        // 발신자 조회, 채팅방 조회, 참여자 권한 검증은 호출부(branchMessage)에서 이미 수행되었다.
 
-        // 3. 참여자 권한 검증 (선택 사항: 보낸 사람이 해당 방의 참여자인지 확인)
-        validateParticipant(chatRoom, sender);
-
-        // 4. 메시지인지 이미지인지 분기
+        // 1. 메시지인지 이미지인지 분기
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatRoomId(chatRoom.getId())
                 .senderId(sender.getId())
@@ -274,17 +317,24 @@ public class ChatService {
                 .timestamp(LocalDateTime.now())
                 .build();
 
-        // 5. 채팅 저장
+        // 2. 채팅 저장
         chatMessageRepository.save(chatMessage);
 
-        // 6. 같은 채팅방의 참여자 중 발신자를 제외한 사용자에게 알림 이벤트 발행
+        // 3. 같은 채팅방의 참여자 중 발신자를 제외한 사용자에게 알림 이벤트 발행
         List<ChatParticipant> participants = chatParticipantRepository.findAllByChatRoomId(chatRoom.getId());
         for (ChatParticipant participant : participants) {
             if (participant.getUserId().equals(sender.getId())) {
                 continue;
             }
 
-            // 5-1. 실제 알림 저장은 NotificationEventListener가 AFTER_COMMIT 시점에 처리
+            // 3-1. 수신자가 채팅방을 나간 상태라면 다시 활성화하여 목록에 노출시킨다.
+            // 조회 하한선(visibleFrom)은 그대로 두므로 수신자에게는 이 메시지부터 보인다.
+            if (participant.hasLeft()) {
+                participant.rejoin();
+                chatParticipantRepository.save(participant);
+            }
+
+            // 3-2. 실제 알림 저장은 NotificationEventListener가 AFTER_COMMIT 시점에 처리
 
             eventPublisher.publishEvent(new NotificationCreatedEvent(
                     participant.getUserId(),
@@ -320,7 +370,16 @@ public class ChatService {
         User sender = userRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 3. 메시지 전송
+        // 3. 채팅방 존재 여부 확인
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND));
+
+        // 4. 참여자 권한 검증
+        // 나간 사용자가 보낸 메시지가 저장되기 전에 상대방 화면에 잠깐 노출되는 것을 막기 위해
+        // 반드시 전송(convertAndSend)보다 앞에서 검증한다.
+        validateParticipant(chatRoom, sender);
+
+        // 5. 메시지 전송
         messagingTemplate.convertAndSend("/sub/chat/room/" + chatRoomId,
                 ChatSendInfoDto.builder()
                         .senderId(sender.getId())
@@ -331,11 +390,11 @@ public class ChatService {
                         .build()
         );
 
-        // 4. 메시지 저장
+        // 6. 메시지 저장
         saveMessage(
                 dto.hasImage() ? dto.getImageUrl() : dto.getMessage(),
-                email,
-                chatRoomId,
+                sender,
+                chatRoom,
                 dto.hasImage()
         );
     }
@@ -397,15 +456,33 @@ public class ChatService {
                 .findFirst();
 
         if (existingRoom.isPresent()) {
-            return existingRoom.get().getId();
+            ChatRoom room = existingRoom.get();
+
+            // 5-1. 이전에 나갔던 채팅방이라면 다시 활성화한다.
+            // 조회 하한선(visibleFrom)은 유지하므로 나가기 이전의 대화 내역은 계속 보이지 않는다.
+            chatParticipantRepository.findByChatRoomIdAndUserId(room.getId(), sender.getId())
+                    .filter(ChatParticipant::hasLeft)
+                    .ifPresent(participant -> {
+                        participant.rejoin();
+                        chatParticipantRepository.save(participant);
+                    });
+
+            // 5-2. 모두 나가서 폐쇄된 채팅방이었다면 폐쇄를 해제해 삭제 대상에서 제외한다.
+            if (room.isClosed()) {
+                room.reopen();
+                chatRoomRepository.save(room);
+            }
+
+            return room.getId();
         }
 
         // 6. 채팅방 생성 (존재하는 채팅방이 없을 경우)
         ChatRoom chatRoom = chatRoomRepository.save(ChatRoom.builder().itemId(item.getId()).build());
 
         // 7. 참여자 등록 (발신자, 수신자 모두 등록)
-        chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(chatRoom.getId()).userId(sender.getId()).isParticipating(true).build());
-        chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(chatRoom.getId()).userId(receiver.getId()).isParticipating(true).build());
+        // leftAt과 visibleFrom은 null로 두어 참여중 + 전체 대화 조회 가능 상태로 시작한다.
+        chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(chatRoom.getId()).userId(sender.getId()).build());
+        chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(chatRoom.getId()).userId(receiver.getId()).build());
 
         // 8. 채팅방 ID 반환
         return chatRoom.getId();
@@ -462,15 +539,58 @@ public class ChatService {
                 .build();
     }
 
-//    @Transactional
-//    public void deleteChatRoom(Long chatRoomId) {
-//
-//        if(!chatRoomRepository.existsById(chatRoomId)) {
-//            throw new CustomException(ErrorCode.CHATROOM_NOT_FOUND);
-//        }
-//
-//        chatRoomRepository.deleteById(chatRoomId);
-//    }
+    /**
+     * 채팅방 나가기
+     *
+     * 채팅방을 실제로 삭제하지 않고, 요청한 사용자의 참여 정보에 나간 시각만 기록하여
+     * 해당 사용자의 목록에서만 숨긴다. 이후 상대방이 새 메시지를 보내면 채팅방이 다시
+     * 활성화되며, 이때 나가기 이전의 대화 내역은 보이지 않는다.
+     *
+     * 단, 모든 참여자가 나간 채팅방은 아무도 메시지를 보낼 수 없어 사실상 버려진 방이므로
+     * 폐쇄 시각을 기록해 둔다. 이 시각으로부터 보관기간이 지나면 배치가 메시지와 함께 삭제한다.
+     * 즉시 삭제하지 않는 이유는, 마지막 한 명이 나가는 순간 그동안의 대화 내역이
+     * 곧바로 사라지는 것을 막기 위함이다.
+     *
+     * @param customUserDetails 로그인정보
+     * @param chatRoomId 채팅방ID
+     */
+    public void leaveChatRoom(CustomUserDetails customUserDetails, String chatRoomId) {
+
+        // 1. 사용자 조회
+        User user = userRepository.findByEmail(customUserDetails.getUsername()).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        // 2. 채팅방 존재 여부 확인
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(
+                () -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND)
+        );
+
+        // 3. 참여자 조회 (해당 채팅방에 속하지 않은 사용자라면 접근 제한)
+        ChatParticipant participant = chatParticipantRepository.findByChatRoomIdAndUserId(chatRoom.getId(), user.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED_ACCESS));
+
+        // 4. 이미 나간 채팅방인지 확인
+        if (participant.hasLeft()) {
+            throw new CustomException(ErrorCode.ALREADY_LEFT_CHATROOM);
+        }
+
+        // 5. 나간 시각 기록 (이 시각이 곧 다음 입장 시의 조회 하한선이 된다)
+        participant.leave(LocalDateTime.now());
+        chatParticipantRepository.save(participant);
+
+        // 6. 남아있는 참여자가 있는지 확인
+        boolean hasRemainingParticipant = chatParticipantRepository.findAllByChatRoomId(chatRoom.getId())
+                .stream()
+                .anyMatch(p -> !p.hasLeft());
+
+        // 7. 마지막 참여자였다면 채팅방을 폐쇄 상태로 표시
+        // 실제 삭제는 보관기간이 지난 뒤 ChatRoomRetentionScheduler가 처리한다.
+        if (!hasRemainingParticipant) {
+            chatRoom.close(LocalDateTime.now());
+            chatRoomRepository.save(chatRoom);
+        }
+    }
 
 
 }
