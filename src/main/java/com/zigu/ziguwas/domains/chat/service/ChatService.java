@@ -125,8 +125,8 @@ public class ChatService {
                 () -> new CustomException(ErrorCode.USER_NOT_FOUND)
         );
 
-        // 2. 사용자가 속한 채팅방 조회
-        List<ChatParticipant> participants = chatParticipantRepository.findAllByUserId(user.getId());
+        // 2. 사용자가 속한 채팅방 조회 (나간 채팅방은 목록에서 제외)
+        List<ChatParticipant> participants = chatParticipantRepository.findAllByUserIdAndLeftAtIsNull(user.getId());
 
         // 3. 사용자가 속한 방 목록 조회
         List<ChatRoomPreviewResDto> dtos = new ArrayList<>();
@@ -167,7 +167,11 @@ public class ChatService {
             }
 
             // 3-3. 마지막으로 보낸 메시지 조회
-            ChatMessage lastMessage = chatMessageRepository.findFirstByChatRoomIdOrderByTimestampDesc(chatParticipant.getChatRoomId()).orElse(null);
+            // 나갔다가 다시 활성화된 채팅방이라면 나가기 이전의 메시지는 미리보기에 노출하지 않는다.
+            ChatMessage lastMessage = chatMessageRepository.findFirstByChatRoomIdAndTimestampAfterOrderByTimestampDesc(
+                    chatParticipant.getChatRoomId(),
+                    resolveVisibleFrom(chatParticipant)
+            ).orElse(null);
 
             // 3-4. 마지막으로 대화한 시각 조회
 
@@ -198,6 +202,8 @@ public class ChatService {
     /**
      * 채팅방 상세조회
      *
+     * 이전에 채팅방을 나간 적이 있다면, 나간 시각 이후의 메시지만 조회된다.
+     *
      * @param customUserDetails 로그인정보
      * @param chatRoomId 채팅방ID
      * @param page 페이지
@@ -216,15 +222,19 @@ public class ChatService {
                 () -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND)
         );
 
-        // 3. 참가자 유효성 검증
-        validateParticipant(room, user);
+        // 3. 참가자 유효성 검증 (조회 하한선을 알아내기 위해 참여자 정보까지 함께 가져온다)
+        ChatParticipant participant = getActiveParticipant(room.getId(), user.getId());
 
         // 4. 페이지 범위 설정하기
         Pageable pageable = PageRequest.of(page, size,
                 Sort.by("timestamp").descending());
 
-        // 5. 채팅방의 메시지 가져오기
-        Slice<ChatMessage> messages = chatMessageRepository.findByChatRoomId(room.getId(), pageable);
+        // 5. 채팅방의 메시지 가져오기 (나가기 이전의 대화 내역은 제외)
+        Slice<ChatMessage> messages = chatMessageRepository.findByChatRoomIdAndTimestampAfter(
+                room.getId(),
+                resolveVisibleFrom(participant),
+                pageable
+        );
         List<ChatMessageDetailResDto> dtos = new ArrayList<>();
 
         // 6. 메시지 dto에 붙이기
