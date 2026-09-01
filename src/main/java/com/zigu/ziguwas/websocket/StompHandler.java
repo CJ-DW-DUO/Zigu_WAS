@@ -78,8 +78,8 @@ public class StompHandler implements ChannelInterceptor {
                         () -> new CustomException(ErrorCode.USER_NOT_FOUND)
                 );
 
-                // 이 채팅방의 참여자가 맞는지 검사
-                boolean isParticipant = chatParticipantRepository.existsByChatRoomIdAndUserId(
+                // 이 채팅방의 참여자가 맞는지 검사 (나간 사용자는 구독할 수 없음)
+                boolean isParticipant = chatParticipantRepository.existsByChatRoomIdAndUserIdAndLeftAtIsNull(
                         chatRoomId, user.getId()
                 );
 
