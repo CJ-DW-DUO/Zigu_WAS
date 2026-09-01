@@ -58,17 +58,30 @@ public class ChatService {
     private final SimpMessageSendingOperations messagingTemplate;
     private final S3Service s3Service;
 
+    // 채팅방을 나간 적이 없는 참여자의 조회 하한선으로 사용하는 기준 시각.
+    // 모든 메시지의 timestamp는 이 시각보다 뒤이므로, 하한선이 없는 경우와 동일하게 동작한다.
+    // (하한선 유무에 따라 쿼리를 분기하지 않고 하나의 인덱스만 사용하기 위함)
+    private static final LocalDateTime MESSAGE_EPOCH = LocalDateTime.of(1970, 1, 1, 0, 0);
+
     /**
      * 채팅방에 해당 유저가 존재하는지 확인하는 서비스
+     *
+     * 채팅방을 나간 사용자는 목록에서 해당 방이 숨겨진 상태이므로 참여자로 보지 않는다.
      *
      * @param room 채팅방
      * @param user 사용자
      */
     private void validateParticipant(ChatRoom room, User user) {
-        if (!chatParticipantRepository.existsByChatRoomIdAndUserId(room.getId(), user.getId())) {
-            // 채팅방에 해당 유저가 없으므로 접근 제한
+        if (!chatParticipantRepository.existsByChatRoomIdAndUserIdAndLeftAtIsNull(room.getId(), user.getId())) {
+            // 채팅방에 해당 유저가 없거나 이미 나갔으므로 접근 제한
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
+    }
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        return participant;
+    }
     }
 
     /**
