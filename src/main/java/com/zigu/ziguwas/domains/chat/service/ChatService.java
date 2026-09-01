@@ -456,15 +456,27 @@ public class ChatService {
                 .findFirst();
 
         if (existingRoom.isPresent()) {
-            return existingRoom.get().getId();
+            ChatRoom room = existingRoom.get();
+
+            // 5-1. 이전에 나갔던 채팅방이라면 다시 활성화한다.
+            // 조회 하한선(visibleFrom)은 유지하므로 나가기 이전의 대화 내역은 계속 보이지 않는다.
+            chatParticipantRepository.findByChatRoomIdAndUserId(room.getId(), sender.getId())
+                    .filter(ChatParticipant::hasLeft)
+                    .ifPresent(participant -> {
+                        participant.rejoin();
+                        chatParticipantRepository.save(participant);
+                    });
+
+            return room.getId();
         }
 
         // 6. 채팅방 생성 (존재하는 채팅방이 없을 경우)
         ChatRoom chatRoom = chatRoomRepository.save(ChatRoom.builder().itemId(item.getId()).build());
 
         // 7. 참여자 등록 (발신자, 수신자 모두 등록)
-        chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(chatRoom.getId()).userId(sender.getId()).isParticipating(true).build());
-        chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(chatRoom.getId()).userId(receiver.getId()).isParticipating(true).build());
+        // leftAt과 visibleFrom은 null로 두어 참여중 + 전체 대화 조회 가능 상태로 시작한다.
+        chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(chatRoom.getId()).userId(sender.getId()).build());
+        chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(chatRoom.getId()).userId(receiver.getId()).build());
 
         // 8. 채팅방 ID 반환
         return chatRoom.getId();
