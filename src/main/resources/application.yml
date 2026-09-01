@@ -25,6 +25,12 @@ app:
   swagger:
     server-url: ${SWAGGER_SERVER_URL:http://localhost:8080}
 
+chat:
+  message:
+    # 채팅 메시지 보관기간(일). 이 기간이 지난 메시지는 매일 새벽 4시 배치가
+    # S3 이미지와 함께 영구 삭제한다. (ChatMessageRetentionScheduler)
+    retention-days: 90
+
 
 #server:
 #  port: 8443
