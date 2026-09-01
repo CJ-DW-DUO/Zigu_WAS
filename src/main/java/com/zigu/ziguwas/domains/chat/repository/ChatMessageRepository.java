@@ -6,6 +6,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface ChatMessageRepository extends MongoRepository<ChatMessage, String> {
@@ -41,4 +42,22 @@ public interface ChatMessageRepository extends MongoRepository<ChatMessage, Stri
      * @param chatRoomId 채팅방ID
      */
     void deleteAllByChatRoomId(String chatRoomId);
+
+    /**
+     * 보관기간이 지난 메시지를 오래된 순으로 조회합니다.
+     *
+     * 한 번에 전부 들고 오면 메모리를 크게 쓰므로, Pageable로 배치 크기만큼 끊어서 가져온다.
+     *
+     * @param timestamp 보관 기준 시각 (이 시각보다 앞선 메시지가 삭제 대상)
+     * @param pageable 배치 크기와 정렬
+     * @return 삭제 대상 메시지 목록
+     */
+    List<ChatMessage> findByTimestampBefore(LocalDateTime timestamp, Pageable pageable);
+
+    /**
+     * 주어진 ID 목록에 해당하는 메시지를 한 번의 쿼리로 삭제합니다.
+     *
+     * @param ids 삭제할 메시지 ID 목록
+     */
+    void deleteAllByIdIn(List<String> ids);
 }
