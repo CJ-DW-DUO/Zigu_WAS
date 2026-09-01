@@ -101,9 +101,12 @@ public class Trade {
         return tradeStdate.plusDays(period - 1);
     }
 
-    public void setDates(LocalDate startDate, LocalDate endDate, LocalDate resDate) {
-        this.tradeStdate = startDate;
-        this.tradeEndate = endDate;
+    /**
+     * 대여 승인일을 기록합니다.
+     * 대여 시작/종료일은 신청 시점에 이미 확정되어 있으므로(캘린더 기반 예약)
+     * 승인 시점에 덮어쓰지 않습니다.
+     */
+    public void markAccepted(LocalDate resDate) {
         this.tradeResdate = resDate;
     }
 }
