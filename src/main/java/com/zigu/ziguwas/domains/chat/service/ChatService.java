@@ -300,23 +300,15 @@ public class ChatService {
      * 실시간 메시지 저장
      *
      * @param content 메시지
-     * @param email 이메일
-     * @param chatRoomId 채팅방ID
+     * @param sender 발신자
+     * @param chatRoom 채팅방
      * @param hasImage 이미지 포함 여부
      */
-    private void saveMessage(String content, String email, String chatRoomId, boolean hasImage) {
-        // 1. 발신자 정보 조회
-        User sender = userRepository.findByEmail(email)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    private void saveMessage(String content, User sender, ChatRoom chatRoom, boolean hasImage) {
 
-        // 2. 해당 채팅방 존재 여부 확인
-        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND));
+        // 발신자 조회, 채팅방 조회, 참여자 권한 검증은 호출부(branchMessage)에서 이미 수행되었다.
 
-        // 3. 참여자 권한 검증 (선택 사항: 보낸 사람이 해당 방의 참여자인지 확인)
-        validateParticipant(chatRoom, sender);
-
-        // 4. 메시지인지 이미지인지 분기
+        // 1. 메시지인지 이미지인지 분기
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatRoomId(chatRoom.getId())
                 .senderId(sender.getId())
@@ -325,17 +317,24 @@ public class ChatService {
                 .timestamp(LocalDateTime.now())
                 .build();
 
-        // 5. 채팅 저장
+        // 2. 채팅 저장
         chatMessageRepository.save(chatMessage);
 
-        // 6. 같은 채팅방의 참여자 중 발신자를 제외한 사용자에게 알림 이벤트 발행
+        // 3. 같은 채팅방의 참여자 중 발신자를 제외한 사용자에게 알림 이벤트 발행
         List<ChatParticipant> participants = chatParticipantRepository.findAllByChatRoomId(chatRoom.getId());
         for (ChatParticipant participant : participants) {
             if (participant.getUserId().equals(sender.getId())) {
                 continue;
             }
 
-            // 5-1. 실제 알림 저장은 NotificationEventListener가 AFTER_COMMIT 시점에 처리
+            // 3-1. 수신자가 채팅방을 나간 상태라면 다시 활성화하여 목록에 노출시킨다.
+            // 조회 하한선(visibleFrom)은 그대로 두므로 수신자에게는 이 메시지부터 보인다.
+            if (participant.hasLeft()) {
+                participant.rejoin();
+                chatParticipantRepository.save(participant);
+            }
+
+            // 3-2. 실제 알림 저장은 NotificationEventListener가 AFTER_COMMIT 시점에 처리
 
             eventPublisher.publishEvent(new NotificationCreatedEvent(
                     participant.getUserId(),
@@ -371,7 +370,16 @@ public class ChatService {
         User sender = userRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 3. 메시지 전송
+        // 3. 채팅방 존재 여부 확인
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND));
+
+        // 4. 참여자 권한 검증
+        // 나간 사용자가 보낸 메시지가 저장되기 전에 상대방 화면에 잠깐 노출되는 것을 막기 위해
+        // 반드시 전송(convertAndSend)보다 앞에서 검증한다.
+        validateParticipant(chatRoom, sender);
+
+        // 5. 메시지 전송
         messagingTemplate.convertAndSend("/sub/chat/room/" + chatRoomId,
                 ChatSendInfoDto.builder()
                         .senderId(sender.getId())
@@ -382,11 +390,11 @@ public class ChatService {
                         .build()
         );
 
-        // 4. 메시지 저장
+        // 6. 메시지 저장
         saveMessage(
                 dto.hasImage() ? dto.getImageUrl() : dto.getMessage(),
-                email,
-                chatRoomId,
+                sender,
+                chatRoom,
                 dto.hasImage()
         );
     }
