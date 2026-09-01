@@ -26,9 +26,10 @@ app:
     server-url: ${SWAGGER_SERVER_URL:http://localhost:8080}
 
 chat:
-  message:
-    # 채팅 메시지 보관기간(일). 이 기간이 지난 메시지는 매일 새벽 4시 배치가
-    # S3 이미지와 함께 영구 삭제한다. (ChatMessageRetentionScheduler)
+  room:
+    # 폐쇄된 채팅방의 보관기간(일). 모든 참여자가 나간 시각으로부터 이 기간이 지나면
+    # 매일 새벽 4시 배치가 채팅방과 메시지를 S3 이미지까지 영구 삭제한다.
+    # (ChatRoomRetentionScheduler)
     retention-days: 90
 
 

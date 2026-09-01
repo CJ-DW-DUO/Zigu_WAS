@@ -55,7 +55,7 @@ public interface ChatParticipantRepository extends MongoRepository<ChatParticipa
     /**
      * 특정 채팅방의 참여 정보를 모두 삭제합니다.
      *
-     * 모든 참여자가 나가 채팅방이 되살아날 수 없게 되었을 때 정리 용도로 사용합니다.
+     * 보관기간이 지난 채팅방을 정리할 때 사용합니다.
      *
      * @param chatRoomId 채팅방ID
      */
