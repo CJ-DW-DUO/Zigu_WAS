@@ -7,6 +7,8 @@ import jakarta.persistence.EntityNotFoundException;
 import com.zigu.ziguwas.domains.notification.entity.NotificationType;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.trade.dto.request.TradeOfferReqDto;
+import com.zigu.ziguwas.domains.trade.dto.response.BlockSource;
+import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockRangeResDto;
 import com.zigu.ziguwas.domains.trade.entity.Trade;
 import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
 import com.zigu.ziguwas.domains.trade.repository.TradeRepository;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -91,6 +94,11 @@ public class TradeService {
         // 5. 임대인이랑 임차인이 같으면 안됨
         if(rentee.getId().equals(renter.getId())){
             throw new CustomException(ErrorCode.SELF_TRADE_NOT_ALLOWED);
+        }
+
+        // 5-1. 요청한 기간이 이미 승인/진행 중인 다른 거래와 겹치면 신청 자체를 막음
+        if (tradeRepository.existsOverlappingTrade(item, TradeStatus.IN_PROGRESS, dto.getStartDate(), dto.getEndDate())) {
+            throw new CustomException(ErrorCode.TRADE_PERIOD_CONFLICT);
         }
 
         // 6. 요청 전송, 거래 시작, 수락일은 요청 당시에 존재하지 않으므로 미기입
@@ -164,23 +172,22 @@ public class TradeService {
             throw new CustomException(ErrorCode.TRADE_STATUS_NOT_REQUESTED);
         }
 
-        // 6. 매물 대여 가능 확인
-        if(item.getItemStatus().equals(ItemStatus.RENTING)){
-            throw new CustomException(ErrorCode.ITEM_ALREADY_RENTING);
-        }
-
         // 7. 대여 승인 혹은 거절 분기
         if(isApproved){
             // 대여 승인
 
-            // 7A - 1. 거래 상태 변경
-            trade.updateStatus(TradeStatus.IN_PROGRESS);
+            // 7A - 1. 같은 아이템에 대한 동시 승인으로 겹치는 기간이 이중 승인되지 않도록
+            // row 락을 걸고 다시 조회한 뒤, 그 사이 겹치는 거래가 승인되지 않았는지 최종 검증
+            itemRepository.findByIdForUpdate(item.getId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
+            if (tradeRepository.existsOverlappingTrade(
+                    item, TradeStatus.IN_PROGRESS, trade.getTradeStdate(), trade.getTradeEndate())) {
+                throw new CustomException(ErrorCode.TRADE_PERIOD_CONFLICT);
+            }
 
-            // 7A - 2. 거래 시작일, 마감일, 수락일 설정
-            // 거래 시작일과 수락일에 대한 분리가 필요함, 수정 필수
-            // 해당 기간만큼 더해버리면 하루가 더 지나므로, 1일을 빼주어야 함
-            trade.setDates(LocalDate.now(), LocalDate.now().plusDays(trade.getPeriod() - 1),
-                    LocalDate.now());
+            // 7A - 2. 거래 상태 변경 (대여 시작/종료일은 신청 시점에 이미 확정되어 있으므로 유지)
+            trade.updateStatus(TradeStatus.IN_PROGRESS);
+            trade.markAccepted(LocalDate.now());
 
             // 7A - 3. 매물 상태 변경
             item.updateItemStatus(ItemStatus.RENTING);
@@ -251,21 +258,26 @@ public class TradeService {
             throw new CustomException(ErrorCode.RENTER_NOT_MATCHED);
         }
 
-        // 5. 아이템 상태 확인
-        if(!item.getItemStatus().equals(ItemStatus.RENTING)){
-            throw new CustomException(ErrorCode.ITEM_NOT_RENTING);
-        }
-
-        // 6. 거래 상태 확인
+        // 5. 거래 상태 확인 (아이템은 겹치지 않는 여러 예약을 동시에 가질 수 있으므로,
+        // 아이템 전체 상태가 아니라 이 거래 자체가 진행 중인지로 반납 가능 여부를 판단한다)
         if(!trade.getTradeStatus().equals(TradeStatus.IN_PROGRESS)){
             throw new CustomException(ErrorCode.TRADE_STATUS_NOT_REQUESTED);
         }
 
-        // 7. 상태변경
-        item.updateItemStatus(ItemStatus.REGISTERED);
-        trade.updateStatus(TradeStatus.RETURNED);
+        // 6. 이 아이템에 이번에 반납하는 거래 말고도 여전히 진행 중인 다른 예약이 있는지
+        // (겹치지 않는 기간의 별도 승인 건) 상태를 바꾸기 전에 먼저 확인해둔다.
+        // trade.updateStatus() 이후에 조회하면 flush 시점에 따라 자기 자신이 아직
+        // IN_PROGRESS로 조회되어 오판할 수 있으므로, 반드시 상태 변경 전에 확인한다.
+        boolean stillHasOtherActiveTrade = tradeRepository.existsByItemAndTradeStatusInAndIdNot(
+                item, List.of(TradeStatus.IN_PROGRESS), trade.getId());
 
-        // 8. 변경 반영
+        // 7. 상태변경
+        trade.updateStatus(TradeStatus.RETURNED);
+        if (stillHasOtherActiveTrade) {
+            item.updateItemStatus(ItemStatus.RENTING);
+        }
+
+        // 7. 변경 반영
         itemRepository.save(item);
         tradeRepository.save(trade);
 
@@ -278,5 +290,30 @@ public class TradeService {
                 trade.getId().toString(),
                 item.getId()
         ));
+    }
+
+    /**
+     * 특정 아이템의 대여 불가 기간 목록을 조회합니다.
+     * 승인/진행 중(IN_PROGRESS)인 거래의 기간을 반환합니다.
+     *
+     * @param itemId 조회할 아이템 ID
+     * @return 대여 불가 기간 목록
+     */
+    @Transactional(readOnly = true)
+    public ItemBlockRangeResDto getBlockRanges(Long itemId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
+
+        List<Trade> activeTrades = tradeRepository.findAllByItemAndTradeStatus(item, TradeStatus.IN_PROGRESS);
+
+        List<ItemBlockRangeResDto.BlockRangeItem> blockRange = activeTrades.stream()
+                .map(trade -> ItemBlockRangeResDto.BlockRangeItem.builder()
+                        .startDate(trade.getTradeStdate())
+                        .endDate(trade.getTradeEndate())
+                        .source(BlockSource.RESERVATION)
+                        .build())
+                .toList();
+
+        return ItemBlockRangeResDto.builder().blockRange(blockRange).build();
     }
 }
