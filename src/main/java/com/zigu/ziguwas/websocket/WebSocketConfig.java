@@ -14,6 +14,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final StompHandler stompHandler;
+    private final ChatDeliveryInterceptor chatDeliveryInterceptor;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -31,7 +32,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        // 클라이언트로부터 들어오는 메시지 인터셉터 등록 (JWT 인증용)
+        // 클라이언트로부터 들어오는 메시지 인터셉터 등록 (JWT 인증 + 구독 권한 검사)
         registration.interceptors(stompHandler);
+    }
+
+    @Override
+    public void configureClientOutboundChannel(ChannelRegistration registration) {
+        // 클라이언트로 나가는 메시지 인터셉터 등록 (전달 직전 참여자 재확인)
+        registration.interceptors(chatDeliveryInterceptor);
     }
 }
