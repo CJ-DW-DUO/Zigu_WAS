@@ -38,6 +38,18 @@ public class NotificationListResDto {
     @Schema(description = "알림 클릭 시 이동할 대상의 PK. type이 CHAT이면 채팅방ID, 그 외(거래 관련)면 거래ID입니다.", example = "42", nullable = true)
     private final String referenceId;
 
+    @Schema(description = "채팅방 ID. type이 CHAT인 경우에만 값이 있습니다.", example = "42", nullable = true)
+    private final String chatRoomId;
+
+    @Schema(description = "거래 ID. type이 거래 관련(CHAT 외)인 경우에만 값이 있습니다.", example = "42", nullable = true)
+    private final String tradeId;
+
+    @Schema(description = "알림과 연관된 매물 ID", example = "11", nullable = true)
+    private final Long itemId;
+
+    @Schema(description = "알림과 연관된 매물명", example = "캐논 카메라 렌즈", nullable = true)
+    private final String itemTitle;
+
     /**
      * 알림 엔티티를 목록 응답 DTO로 변환합니다.
      *
@@ -55,6 +67,10 @@ public class NotificationListResDto {
                 .isRead(notification.getIsRead())
                 .readAt(notification.getReadAt())
                 .referenceId(notification.getReferenceId())
+                .chatRoomId(notification.getChatRoomId())
+                .tradeId(notification.getTradeId())
+                .itemId(notification.getItemId())
+                .itemTitle(notification.getItemTitle())
                 .build();
     }
 }
