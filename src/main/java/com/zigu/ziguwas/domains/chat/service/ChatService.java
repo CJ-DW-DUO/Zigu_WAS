@@ -6,6 +6,7 @@ import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatImageUploadResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatMessageDetailResDto;
+import com.zigu.ziguwas.domains.chat.dto.response.ChatMessagePageResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomItemAndTradeInfoResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomPreviewResDto;
 import com.zigu.ziguwas.domains.chat.entity.ChatMessage;
@@ -210,7 +211,7 @@ public class ChatService {
      * @param size 페이지 사이즈
      * @return 채팅정보
      */
-    public List<ChatMessageDetailResDto> getChatroomDetail(CustomUserDetails customUserDetails, String chatRoomId, Integer page, Integer size) {
+    public ChatMessagePageResDto getChatroomDetail(CustomUserDetails customUserDetails, String chatRoomId, Integer page, Integer size) {
 
         // 1. 유저 확인
         User user = userRepository.findByEmail(customUserDetails.getUsername()).orElseThrow(
@@ -253,7 +254,11 @@ public class ChatService {
                     .build());
         }
 
-        return dtos;
+        // 7. 다음 페이지 존재 여부와 함께 반환
+        return ChatMessagePageResDto.builder()
+                .content(dtos)
+                .last(!messages.hasNext()) // 다음이 없다면 얘가 마지막페이지(슬라이스)
+                .build();
     }
 
 
