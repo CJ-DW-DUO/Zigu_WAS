@@ -143,6 +143,20 @@ public class NotificationService {
         notificationRepository.saveAll(unreadChatNotifications);
     }
 
+    /**
+     * 로그인 사용자의 모든 미읽음 알림을 읽음 처리합니다.
+     *
+     * @param userId 사용자 ID
+     */
+    public void markAllAsRead(Long userId) {
+        // 1. 사용자의 미읽음 알림 전체 조회
+        List<Notification> unreadNotifications = notificationRepository.findAllByUserIdAndIsReadFalse(userId);
+
+        // 2. 전부 읽음 처리 후 일괄 저장
+        unreadNotifications.forEach(Notification::markAsRead);
+        notificationRepository.saveAll(unreadNotifications);
+    }
+
     public NotificationSettingResDto getNotificationSettings(Long userId) {
 
         User user = userRepository.findById(userId).orElseThrow(
