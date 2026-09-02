@@ -56,6 +56,9 @@ public class Notification {
     // 알림과 연관된 매물 PK (푸시 알림 payload 구성 시 사용)
     private Long itemId;
 
+    // 알림과 연관된 매물명 (알림 생성 시점의 스냅샷, 목록/푸시 표시용)
+    private String itemTitle;
+
     /**
      * 알림 생성 시 사용하는 정적 팩토리 메서드입니다.
      *
@@ -68,7 +71,8 @@ public class Notification {
             String notiTitle,
             String notiContent,
             String referenceId,
-            Long itemId
+            Long itemId,
+            String itemTitle
     ) {
         return Notification.builder()
                 .userId(userId)
@@ -79,6 +83,7 @@ public class Notification {
                 .isRead(false)
                 .referenceId(referenceId)
                 .itemId(itemId)
+                .itemTitle(itemTitle)
                 .build();
     }
 
