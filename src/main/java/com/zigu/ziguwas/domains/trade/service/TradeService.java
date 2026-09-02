@@ -124,7 +124,8 @@ public class TradeService {
                 "새로운 대여 요청",
                 rentee.getNickname() + "님이 " + item.getTitle() + " 대여를 요청했어요.",
                 saved.getId().toString(),
-                item.getId()
+                item.getId(),
+                item.getTitle()
         ));
 
         // 9. 거래ID 반환
@@ -220,7 +221,8 @@ public class TradeService {
                 title,
                 content,
                 trade.getId().toString(),
-                item.getId()
+                item.getId(),
+                item.getTitle()
         ));
     }
 
@@ -288,7 +290,8 @@ public class TradeService {
                 "반납 처리 완료",
                 item.getTitle() + "의 반납 처리가 완료되었습니다.",
                 trade.getId().toString(),
-                item.getId()
+                item.getId(),
+                item.getTitle()
         ));
     }
 

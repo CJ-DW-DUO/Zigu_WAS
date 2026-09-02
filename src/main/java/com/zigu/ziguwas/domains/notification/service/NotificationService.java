@@ -51,7 +51,8 @@ public class NotificationService {
                 event.title(),
                 event.content(),
                 event.referenceId(),
-                event.itemId()
+                event.itemId(),
+                event.itemTitle()
         );
 
         // 3. 알림 저장
