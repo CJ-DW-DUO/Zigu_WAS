@@ -1,7 +1,6 @@
 package com.zigu.ziguwas.domains.notification.service;
 
 import com.zigu.ziguwas.domains.notification.entity.Notification;
-import com.zigu.ziguwas.domains.notification.entity.NotificationCategory;
 import com.zigu.ziguwas.domains.notification.entity.PushToken;
 import com.zigu.ziguwas.domains.notification.repository.PushTokenRepository;
 import com.zigu.ziguwas.push.ExpoPushClient;
@@ -54,10 +53,10 @@ public class PushNotificationService {
         data.put("type", notification.getNotificationType().name());
         data.put("itemId", notification.getItemId());
 
-        if (notification.getNotificationType().getCategory() == NotificationCategory.CHAT) {
-            data.put("chatRoomId", notification.getReferenceId());
+        if (notification.getChatRoomId() != null) {
+            data.put("chatRoomId", notification.getChatRoomId());
         } else {
-            data.put("tradeId", notification.getReferenceId());
+            data.put("tradeId", notification.getTradeId());
         }
 
         return data;
