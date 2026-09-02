@@ -3,6 +3,7 @@ package com.zigu.ziguwas.domains.notification.api;
 import com.zigu.ziguwas.domains.notification.dto.request.NotificationSettingReqDto;
 import com.zigu.ziguwas.domains.notification.dto.request.PushTokenDeleteReqDto;
 import com.zigu.ziguwas.domains.notification.dto.request.PushTokenRegisterReqDto;
+import com.zigu.ziguwas.domains.notification.dto.response.NotificationListResDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationSettingResDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationUnreadCountResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
@@ -80,6 +81,35 @@ public interface NotificationApi {
     ResponseEntity<?> getMyNotifications(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @Parameter(description = "페이지 정보(page, size, sort)") Pageable pageable
+    );
+
+    @Operation(summary = "알림 단건 조회", description = "특정 알림 하나를 조회합니다. 목록 조회(getMyNotifications)와 동일한 응답 형태이며, 본인 소유 알림만 조회할 수 있습니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = NotificationListResDto.class),
+                            examples = {
+                                    @ExampleObject(name = "조회 성공", value = """
+                                            {
+                                              "notificationId": "12",
+                                              "type": "RENTAL_REQUEST",
+                                              "title": "새로운 대여 요청",
+                                              "content": "홍길동님이 카메라 대여를 요청했어요.",
+                                              "receivedAt": "2026-04-27T14:30:00",
+                                              "isRead": false,
+                                              "readAt": null,
+                                              "referenceId": "42"
+                                            }
+                                            """)
+                            })),
+            @ApiResponse(responseCode = "404", description = "알림이 존재하지 않거나 본인 소유가 아님",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 404, \"message\": \"해당 알림을 찾을 수 없습니다.\"}")
+                    }))
+    })
+    ResponseEntity<?> getNotification(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @Parameter(description = "조회할 알림 ID") @PathVariable String notificationId
     );
 
     @Operation(summary = "미읽음 알림 개수 조회", description = "로그인 사용자의 미읽음 알림 개수를 조회합니다.")

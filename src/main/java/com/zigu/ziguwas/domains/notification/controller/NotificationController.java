@@ -49,6 +49,24 @@ public class NotificationController implements NotificationApi {
     }
 
     /**
+     * 알림 단건을 조회합니다.
+     *
+     * @param customUserDetails 인증 사용자 정보
+     * @param notificationId 조회할 알림 ID
+     * @return 알림 상세 정보
+     */
+    @GetMapping("/{notificationId}")
+    public ResponseEntity<?> getNotification(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable String notificationId
+    ) {
+        // 1. 본인 소유 알림만 조회하여 목록과 동일한 형태로 반환
+        return ResponseEntity.ok(
+                notificationService.getNotification(customUserDetails.getUserId(), notificationId)
+        );
+    }
+
+    /**
      * 내 미읽음 알림 개수를 조회합니다.
      *
      * @param customUserDetails 인증 사용자 정보
