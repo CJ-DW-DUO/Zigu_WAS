@@ -84,6 +84,25 @@ public class NotificationController implements NotificationApi {
 
 
     /**
+     * 특정 채팅방에 대한 채팅 알림을 전부 읽음 처리합니다.
+     *
+     * @param customUserDetails 인증 사용자 정보
+     * @param chatRoomId 채팅방 ID
+     * @return 처리 성공 응답
+     */
+    @PatchMapping("/chat-rooms/{chatRoomId}/read")
+    public ResponseEntity<?> markChatRoomNotificationsAsRead(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable String chatRoomId
+    ) {
+        // 1. 해당 채팅방의 참여자인지 검증 후, 채팅 알림 전체 읽음 처리
+        notificationService.markChatRoomNotificationsAsRead(customUserDetails.getUserId(), chatRoomId);
+        // 2. 본문 없는 성공 응답
+        return ResponseEntity.ok().build();
+    }
+
+
+    /**
      * 사용자 알림 수신 여부를 가져옵니다.
      *
      * @param customUserDetails 인증 사용자 정보
