@@ -86,6 +86,23 @@ public class NotificationService {
     }
 
     /**
+     * 알림 단건을 조회합니다.
+     *
+     * @param userId 사용자 ID
+     * @param notificationId 알림 ID
+     * @return 목록 조회와 동일한 형태의 알림 상세 응답
+     */
+    public NotificationListResDto getNotification(Long userId, String notificationId) {
+        // 1. 본인 소유 알림만 조회 (존재하지 않거나 타인 소유면 404)
+        Notification notification = notificationRepository.findByIdAndUserId(notificationId, userId).orElseThrow(
+                () -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND)
+        );
+
+        // 2. 목록 응답과 동일한 DTO로 변환
+        return NotificationListResDto.fromEntity(notification);
+    }
+
+    /**
      * 특정 알림을 읽음 처리합니다.
      *
      * @param userId 사용자 ID
