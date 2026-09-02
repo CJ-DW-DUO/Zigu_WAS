@@ -88,6 +88,20 @@ public class Notification {
     }
 
     /**
+     * referenceId가 채팅방ID를 의미하는 타입(CHAT)인 경우에만 채팅방ID를 반환합니다.
+     */
+    public String getChatRoomId() {
+        return notificationType.getCategory() == NotificationCategory.CHAT ? referenceId : null;
+    }
+
+    /**
+     * referenceId가 거래ID를 의미하는 타입(CHAT 외)인 경우에만 거래ID를 반환합니다.
+     */
+    public String getTradeId() {
+        return notificationType.getCategory() == NotificationCategory.CHAT ? null : referenceId;
+    }
+
+    /**
      * 알림을 읽음 상태로 변경합니다.
      *
      * 이미 읽은 알림은 중복 갱신하지 않습니다.
