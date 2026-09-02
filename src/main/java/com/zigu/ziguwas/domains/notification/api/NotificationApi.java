@@ -42,7 +42,11 @@ public interface NotificationApi {
                                                   "receivedAt": "2026-04-27T14:30:00",
                                                   "isRead": false,
                                                   "readAt": null,
-                                                  "referenceId": "42"
+                                                  "referenceId": "42",
+                                                  "chatRoomId": null,
+                                                  "tradeId": "42",
+                                                  "itemId": 11,
+                                                  "itemTitle": "캐논 카메라 렌즈"
                                                 }
                                               ],
                                               "pageable": {
@@ -98,7 +102,11 @@ public interface NotificationApi {
                                               "receivedAt": "2026-04-27T14:30:00",
                                               "isRead": false,
                                               "readAt": null,
-                                              "referenceId": "42"
+                                              "referenceId": "42",
+                                              "chatRoomId": null,
+                                              "tradeId": "42",
+                                              "itemId": 11,
+                                              "itemTitle": "캐논 카메라 렌즈"
                                             }
                                             """)
                             })),

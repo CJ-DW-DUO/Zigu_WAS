@@ -56,6 +56,9 @@ public class Notification {
     // 알림과 연관된 매물 PK (푸시 알림 payload 구성 시 사용)
     private Long itemId;
 
+    // 알림과 연관된 매물명 (알림 생성 시점의 스냅샷, 목록/푸시 표시용)
+    private String itemTitle;
+
     /**
      * 알림 생성 시 사용하는 정적 팩토리 메서드입니다.
      *
@@ -68,7 +71,8 @@ public class Notification {
             String notiTitle,
             String notiContent,
             String referenceId,
-            Long itemId
+            Long itemId,
+            String itemTitle
     ) {
         return Notification.builder()
                 .userId(userId)
@@ -79,7 +83,22 @@ public class Notification {
                 .isRead(false)
                 .referenceId(referenceId)
                 .itemId(itemId)
+                .itemTitle(itemTitle)
                 .build();
+    }
+
+    /**
+     * referenceId가 채팅방ID를 의미하는 타입(CHAT)인 경우에만 채팅방ID를 반환합니다.
+     */
+    public String getChatRoomId() {
+        return notificationType.getCategory() == NotificationCategory.CHAT ? referenceId : null;
+    }
+
+    /**
+     * referenceId가 거래ID를 의미하는 타입(CHAT 외)인 경우에만 거래ID를 반환합니다.
+     */
+    public String getTradeId() {
+        return notificationType.getCategory() == NotificationCategory.CHAT ? null : referenceId;
     }
 
     /**

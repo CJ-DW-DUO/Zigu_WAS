@@ -2,7 +2,7 @@ package com.zigu.ziguwas.domains.chat.api;
 
 import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatImageUploadResDto;
-import com.zigu.ziguwas.domains.chat.dto.response.ChatMessageDetailResDto;
+import com.zigu.ziguwas.domains.chat.dto.response.ChatMessagePageResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomItemAndTradeInfoResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomPreviewResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
@@ -35,10 +35,27 @@ public interface ChatApi {
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
     );
 
-    @Operation(summary = "채팅방 상세 조회", description = "특정 채팅방의 상세 대화 내역 및 정보를 조회합니다. 이전에 채팅방을 나간 적이 있다면 나간 시각 이후의 메시지만 조회됩니다.")
+    @Operation(summary = "채팅방 상세 조회", description = "특정 채팅방의 상세 대화 내역 및 정보를 조회합니다. 이전에 채팅방을 나간 적이 있다면 나간 시각 이후의 메시지만 조회됩니다. `last`가 true이면 다음 페이지를 요청할 필요가 없습니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
-                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = ChatMessageDetailResDto.class)))
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ChatMessagePageResDto.class),
+                            examples = @ExampleObject(name = "조회 성공", value = """
+                                    {
+                                      "content": [
+                                        {
+                                          "messageId": "1",
+                                          "chatRoomId": "1",
+                                          "senderId": 3,
+                                          "senderName": "홍길동",
+                                          "message": "안녕하세요",
+                                          "timestamp": "2026-04-27T14:30:00",
+                                          "imageUrl": null
+                                        }
+                                      ],
+                                      "last": true
+                                    }
+                                    """))
             ),
             @ApiResponse(responseCode = "404", description = "채팅방을 찾을 수 없음")
     })

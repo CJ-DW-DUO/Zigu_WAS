@@ -6,6 +6,7 @@ import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatImageUploadResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatMessageDetailResDto;
+import com.zigu.ziguwas.domains.chat.dto.response.ChatMessagePageResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomItemAndTradeInfoResDto;
 import com.zigu.ziguwas.domains.chat.dto.response.ChatRoomPreviewResDto;
 import com.zigu.ziguwas.domains.chat.entity.ChatMessage;
@@ -210,7 +211,7 @@ public class ChatService {
      * @param size 페이지 사이즈
      * @return 채팅정보
      */
-    public List<ChatMessageDetailResDto> getChatroomDetail(CustomUserDetails customUserDetails, String chatRoomId, Integer page, Integer size) {
+    public ChatMessagePageResDto getChatroomDetail(CustomUserDetails customUserDetails, String chatRoomId, Integer page, Integer size) {
 
         // 1. 유저 확인
         User user = userRepository.findByEmail(customUserDetails.getUsername()).orElseThrow(
@@ -253,7 +254,11 @@ public class ChatService {
                     .build());
         }
 
-        return dtos;
+        // 7. 다음 페이지 존재 여부와 함께 반환
+        return ChatMessagePageResDto.builder()
+                .content(dtos)
+                .last(!messages.hasNext()) // 다음이 없다면 얘가 마지막페이지(슬라이스)
+                .build();
     }
 
 
@@ -332,8 +337,9 @@ public class ChatService {
      * @param sender 발신자
      * @param chatRoom 채팅방
      * @param hasImage 이미지 포함 여부
+     * @param itemTitle 알림에 함께 저장할 매물명 스냅샷 (조회 실패 시 null)
      */
-    private void notifyParticipants(String content, User sender, ChatRoom chatRoom, boolean hasImage) {
+    private void notifyParticipants(String content, User sender, ChatRoom chatRoom, boolean hasImage, String itemTitle) {
 
         List<ChatParticipant> participants = chatParticipantRepository.findAllByChatRoomId(chatRoom.getId());
         for (ChatParticipant participant : participants) {
@@ -357,7 +363,8 @@ public class ChatService {
                     (hasImage) ? sender.getNickname() + "님이 이미지를 전송했습니다."
                             : sender.getNickname() + "님: " + content,
                     chatRoom.getId(),
-                    chatRoom.getItemId()
+                    chatRoom.getItemId(),
+                    itemTitle
             ));
         }
     }
@@ -416,7 +423,9 @@ public class ChatService {
         );
 
         // 7. 알림 발행 (나갔던 수신자의 채팅방 재활성화 포함)
-        notifyParticipants(content, sender, chatRoom, dto.hasImage());
+        // 매물명은 알림 목록/푸시 표시용 스냅샷이므로, 조회 실패(소프트 딜리트 등) 시에도 메시지 전송 자체는 막지 않는다.
+        String itemTitle = itemRepository.findById(chatRoom.getItemId()).map(Item::getTitle).orElse(null);
+        notifyParticipants(content, sender, chatRoom, dto.hasImage(), itemTitle);
     }
 
     /**
