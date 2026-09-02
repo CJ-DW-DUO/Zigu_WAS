@@ -303,8 +303,9 @@ public class ChatService {
      * @param sender 발신자
      * @param chatRoom 채팅방
      * @param hasImage 이미지 포함 여부
+     * @return 저장된 메시지 (ID와 저장 시각이 채워진 상태)
      */
-    private void saveMessage(String content, User sender, ChatRoom chatRoom, boolean hasImage) {
+    private ChatMessage saveMessage(String content, User sender, ChatRoom chatRoom, boolean hasImage) {
 
         // 발신자 조회, 채팅방 조회, 참여자 권한 검증은 호출부(branchMessage)에서 이미 수행되었다.
 
@@ -318,23 +319,36 @@ public class ChatService {
                 .build();
 
         // 2. 채팅 저장
-        chatMessageRepository.save(chatMessage);
+        return chatMessageRepository.save(chatMessage);
+    }
 
-        // 3. 같은 채팅방의 참여자 중 발신자를 제외한 사용자에게 알림 이벤트 발행
+    /**
+     * 같은 채팅방의 참여자 중 발신자를 제외한 사용자에게 알림 이벤트를 발행합니다.
+     *
+     * 메시지 저장과 실시간 전송이 모두 끝난 뒤에 호출한다. 알림 발송이 늦어지더라도
+     * 대화 자체는 이미 저장/전달된 상태여야 하기 때문이다.
+     *
+     * @param content 메시지 본문 또는 이미지 URL
+     * @param sender 발신자
+     * @param chatRoom 채팅방
+     * @param hasImage 이미지 포함 여부
+     */
+    private void notifyParticipants(String content, User sender, ChatRoom chatRoom, boolean hasImage) {
+
         List<ChatParticipant> participants = chatParticipantRepository.findAllByChatRoomId(chatRoom.getId());
         for (ChatParticipant participant : participants) {
             if (participant.getUserId().equals(sender.getId())) {
                 continue;
             }
 
-            // 3-1. 수신자가 채팅방을 나간 상태라면 다시 활성화하여 목록에 노출시킨다.
+            // 1. 수신자가 채팅방을 나간 상태라면 다시 활성화하여 목록에 노출시킨다.
             // 조회 하한선(visibleFrom)은 그대로 두므로 수신자에게는 이 메시지부터 보인다.
             if (participant.hasLeft()) {
                 participant.rejoin();
                 chatParticipantRepository.save(participant);
             }
 
-            // 3-2. 실제 알림 저장은 NotificationEventListener가 AFTER_COMMIT 시점에 처리
+            // 2. 실제 알림 저장은 NotificationEventListener가 AFTER_COMMIT 시점에 처리
 
             eventPublisher.publishEvent(new NotificationCreatedEvent(
                     participant.getUserId(),
@@ -379,9 +393,20 @@ public class ChatService {
         // 반드시 전송(convertAndSend)보다 앞에서 검증한다.
         validateParticipant(chatRoom, sender);
 
-        // 5. 메시지 전송
+        String content = dto.hasImage() ? dto.getImageUrl() : dto.getMessage();
+
+        // 5. 메시지 저장
+        // 전송보다 저장이 먼저여야 한다. 전송을 먼저 하면 저장이 실패했을 때
+        // 상대 화면에는 떴다가 새로고침하면 사라지는 유령 메시지가 남는다.
+        ChatMessage saved = saveMessage(content, sender, chatRoom, dto.hasImage());
+
+        // 6. 메시지 전송
+        // 저장된 ID와 시각을 함께 내려보내, 클라이언트가 목록 조회 결과와 비교해
+        // 중복 표시를 걸러내고 서버 기준 시각으로 정렬할 수 있게 한다.
         messagingTemplate.convertAndSend("/sub/chat/room/" + chatRoomId,
                 ChatSendInfoDto.builder()
+                        .messageId(saved.getId())
+                        .timestamp(saved.getTimestamp().toString())
                         .senderId(sender.getId())
                         .chatRoomId(chatRoomId)
                         .senderNickname(sender.getNickname())
@@ -390,13 +415,8 @@ public class ChatService {
                         .build()
         );
 
-        // 6. 메시지 저장
-        saveMessage(
-                dto.hasImage() ? dto.getImageUrl() : dto.getMessage(),
-                sender,
-                chatRoom,
-                dto.hasImage()
-        );
+        // 7. 알림 발행 (나갔던 수신자의 채팅방 재활성화 포함)
+        notifyParticipants(content, sender, chatRoom, dto.hasImage());
     }
 
     /**

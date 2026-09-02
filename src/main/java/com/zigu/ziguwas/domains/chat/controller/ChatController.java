@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -145,7 +146,10 @@ public class ChatController implements ChatApi {
             ChatMessageReqDto dto,
             StompHeaderAccessor headerAccessor
     ){
-        String email = (String) headerAccessor.getSessionAttributes().get("userEmail");
+        // CONNECT 시 StompHandler가 세션에 심어둔 값. 세션 정보 자체가 없을 수도 있으므로 NPE를 막는다.
+        Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
+
+        String email = sessionAttributes != null ? (String) sessionAttributes.get("userEmail") : null;
 
         if (email == null) {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
