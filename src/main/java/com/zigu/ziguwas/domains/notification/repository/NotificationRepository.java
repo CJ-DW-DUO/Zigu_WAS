@@ -27,6 +27,11 @@ public interface NotificationRepository extends MongoRepository<Notification, St
 	long countByUserIdAndIsReadFalse(Long userId);
 
 	/**
+	 * 사용자의 미읽음 알림을 전부 조회합니다. (전체 읽음 처리용)
+	 */
+	List<Notification> findAllByUserIdAndIsReadFalse(Long userId);
+
+	/**
 	 * 특정 채팅방에 대한 사용자의 미읽음 채팅 알림을 모두 조회합니다.
 	 *
 	 * 채팅방 일괄 읽음 처리 시, referenceId가 해당 채팅방ID인 CHAT 타입 알림만 골라내기 위해 사용합니다.
