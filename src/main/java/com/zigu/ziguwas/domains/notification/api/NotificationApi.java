@@ -121,6 +121,19 @@ public interface NotificationApi {
             @Parameter(description = "읽음 처리할 알림 ID") @PathVariable String notificationId
     );
 
+    @Operation(summary = "채팅방 알림 전체 읽음 처리", description = "특정 채팅방에 대한 로그인 사용자의 채팅 알림을 모두 읽음 상태로 변경합니다. 이미 읽었거나 미읽음 알림이 없어도 성공하며, 같은 요청을 여러 번 보내도 안전합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "읽음 처리 성공"),
+            @ApiResponse(responseCode = "403", description = "해당 채팅방의 참여자가 아님",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 403, \"message\": \"허용되지 않은 접근입니다.\"}")
+                    }))
+    })
+    ResponseEntity<?> markChatRoomNotificationsAsRead(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @Parameter(description = "읽음 처리할 채팅 알림이 속한 채팅방 ID") @PathVariable String chatRoomId
+    );
+
     @Operation(summary = "알림 수신 설정 조회", description = "로그인 사용자의 알림 수신 설정(채팅/거래/마케팅)을 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",

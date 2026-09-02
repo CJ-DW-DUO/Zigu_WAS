@@ -1,10 +1,12 @@
 package com.zigu.ziguwas.domains.notification.service;
 
+import com.zigu.ziguwas.domains.chat.repository.ChatParticipantRepository;
 import com.zigu.ziguwas.domains.notification.dto.request.NotificationSettingReqDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationListResDto;
 import com.zigu.ziguwas.domains.notification.dto.response.NotificationSettingResDto;
 import com.zigu.ziguwas.domains.notification.entity.Notification;
 import com.zigu.ziguwas.domains.notification.entity.NotificationCategory;
+import com.zigu.ziguwas.domains.notification.entity.NotificationType;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.notification.repository.NotificationRepository;
 import com.zigu.ziguwas.domains.user.entity.User;
@@ -17,12 +19,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final ChatParticipantRepository chatParticipantRepository;
     private final PushNotificationService pushNotificationService;
 
     /**
@@ -95,6 +100,30 @@ public class NotificationService {
         // 2. 읽음 상태 업데이트
         notification.markAsRead();
         notificationRepository.save(notification);
+    }
+
+    /**
+     * 특정 채팅방에 대한 사용자의 채팅 알림을 모두 읽음 처리합니다.
+     *
+     * 사용자가 채팅방에 입장했을 때 호출되며, 앱이 아직 불러오지 않은 알림까지
+     * 서버에서 한 번에 읽음 처리하기 위해 사용합니다.
+     *
+     * @param userId 사용자 ID
+     * @param chatRoomId 채팅방 ID
+     */
+    public void markChatRoomNotificationsAsRead(Long userId, String chatRoomId) {
+        // 1. 요청자가 해당 채팅방의 (나가지 않은) 참여자인지 검증
+        if (!chatParticipantRepository.existsByChatRoomIdAndUserIdAndLeftAtIsNull(chatRoomId, userId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        // 2. 해당 채팅방의 미읽음 채팅 알림만 조회
+        List<Notification> unreadChatNotifications = notificationRepository
+                .findAllByUserIdAndNotificationTypeAndReferenceIdAndIsReadFalse(userId, NotificationType.CHAT, chatRoomId);
+
+        // 3. 전부 읽음 처리 후 일괄 저장
+        unreadChatNotifications.forEach(Notification::markAsRead);
+        notificationRepository.saveAll(unreadChatNotifications);
     }
 
     public NotificationSettingResDto getNotificationSettings(Long userId) {
