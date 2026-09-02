@@ -164,6 +164,14 @@ public interface NotificationApi {
             @Parameter(description = "읽음 처리할 채팅 알림이 속한 채팅방 ID") @PathVariable String chatRoomId
     );
 
+    @Operation(summary = "전체 알림 읽음 처리", description = "로그인 사용자의 모든 미읽음 알림을 읽음 상태로 변경합니다. 이미 전부 읽었거나 미읽음 알림이 없어도 성공하며, 같은 요청을 여러 번 보내도 안전합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "읽음 처리 성공")
+    })
+    ResponseEntity<?> markAllAsRead(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
     @Operation(summary = "알림 수신 설정 조회", description = "로그인 사용자의 알림 수신 설정(채팅/거래/마케팅)을 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
