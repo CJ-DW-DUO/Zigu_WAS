@@ -119,6 +119,22 @@ public class NotificationController implements NotificationApi {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * 내 모든 알림을 읽음 처리합니다.
+     *
+     * @param customUserDetails 인증 사용자 정보
+     * @return 처리 성공 응답
+     */
+    @PatchMapping("/read-all")
+    public ResponseEntity<?> markAllAsRead(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ) {
+        // 1. 사용자의 미읽음 알림 전체 읽음 처리
+        notificationService.markAllAsRead(customUserDetails.getUserId());
+        // 2. 본문 없는 성공 응답
+        return ResponseEntity.ok().build();
+    }
+
 
     /**
      * 사용자 알림 수신 여부를 가져옵니다.
