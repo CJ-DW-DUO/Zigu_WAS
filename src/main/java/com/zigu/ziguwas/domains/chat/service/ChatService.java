@@ -303,8 +303,9 @@ public class ChatService {
      * @param sender 발신자
      * @param chatRoom 채팅방
      * @param hasImage 이미지 포함 여부
+     * @return 저장된 메시지 (ID와 저장 시각이 채워진 상태)
      */
-    private void saveMessage(String content, User sender, ChatRoom chatRoom, boolean hasImage) {
+    private ChatMessage saveMessage(String content, User sender, ChatRoom chatRoom, boolean hasImage) {
 
         // 발신자 조회, 채팅방 조회, 참여자 권한 검증은 호출부(branchMessage)에서 이미 수행되었다.
 
@@ -318,7 +319,7 @@ public class ChatService {
                 .build();
 
         // 2. 채팅 저장
-        chatMessageRepository.save(chatMessage);
+        return chatMessageRepository.save(chatMessage);
     }
 
     /**
@@ -397,11 +398,15 @@ public class ChatService {
         // 5. 메시지 저장
         // 전송보다 저장이 먼저여야 한다. 전송을 먼저 하면 저장이 실패했을 때
         // 상대 화면에는 떴다가 새로고침하면 사라지는 유령 메시지가 남는다.
-        saveMessage(content, sender, chatRoom, dto.hasImage());
+        ChatMessage saved = saveMessage(content, sender, chatRoom, dto.hasImage());
 
         // 6. 메시지 전송
+        // 저장된 ID와 시각을 함께 내려보내, 클라이언트가 목록 조회 결과와 비교해
+        // 중복 표시를 걸러내고 서버 기준 시각으로 정렬할 수 있게 한다.
         messagingTemplate.convertAndSend("/sub/chat/room/" + chatRoomId,
                 ChatSendInfoDto.builder()
+                        .messageId(saved.getId())
+                        .timestamp(saved.getTimestamp().toString())
                         .senderId(sender.getId())
                         .chatRoomId(chatRoomId)
                         .senderNickname(sender.getNickname())
