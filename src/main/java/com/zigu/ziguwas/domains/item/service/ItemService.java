@@ -1,6 +1,7 @@
 package com.zigu.ziguwas.domains.item.service;
 
 import com.zigu.ziguwas.S3.S3Service;
+import com.zigu.ziguwas.domains.block.repository.BlockRepository;
 import com.zigu.ziguwas.domains.item.dto.request.ItemRegisterReqDto;
 import com.zigu.ziguwas.domains.item.dto.request.ItemUpdateReqDto;
 import com.zigu.ziguwas.domains.item.dto.response.ItemResDto;
@@ -37,6 +38,7 @@ public class ItemService {
     private final TradeRepository tradeRepository;
     private final S3Service s3Service;
     private final ApplicationEventPublisher eventPublisher;
+    private final BlockRepository blockRepository;
 
     /**
      * 새로운 아이템을 등록합니다.
@@ -221,6 +223,11 @@ public class ItemService {
             // 허용된 대학의 인원이 아니라면(univId가 다르다면)
             if (!item.getUser().getUniv().getUnivId().equals(univId)) {
                 throw new CustomException(ErrorCode.DIFFERENT_UNIVERSITY_ACCESS);
+            }
+
+            // 조회 요청자가 작성자를 차단한 상태라면 상세조회 차단
+            if (blockRepository.existsByBlockerIdAndBlockedId(userId, item.getUser().getId())) {
+                throw new CustomException(ErrorCode.BLOCKED_ITEM_ACCESS);
             }
 
         } catch (EntityNotFoundException e) {
