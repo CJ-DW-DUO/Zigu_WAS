@@ -1,6 +1,7 @@
 package com.zigu.ziguwas.domains.chat.service;
 
 import com.zigu.ziguwas.S3.S3Service;
+import com.zigu.ziguwas.domains.block.repository.BlockRepository;
 import com.zigu.ziguwas.domains.chat.dto.ChatSendInfoDto;
 import com.zigu.ziguwas.domains.chat.dto.request.ChatMessageReqDto;
 import com.zigu.ziguwas.domains.chat.dto.request.CreateChatRoomReqDto;
@@ -55,6 +56,7 @@ public class ChatService {
     private final ApplicationEventPublisher eventPublisher;
     private final TradeRepository tradeRepository;
     private final ItemRepository itemRepository;
+    private final BlockRepository blockRepository;
 
     private final SimpMessageSendingOperations messagingTemplate;
     private final S3Service s3Service;
@@ -76,6 +78,27 @@ public class ChatService {
         if (!chatParticipantRepository.existsByChatRoomIdAndUserIdAndLeftAtIsNull(room.getId(), user.getId())) {
             // 채팅방에 해당 유저가 없거나 이미 나갔으므로 접근 제한
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+    }
+
+    /**
+     * 채팅방 상대방과 차단 관계인지 검증하는 서비스
+     *
+     * 어느 한쪽이라도 상대를 차단한 상태라면(채팅방 생성 이후에 차단한 경우 포함)
+     * 더 이상 메시지를 주고받을 수 없도록 제한한다.
+     *
+     * @param room 채팅방
+     * @param sender 발신자
+     */
+    private void validateNotBlocked(ChatRoom room, User sender) {
+        List<ChatParticipant> participants = chatParticipantRepository.findAllByChatRoomId(room.getId());
+        for (ChatParticipant participant : participants) {
+            if (participant.getUserId().equals(sender.getId())) {
+                continue;
+            }
+            if (blockRepository.existsBlockBetween(sender.getId(), participant.getUserId())) {
+                throw new CustomException(ErrorCode.BLOCKED_USER_ACCESS);
+            }
         }
     }
 
@@ -400,6 +423,9 @@ public class ChatService {
         // 반드시 전송(convertAndSend)보다 앞에서 검증한다.
         validateParticipant(chatRoom, sender);
 
+        // 4-1. 차단 관계 검증 (채팅방 생성 이후 어느 한쪽이 상대를 차단했다면 메시지 전송 불가)
+        validateNotBlocked(chatRoom, sender);
+
         String content = dto.hasImage() ? dto.getImageUrl() : dto.getMessage();
 
         // 5. 메시지 저장
@@ -459,6 +485,11 @@ public class ChatService {
         // 대화 대상자 조회
         User receiver = userRepository.findById(dto.getReceiverId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 어느 한쪽이라도 상대를 차단한 상태라면 채팅방을 새로 만들거나 재사용할 수 없다.
+        if (blockRepository.existsBlockBetween(sender.getId(), receiver.getId())) {
+            throw new CustomException(ErrorCode.BLOCKED_USER_ACCESS);
+        }
 
         // 3. 해당 물품과 거래로 이루어진 채팅방이 이미 존재한다면, 그냥 해당 ID를 반환
 //        ChatRoom chatRoom = chatRoomRepository.findByItemAndParticipants(item, sender, receiver).orElse(null);
