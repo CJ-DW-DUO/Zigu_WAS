@@ -81,7 +81,14 @@ public enum ErrorCode {
 
     // 신고 관련
     SELF_REPORT_NOT_ALLOWED(400, "본인이 등록한 물건 게시글은 신고할 수 없습니다."),
-    ALREADY_REPORTED_ITEM(400, "이미 신고 접수된 게시글입니다.");
+    ALREADY_REPORTED_ITEM(400, "이미 신고 접수된 게시글입니다."),
+
+    // 차단 관련
+    SELF_BLOCK_NOT_ALLOWED(400, "자기 자신을 차단할 수 없습니다."),
+    ALREADY_BLOCKED_USER(409, "이미 차단한 사용자입니다."),
+    BLOCK_NOT_FOUND(404, "차단 내역을 찾을 수 없습니다."),
+    BLOCKED_ITEM_ACCESS(403, "차단한 사용자의 게시글은 조회할 수 없습니다."),
+    BLOCKED_USER_ACCESS(403, "차단된 사용자와는 채팅할 수 없습니다.");
 
     private final int status;
     private final String message;
