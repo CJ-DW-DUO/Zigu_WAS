@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.item.service;
 
+import com.zigu.ziguwas.domains.block.repository.BlockRepository;
 import com.zigu.ziguwas.domains.item.dto.response.ItemListResDto;
 import com.zigu.ziguwas.domains.item.dto.response.ItemSearchCond;
 import com.zigu.ziguwas.domains.item.entity.Item;
@@ -14,11 +15,14 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ItemListService {
 
     private final ItemListRepository itemListRepository;
+    private final BlockRepository blockRepository;
 
     @Transactional(readOnly = true)
     public Page<ItemListResDto> getItemList(ItemSearchCond cond, Pageable pageable ,
@@ -35,10 +39,16 @@ public class ItemListService {
 
         Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
-        // 2. 검색 조건 조합 및 조회 : 카테고리와 대학ID기반으로 조회
+        // 2. 요청자가 차단한 사용자 ID 목록 조회 (차단한 사용자의 글은 목록에서 제외)
+        List<Long> blockedUserIds = (userId != null)
+                ? blockRepository.findBlockedUserIdsByBlockerId(userId)
+                : List.of();
+
+        // 3. 검색 조건 조합 및 조회 : 카테고리, 대학ID, 차단 여부 기반으로 조회
         Specification<Item> spec = Specification.allOf(
                 ItemSpecs.withCategory(cond.getCategory()),
-                ItemSpecs.withUniversity(univId)
+                ItemSpecs.withUniversity(univId),
+                ItemSpecs.excludeBlockedUsers(blockedUserIds)
         );
 
 
