@@ -4,6 +4,8 @@ import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemCategory;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
+
 public class ItemSpecs {
     /**
      * 카테고리 필터 조건 생성
@@ -35,6 +37,17 @@ public class ItemSpecs {
                 return builder.disjunction(); // 0건 처리
             // 둘다 소문자로 만들어서 대소문자를 사실상 같게 변경
             return builder.like(builder.lower(root.get("title")), "%" + keyword.toLowerCase() + "%");
+        };
+    }
+
+    /**
+     * 조회 요청자가 차단한 사용자들의 게시물 제외 조건 생성
+     * @param blockedUserIds 조회 요청자가 차단한 사용자 ID 목록
+     */
+    public static Specification<Item> excludeBlockedUsers(List<Long> blockedUserIds) {
+        return (root, query, builder) -> {
+            if (blockedUserIds == null || blockedUserIds.isEmpty()) return null;
+            return builder.not(root.get("user").get("id").in(blockedUserIds));
         };
     }
 }
