@@ -6,7 +6,10 @@ import com.zigu.ziguwas.domains.item.dto.request.ItemRegisterReqDto;
 import com.zigu.ziguwas.domains.item.dto.request.ItemUpdateReqDto;
 import com.zigu.ziguwas.domains.item.dto.response.ItemResDto;
 import com.zigu.ziguwas.domains.item.service.ItemService;
+import com.zigu.ziguwas.domains.trade.dto.request.ItemBlockedDateReqDto;
 import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockRangeResDto;
+import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockedDateListResDto;
+import com.zigu.ziguwas.domains.trade.service.ItemBlockService;
 import com.zigu.ziguwas.domains.trade.service.TradeService;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -35,6 +38,7 @@ public class ItemController implements ItemApi {
 
     private final ItemService itemService;
     private final TradeService tradeService;
+    private final ItemBlockService itemBlockService;
 
     /**
      * 아이템의 기본 텍스트 정보를 먼저 등록합니다.
@@ -145,6 +149,52 @@ public class ItemController implements ItemApi {
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
         return ResponseEntity.ok(tradeService.getBlockRanges(itemId));
+    }
+
+    /**
+     * 등록자 본인이 설정한 차단 날짜 목록을 조회합니다. (등록/수정 화면용)
+     * @param itemId 조회할 아이템 ID
+     * @param customUserDetails 현재 로그인한 사용자의 시큐리티 인증 정보
+     * @return 차단된 날짜 목록
+     */
+    @GetMapping("/{itemId}/blocks/dates")
+    public ResponseEntity<ItemBlockedDateListResDto> getBlockedDates(
+            @PathVariable("itemId") Long itemId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        return ResponseEntity.ok(itemBlockService.getBlockedDates(itemId, customUserDetails.getUserId()));
+    }
+
+    /**
+     * 특정 날짜(들)를 대여 불가로 차단합니다.
+     * @param itemId 대상 아이템 ID
+     * @param dto 차단할 날짜 목록
+     * @param customUserDetails 현재 로그인한 사용자의 시큐리티 인증 정보
+     */
+    @PostMapping("/{itemId}/blocks/dates")
+    public ResponseEntity<Void> addBlockedDates(
+            @PathVariable("itemId") Long itemId,
+            @RequestBody @Valid ItemBlockedDateReqDto dto,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        itemBlockService.addBlockedDates(itemId, dto.getDates(), customUserDetails.getUserId());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    /**
+     * 차단해둔 특정 날짜(들)를 해제합니다.
+     * @param itemId 대상 아이템 ID
+     * @param dto 해제할 날짜 목록
+     * @param customUserDetails 현재 로그인한 사용자의 시큐리티 인증 정보
+     */
+    @DeleteMapping("/{itemId}/blocks/dates")
+    public ResponseEntity<Void> removeBlockedDates(
+            @PathVariable("itemId") Long itemId,
+            @RequestBody @Valid ItemBlockedDateReqDto dto,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        itemBlockService.removeBlockedDates(itemId, dto.getDates(), customUserDetails.getUserId());
+        return ResponseEntity.noContent().build();
     }
 
 }
