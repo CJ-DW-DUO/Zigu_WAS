@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.List;
 
 @Tag(name = "Item API", description = "아이템 등록 및 이미지 업로드 API")
@@ -220,12 +221,19 @@ public interface ItemApi {
 
     @Operation(
             summary = "아이템 대여 불가 기간 조회",
-            description = "승인/진행 중인 거래로 인해 대여가 불가능한 기간 목록을 반환합니다. " +
-                    "예약 캘린더에서 이미 차단된 날짜를 표시하는 데 사용합니다."
+            description = "승인/진행 중인 거래(RESERVATION)와 등록자가 직접 설정한 차단(OWNER, 특정 날짜 + 매주 반복 요일)을 " +
+                    "합쳐서 대여가 불가능한 기간 목록을 반환합니다. 예약 캘린더에서 차단된 날짜를 표시하는 데 사용합니다. " +
+                    "반복 요일 차단은 [from, to] 구간 내의 실제 날짜로 펼쳐서 내려줍니다. " +
+                    "from/to를 생략하면 오늘부터 90일간을 기본으로 조회합니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(schema = @Schema(implementation = ItemBlockRangeResDto.class))
+            ),
+            @ApiResponse(responseCode = "400", description = "조회 기간이 잘못됨 (종료일이 시작일보다 빠름)",
+                    content = @Content(examples = @ExampleObject(value = """
+                        { "status": 400, "message": "종료일은 시작일보다 빠를 수 없습니다." }
+                        """))
             ),
             @ApiResponse(responseCode = "404", description = "아이템 없음",
                     content = @Content(examples = @ExampleObject(value = """
@@ -237,6 +245,12 @@ public interface ItemApi {
     ResponseEntity<ItemBlockRangeResDto> getItemBlockRanges(
             @Parameter(description = "조회할 아이템 ID", required = true, example = "1")
             @PathVariable("itemId") Long itemId,
+
+            @Parameter(description = "조회 시작일 (생략 시 오늘)", example = "2026-09-01")
+            @RequestParam(value = "from", required = false) LocalDate from,
+
+            @Parameter(description = "조회 종료일 (생략 시 from + 90일)", example = "2026-12-01")
+            @RequestParam(value = "to", required = false) LocalDate to,
 
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
     );

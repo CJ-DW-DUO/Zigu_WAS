@@ -27,11 +27,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -149,9 +151,11 @@ public class ItemController implements ItemApi {
     @GetMapping("/{itemId}/block-ranges")
     public ResponseEntity<ItemBlockRangeResDto> getItemBlockRanges(
             @PathVariable("itemId") Long itemId,
+            @RequestParam(value = "from", required = false) LocalDate from,
+            @RequestParam(value = "to", required = false) LocalDate to,
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
-        return ResponseEntity.ok(tradeService.getBlockRanges(itemId));
+        return ResponseEntity.ok(tradeService.getBlockRanges(itemId, from, to));
     }
 
     /**

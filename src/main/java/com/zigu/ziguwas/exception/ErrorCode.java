@@ -56,6 +56,7 @@ public enum ErrorCode {
 
     // 등록자 대여 불가 차단 관련
     PAST_DATE_NOT_BLOCKABLE(400, "지난 날짜는 차단할 수 없습니다."),
+    INVALID_DATE_RANGE(400, "종료일은 시작일보다 빠를 수 없습니다."),
 
     // 아이템 이미지 관련
     IMAGE_NOT_FOUND(404, "이미지를 찾을 수 없습니다." ),

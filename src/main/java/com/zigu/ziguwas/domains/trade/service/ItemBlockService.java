@@ -2,6 +2,8 @@ package com.zigu.ziguwas.domains.trade.service;
 
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
+import com.zigu.ziguwas.domains.trade.dto.response.BlockSource;
+import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockRangeResDto;
 import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockWeekdayListResDto;
 import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockedDateListResDto;
 import com.zigu.ziguwas.domains.trade.entity.ItemBlockWeekday;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -160,5 +163,41 @@ public class ItemBlockService {
             }
         }
         return false;
+    }
+
+    /**
+     * 등록자가 설정한 차단(특정 날짜 + 반복 요일)을 주어진 기간 내의 구체적인 날짜들로 펼쳐서 반환합니다.
+     * 반복 요일 차단은 규칙 그 자체로는 캘린더에 표시할 수 없으므로, 여기서 실제 날짜로 변환합니다.
+     */
+    @Transactional(readOnly = true)
+    public List<ItemBlockRangeResDto.BlockRangeItem> getOwnerBlockedRanges(Item item, LocalDate from, LocalDate to) {
+        List<ItemBlockRangeResDto.BlockRangeItem> result = new ArrayList<>();
+
+        itemBlockedDateRepository.findAllByItem(item).stream()
+                .map(ItemBlockedDate::getBlockedDate)
+                .filter(date -> !date.isBefore(from) && !date.isAfter(to))
+                .forEach(date -> result.add(ItemBlockRangeResDto.BlockRangeItem.builder()
+                        .startDate(date)
+                        .endDate(date)
+                        .source(BlockSource.OWNER)
+                        .build()));
+
+        List<DayOfWeek> blockedWeekdays = itemBlockWeekdayRepository.findAllByItem(item).stream()
+                .map(ItemBlockWeekday::getDayOfWeek)
+                .toList();
+
+        if (!blockedWeekdays.isEmpty()) {
+            for (LocalDate date = from; !date.isAfter(to); date = date.plusDays(1)) {
+                if (blockedWeekdays.contains(date.getDayOfWeek())) {
+                    result.add(ItemBlockRangeResDto.BlockRangeItem.builder()
+                            .startDate(date)
+                            .endDate(date)
+                            .source(BlockSource.OWNER)
+                            .build());
+                }
+            }
+        }
+
+        return result;
     }
 }
