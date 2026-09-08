@@ -6,8 +6,10 @@ import com.zigu.ziguwas.domains.item.dto.request.ItemRegisterReqDto;
 import com.zigu.ziguwas.domains.item.dto.request.ItemUpdateReqDto;
 import com.zigu.ziguwas.domains.item.dto.response.ItemResDto;
 import com.zigu.ziguwas.domains.item.service.ItemService;
+import com.zigu.ziguwas.domains.trade.dto.request.ItemBlockWeekdayReqDto;
 import com.zigu.ziguwas.domains.trade.dto.request.ItemBlockedDateReqDto;
 import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockRangeResDto;
+import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockWeekdayListResDto;
 import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockedDateListResDto;
 import com.zigu.ziguwas.domains.trade.service.ItemBlockService;
 import com.zigu.ziguwas.domains.trade.service.TradeService;
@@ -29,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.DayOfWeek;
 import java.util.List;
 
 @RestController
@@ -194,6 +197,52 @@ public class ItemController implements ItemApi {
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
         itemBlockService.removeBlockedDates(itemId, dto.getDates(), customUserDetails.getUserId());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 등록자 본인이 설정한 반복 차단 요일 목록을 조회합니다. (등록/수정 화면용)
+     * @param itemId 조회할 아이템 ID
+     * @param customUserDetails 현재 로그인한 사용자의 시큐리티 인증 정보
+     * @return 매주 반복 차단되는 요일 목록
+     */
+    @GetMapping("/{itemId}/blocks/weekdays")
+    public ResponseEntity<ItemBlockWeekdayListResDto> getBlockedWeekdays(
+            @PathVariable("itemId") Long itemId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        return ResponseEntity.ok(itemBlockService.getBlockedWeekdays(itemId, customUserDetails.getUserId()));
+    }
+
+    /**
+     * 매주 반복되는 특정 요일(들)을 대여 불가로 차단합니다.
+     * @param itemId 대상 아이템 ID
+     * @param dto 차단할 요일 목록
+     * @param customUserDetails 현재 로그인한 사용자의 시큐리티 인증 정보
+     */
+    @PostMapping("/{itemId}/blocks/weekdays")
+    public ResponseEntity<Void> addBlockedWeekdays(
+            @PathVariable("itemId") Long itemId,
+            @RequestBody @Valid ItemBlockWeekdayReqDto dto,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        itemBlockService.addBlockedWeekdays(itemId, dto.getDaysOfWeek(), customUserDetails.getUserId());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    /**
+     * 차단해둔 반복 요일을 해제합니다.
+     * @param itemId 대상 아이템 ID
+     * @param dayOfWeek 해제할 요일
+     * @param customUserDetails 현재 로그인한 사용자의 시큐리티 인증 정보
+     */
+    @DeleteMapping("/{itemId}/blocks/weekdays/{dayOfWeek}")
+    public ResponseEntity<Void> removeBlockedWeekday(
+            @PathVariable("itemId") Long itemId,
+            @PathVariable("dayOfWeek") DayOfWeek dayOfWeek,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        itemBlockService.removeBlockedWeekday(itemId, dayOfWeek, customUserDetails.getUserId());
         return ResponseEntity.noContent().build();
     }
 

@@ -4,8 +4,10 @@ import com.zigu.ziguwas.domains.item.dto.request.ItemDelReqDto;
 import com.zigu.ziguwas.domains.item.dto.request.ItemRegisterReqDto;
 import com.zigu.ziguwas.domains.item.dto.request.ItemUpdateReqDto;
 import com.zigu.ziguwas.domains.item.dto.response.ItemResDto;
+import com.zigu.ziguwas.domains.trade.dto.request.ItemBlockWeekdayReqDto;
 import com.zigu.ziguwas.domains.trade.dto.request.ItemBlockedDateReqDto;
 import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockRangeResDto;
+import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockWeekdayListResDto;
 import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockedDateListResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,6 +26,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.DayOfWeek;
 import java.util.List;
 
 @Tag(name = "Item API", description = "아이템 등록 및 이미지 업로드 API")
@@ -304,6 +307,64 @@ public interface ItemApi {
             @PathVariable("itemId") Long itemId,
 
             @RequestBody @Valid ItemBlockedDateReqDto dto,
+
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
+    @Operation(
+            summary = "등록자 반복 차단 요일 목록 조회",
+            description = "등록자 본인이 설정한, 매주 반복되는 차단 요일 목록을 조회합니다. 등록/수정 화면에서 사용합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = ItemBlockWeekdayListResDto.class))
+            ),
+            @ApiResponse(responseCode = "403", description = "본인 소유 아이템이 아님"),
+            @ApiResponse(responseCode = "404", description = "아이템 없음")
+    })
+    @GetMapping("/{itemId}/blocks/weekdays")
+    ResponseEntity<ItemBlockWeekdayListResDto> getBlockedWeekdays(
+            @Parameter(description = "조회할 아이템 ID", required = true, example = "1")
+            @PathVariable("itemId") Long itemId,
+
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
+    @Operation(
+            summary = "매주 반복 요일 대여 불가 차단",
+            description = "등록자가 매주 반복되는 특정 요일(들)을 대여 불가로 차단합니다. 이미 차단된 요일은 건너뜁니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "차단 등록 성공"),
+            @ApiResponse(responseCode = "403", description = "본인 소유 아이템이 아님"),
+            @ApiResponse(responseCode = "404", description = "아이템 없음")
+    })
+    @PostMapping("/{itemId}/blocks/weekdays")
+    ResponseEntity<Void> addBlockedWeekdays(
+            @Parameter(description = "대상 아이템 ID", required = true, example = "1")
+            @PathVariable("itemId") Long itemId,
+
+            @RequestBody @Valid ItemBlockWeekdayReqDto dto,
+
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
+    @Operation(
+            summary = "반복 차단 요일 해제",
+            description = "등록자가 차단해둔 반복 요일을 해제합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "차단 해제 성공"),
+            @ApiResponse(responseCode = "403", description = "본인 소유 아이템이 아님"),
+            @ApiResponse(responseCode = "404", description = "아이템 없음")
+    })
+    @DeleteMapping("/{itemId}/blocks/weekdays/{dayOfWeek}")
+    ResponseEntity<Void> removeBlockedWeekday(
+            @Parameter(description = "대상 아이템 ID", required = true, example = "1")
+            @PathVariable("itemId") Long itemId,
+
+            @Parameter(description = "해제할 요일", required = true, example = "TUESDAY")
+            @PathVariable("dayOfWeek") DayOfWeek dayOfWeek,
 
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
     );
