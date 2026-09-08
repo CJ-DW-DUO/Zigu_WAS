@@ -135,4 +135,30 @@ public class ItemBlockService {
                 .blockedWeekdays(blockedWeekdays)
                 .build();
     }
+
+    /**
+     * 주어진 기간에 등록자가 지정한 차단(특정 날짜 또는 매주 반복 요일)이 겹치는지 확인합니다.
+     * 대여 신청/승인 검증에서 사용합니다.
+     */
+    @Transactional(readOnly = true)
+    public boolean isPeriodBlockedByOwner(Item item, LocalDate startDate, LocalDate endDate) {
+        if (itemBlockedDateRepository.existsByItemAndBlockedDateBetween(item, startDate, endDate)) {
+            return true;
+        }
+
+        List<DayOfWeek> blockedWeekdays = itemBlockWeekdayRepository.findAllByItem(item).stream()
+                .map(ItemBlockWeekday::getDayOfWeek)
+                .toList();
+
+        if (blockedWeekdays.isEmpty()) {
+            return false;
+        }
+
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            if (blockedWeekdays.contains(date.getDayOfWeek())) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
