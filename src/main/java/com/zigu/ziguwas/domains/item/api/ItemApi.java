@@ -4,7 +4,9 @@ import com.zigu.ziguwas.domains.item.dto.request.ItemDelReqDto;
 import com.zigu.ziguwas.domains.item.dto.request.ItemRegisterReqDto;
 import com.zigu.ziguwas.domains.item.dto.request.ItemUpdateReqDto;
 import com.zigu.ziguwas.domains.item.dto.response.ItemResDto;
+import com.zigu.ziguwas.domains.trade.dto.request.ItemBlockedDateReqDto;
 import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockRangeResDto;
+import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockedDateListResDto;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -232,6 +234,76 @@ public interface ItemApi {
     ResponseEntity<ItemBlockRangeResDto> getItemBlockRanges(
             @Parameter(description = "조회할 아이템 ID", required = true, example = "1")
             @PathVariable("itemId") Long itemId,
+
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
+    @Operation(
+            summary = "등록자 차단 날짜 목록 조회",
+            description = "등록자 본인이 설정한 특정 날짜 차단 목록을 조회합니다. 등록/수정 화면에서 사용합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = ItemBlockedDateListResDto.class))
+            ),
+            @ApiResponse(responseCode = "403", description = "본인 소유 아이템이 아님",
+                    content = @Content(examples = @ExampleObject(value = """
+                        { "status": 403, "message": "권한이 없습니다." }
+                        """))
+            ),
+            @ApiResponse(responseCode = "404", description = "아이템 없음",
+                    content = @Content(examples = @ExampleObject(value = """
+                        { "status": 404, "message": "아이템을 찾을 수 없습니다." }
+                        """))
+            )
+    })
+    @GetMapping("/{itemId}/blocks/dates")
+    ResponseEntity<ItemBlockedDateListResDto> getBlockedDates(
+            @Parameter(description = "조회할 아이템 ID", required = true, example = "1")
+            @PathVariable("itemId") Long itemId,
+
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
+    @Operation(
+            summary = "특정 날짜 대여 불가 차단",
+            description = "등록자가 특정 날짜(들)를 대여 불가로 차단합니다. 이미 차단된 날짜는 건너뜁니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "차단 등록 성공"),
+            @ApiResponse(responseCode = "400", description = "지난 날짜를 차단하려는 경우",
+                    content = @Content(examples = @ExampleObject(value = """
+                        { "status": 400, "message": "지난 날짜는 차단할 수 없습니다." }
+                        """))
+            ),
+            @ApiResponse(responseCode = "403", description = "본인 소유 아이템이 아님"),
+            @ApiResponse(responseCode = "404", description = "아이템 없음")
+    })
+    @PostMapping("/{itemId}/blocks/dates")
+    ResponseEntity<Void> addBlockedDates(
+            @Parameter(description = "대상 아이템 ID", required = true, example = "1")
+            @PathVariable("itemId") Long itemId,
+
+            @RequestBody @Valid ItemBlockedDateReqDto dto,
+
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
+    @Operation(
+            summary = "특정 날짜 차단 해제",
+            description = "등록자가 차단해둔 특정 날짜(들)를 해제합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "차단 해제 성공"),
+            @ApiResponse(responseCode = "403", description = "본인 소유 아이템이 아님"),
+            @ApiResponse(responseCode = "404", description = "아이템 없음")
+    })
+    @DeleteMapping("/{itemId}/blocks/dates")
+    ResponseEntity<Void> removeBlockedDates(
+            @Parameter(description = "대상 아이템 ID", required = true, example = "1")
+            @PathVariable("itemId") Long itemId,
+
+            @RequestBody @Valid ItemBlockedDateReqDto dto,
 
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
     );

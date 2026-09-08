@@ -54,6 +54,9 @@ public enum ErrorCode {
     ACTIVE_TRADE_EXISTS(400, "진행중인 거래가 있습니다." ),
     TRADE_PERIOD_CONFLICT(409, "선택한 기간은 이미 대여 중입니다."),
 
+    // 등록자 대여 불가 차단 관련
+    PAST_DATE_NOT_BLOCKABLE(400, "지난 날짜는 차단할 수 없습니다."),
+
     // 아이템 이미지 관련
     IMAGE_NOT_FOUND(404, "이미지를 찾을 수 없습니다." ),
     IMAGE_NOT_BELONG_TO_ITEM(400, "해당 item에 속하지않은 image 입니다." ),
