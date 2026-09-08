@@ -24,11 +24,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class TradeService {
+
+    // 캘린더 조회 시 from/to를 안 주면 오늘부터 이 기간만큼 기본으로 펼쳐서 보여준다.
+    private static final int DEFAULT_BLOCK_RANGE_WINDOW_DAYS = 90;
 
     private final TradeRepository tradeRepository;
     private final UserRepository userRepository;
@@ -307,25 +311,40 @@ public class TradeService {
 
     /**
      * 특정 아이템의 대여 불가 기간 목록을 조회합니다.
-     * 승인/진행 중(IN_PROGRESS)인 거래의 기간을 반환합니다.
+     * 승인/진행 중(IN_PROGRESS)인 거래의 기간 + 등록자가 지정한 차단(특정 날짜/반복 요일)을
+     * 함께 반환합니다. 반복 요일 차단은 그 자체로는 캘린더에 표시할 수 없어 [from, to] 구간의
+     * 실제 날짜들로 펼쳐서 내려줍니다.
      *
      * @param itemId 조회할 아이템 ID
+     * @param from   조회 시작일 (생략 시 오늘)
+     * @param to     조회 종료일 (생략 시 from + 90일)
      * @return 대여 불가 기간 목록
      */
     @Transactional(readOnly = true)
-    public ItemBlockRangeResDto getBlockRanges(Long itemId) {
+    public ItemBlockRangeResDto getBlockRanges(Long itemId, LocalDate from, LocalDate to) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
 
+        LocalDate rangeFrom = (from != null) ? from : LocalDate.now();
+        LocalDate rangeTo = (to != null) ? to : rangeFrom.plusDays(DEFAULT_BLOCK_RANGE_WINDOW_DAYS);
+
+        if (rangeTo.isBefore(rangeFrom)) {
+            throw new CustomException(ErrorCode.INVALID_DATE_RANGE);
+        }
+
         List<Trade> activeTrades = tradeRepository.findAllByItemAndTradeStatus(item, TradeStatus.IN_PROGRESS);
 
-        List<ItemBlockRangeResDto.BlockRangeItem> blockRange = activeTrades.stream()
-                .map(trade -> ItemBlockRangeResDto.BlockRangeItem.builder()
+        List<ItemBlockRangeResDto.BlockRangeItem> blockRange = new ArrayList<>();
+
+        activeTrades.stream()
+                .filter(trade -> !trade.getTradeEndate().isBefore(rangeFrom) && !trade.getTradeStdate().isAfter(rangeTo))
+                .forEach(trade -> blockRange.add(ItemBlockRangeResDto.BlockRangeItem.builder()
                         .startDate(trade.getTradeStdate())
                         .endDate(trade.getTradeEndate())
                         .source(BlockSource.RESERVATION)
-                        .build())
-                .toList();
+                        .build()));
+
+        blockRange.addAll(itemBlockService.getOwnerBlockedRanges(item, rangeFrom, rangeTo));
 
         return ItemBlockRangeResDto.builder().blockRange(blockRange).build();
     }
