@@ -33,6 +33,7 @@ public class TradeService {
     private final TradeRepository tradeRepository;
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
+    private final ItemBlockService itemBlockService;
     // 거래 상태 변경 시 알림 이벤트를 발행하기 위한 퍼블리셔
     private final ApplicationEventPublisher eventPublisher;
 
@@ -98,6 +99,11 @@ public class TradeService {
 
         // 5-1. 요청한 기간이 이미 승인/진행 중인 다른 거래와 겹치면 신청 자체를 막음
         if (tradeRepository.existsOverlappingTrade(item, TradeStatus.IN_PROGRESS, dto.getStartDate(), dto.getEndDate())) {
+            throw new CustomException(ErrorCode.TRADE_PERIOD_CONFLICT);
+        }
+
+        // 5-2. 요청한 기간에 등록자가 직접 차단한 날짜/요일이 껴있으면 신청 자체를 막음
+        if (itemBlockService.isPeriodBlockedByOwner(item, dto.getStartDate(), dto.getEndDate())) {
             throw new CustomException(ErrorCode.TRADE_PERIOD_CONFLICT);
         }
 
@@ -183,6 +189,10 @@ public class TradeService {
                     .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
             if (tradeRepository.existsOverlappingTrade(
                     item, TradeStatus.IN_PROGRESS, trade.getTradeStdate(), trade.getTradeEndate())) {
+                throw new CustomException(ErrorCode.TRADE_PERIOD_CONFLICT);
+            }
+            // 신청 이후 승인 사이에 등록자가 해당 기간을 차단했을 수도 있으므로 승인 시점에도 재검증
+            if (itemBlockService.isPeriodBlockedByOwner(item, trade.getTradeStdate(), trade.getTradeEndate())) {
                 throw new CustomException(ErrorCode.TRADE_PERIOD_CONFLICT);
             }
 
