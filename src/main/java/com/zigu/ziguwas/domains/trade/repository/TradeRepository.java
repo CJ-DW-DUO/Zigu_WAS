@@ -15,11 +15,8 @@ import java.util.Optional;
 
 public interface TradeRepository extends JpaRepository<Trade, Long> {
 
-    // 특정 아이템과 임대인으로 거래 조회
-    Optional<Trade> findByItemAndRenter(Item item, User renter);
-
-    // 특정 아이템과 임차인으로 거래 조회
-    Optional<Trade> findByItemAndRentee(Item item, User rentee);
+    // 특정 아이템에서 두 사용자 사이의 가장 최근 거래 조회 (채팅방 상대와의 거래 상태 표시용)
+    Optional<Trade> findFirstByItemAndRenterIdAndRenteeIdOrderByIdDesc(Item item, Long renterId, Long renteeId);
 
     /**
      * 유저가 대여인(Renter) 혹은 임차인(Lessee)으로 참여 중인 거래 중
@@ -34,6 +31,12 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
     );
 
     boolean existsByItemAndTradeStatusIn(Item item, List<TradeStatus> statuses);
+
+    /**
+     * 특정 아이템에 대해 해당 임대인이 이미 요청/진행 중인 거래를 가지고 있는지 확인합니다.
+     * (요청글에 같은 공급자가 중복 제안하는 것을 막는 용도)
+     */
+    boolean existsByItemAndRenterAndTradeStatusIn(Item item, User renter, List<TradeStatus> statuses);
 
     /**
      * 특정 거래를 제외하고, 같은 아이템에 주어진 상태인 다른 거래가 있는지 확인합니다.

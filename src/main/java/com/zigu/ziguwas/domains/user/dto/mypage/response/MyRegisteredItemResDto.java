@@ -18,6 +18,9 @@ public class MyRegisteredItemResDto {
     @Schema(description = "아이템Id", example = "1")
     private final Long itemId;
 
+    @Schema(description = "게시글 유형 (SUPPLY: 빌려드려요, DEMAND: 빌려주세요)", example = "SUPPLY")
+    private final String postType;
+
     @Schema(description = "제목", example = "제목입니다 빌려가세요 상태도 ..")
     private final String title;
 
@@ -33,6 +36,7 @@ public class MyRegisteredItemResDto {
     public static MyRegisteredItemResDto fromEntity(Item item) {
         return MyRegisteredItemResDto.builder()
                 .itemId(item.getId())
+                .postType(item.getPostType().name())
                 .title(item.getTitle())
                 .mainImageUrl(item.getImageUrl().stream()
                         .filter(ItemImage::isMainImageUrl)

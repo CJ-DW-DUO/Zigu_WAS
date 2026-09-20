@@ -4,6 +4,7 @@ import com.zigu.ziguwas.domains.block.repository.BlockRepository;
 import com.zigu.ziguwas.domains.item.dto.response.ItemListResDto;
 import com.zigu.ziguwas.domains.item.dto.response.ItemSearchCond;
 import com.zigu.ziguwas.domains.item.entity.Item;
+import com.zigu.ziguwas.domains.item.entity.PostType;
 import com.zigu.ziguwas.domains.item.repository.ItemListRepository;
 import com.zigu.ziguwas.domains.item.repository.spec.ItemSpecs;
 import lombok.RequiredArgsConstructor;
@@ -44,8 +45,11 @@ public class ItemListService {
                 ? blockRepository.findBlockedUserIdsByBlockerId(userId)
                 : List.of();
 
-        // 3. 검색 조건 조합 및 조회 : 카테고리, 대학ID, 차단 여부 기반으로 조회
+        // 3. 검색 조건 조합 및 조회 : 게시글 유형, 카테고리, 대학ID, 차단 여부 기반으로 조회
+        // 유형을 지정하지 않으면 요청글을 모르는 기존 클라이언트를 위해 공급글만 조회한다.
+        PostType postType = cond.getPostType() != null ? cond.getPostType() : PostType.SUPPLY;
         Specification<Item> spec = Specification.allOf(
+                ItemSpecs.withPostType(postType),
                 ItemSpecs.withCategory(cond.getCategory()),
                 ItemSpecs.withUniversity(univId),
                 ItemSpecs.excludeBlockedUsers(blockedUserIds)

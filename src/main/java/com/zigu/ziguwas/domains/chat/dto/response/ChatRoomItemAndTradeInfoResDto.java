@@ -26,7 +26,10 @@ public class ChatRoomItemAndTradeInfoResDto {
     // 물건 이미지 URL
     private String imageUrl;
 
-    // 사용자 역할 (RENTER, RENTEE)
+    // 게시글 유형 (SUPPLY: 빌려드려요, DEMAND: 빌려주세요)
+    private String postType;
+
+    // 사용자 역할 (RENTER, RENTEE). 게시글 유형과 무관하게 물건을 빌려주는 쪽이 RENTER이다.
     private String userRole;
 
     // 거래 상태

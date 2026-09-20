@@ -57,9 +57,9 @@ public class MyPageTradeService {
     }
 
     /**
-     * 보낸 요청을 조회 합니다.
+     * 보낸 요청을 조회 합니다. (공급글은 임차인이 보낸 요청, 요청글은 임대인이 보낸 제안)
      *
-     * @param userId rentee의 userId
+     * @param userId 요청을 보낸 사용자의 userId
      * @param tradeStatus 필터링 할 문자
      * @param pageable page 정보
      * @return 보낸 요청에 응답할 DTO
@@ -74,14 +74,14 @@ public class MyPageTradeService {
                 ? List.of(TradeStatus.IN_PROGRESS,TradeStatus.REQUESTED,TradeStatus.REJECTED)
                 : List.of(tradeStatus);
 
-        return myPageTradeRepository.findAllByRenteeAndTradeStatusIn(user, statuses, pageable)
+        return myPageTradeRepository.findSentRequests(user, statuses, pageable)
                 .map(MyPageTradeListResDto::fromEntity);
     }
 
     /**
-     * 받은 대여 요청을 조회합니다.
+     * 받은 대여 요청을 조회합니다. (공급글은 임대인이 받은 요청, 요청글은 임차인이 받은 제안)
      *
-     * @param userId renter의 userId
+     * @param userId 요청을 받은 사용자의 userId
      * @param tradeStatus 필터링 할 상태
      * @param pageable 페이지 정보
      * @return 받은 요청 리스트
@@ -95,7 +95,7 @@ public class MyPageTradeService {
                 ? List.of(TradeStatus.IN_PROGRESS, TradeStatus.REQUESTED, TradeStatus.REJECTED)
                 : List.of(tradeStatus);
 
-        return myPageTradeRepository.findAllByRenterAndTradeStatusIn(user, statuses, pageable)
+        return myPageTradeRepository.findReceivedRequests(user, statuses, pageable)
                 .map(MyPageReceiveResDto::fromEntity);
     }
 

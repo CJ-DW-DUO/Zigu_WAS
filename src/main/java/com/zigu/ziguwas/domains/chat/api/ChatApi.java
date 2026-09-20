@@ -78,6 +78,7 @@ public interface ChatApi {
                                       "itemTitle": "캐논 카메라 렌즈",
                                       "itemPrice": 15000,
                                       "imageUrl": "https://example.com/item.jpg",
+                                      "postType": "SUPPLY",
                                       "userRole": "RENTEE",
                                       "tradeStatus": "REQUESTED"
                                     }

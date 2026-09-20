@@ -22,8 +22,11 @@ public class MyPageReceiveResDto {
     @Schema(description = "아이템 ID", example = "2")
     private final Long itemId;
 
-    @Schema(description = "신청자 닉네임", example = "빌리미123")
+    @Schema(description = "신청자 닉네임 (요청을 먼저 보낸 사람. 요청글 제안이면 제안한 공급자)", example = "빌리미123")
     private final String renteeName;
+
+    @Schema(description = "게시글 유형 (SUPPLY: 빌려드려요, DEMAND: 빌려주세요). 삭제된 게시글이면 null", example = "SUPPLY")
+    private final String postType;
 
     @Schema(description = "제목", example = "제목입니다")
     private final String title;
@@ -57,7 +60,10 @@ public class MyPageReceiveResDto {
         return MyPageReceiveResDto.builder()
                 .tradeId(trade.getId())
                 .itemId(itemDeleted ? null : trade.getItem().getId())
-                .renteeName(trade.getRentee().getNickname())
+                .renteeName(trade.isProposedByRenter()
+                        ? trade.getRenter().getNickname()
+                        : trade.getRentee().getNickname())
+                .postType(itemDeleted ? null : trade.getItem().getPostType().name())
                 .title(itemDeleted ? "삭제된 게시글입니다." : trade.getItem().getTitle())
                 .period(trade.getPeriod())
                 .totalPrice(itemDeleted ? 0L : trade.calculateTotalPrice())

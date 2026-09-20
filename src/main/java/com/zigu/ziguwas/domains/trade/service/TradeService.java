@@ -1,12 +1,15 @@
 package com.zigu.ziguwas.domains.trade.service;
 
 import com.zigu.ziguwas.domains.item.entity.Item;
+import com.zigu.ziguwas.domains.block.repository.BlockRepository;
 import com.zigu.ziguwas.domains.item.entity.ItemStatus;
+import com.zigu.ziguwas.domains.item.entity.PostType;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
 import jakarta.persistence.EntityNotFoundException;
 import com.zigu.ziguwas.domains.notification.entity.NotificationType;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.trade.dto.request.TradeOfferReqDto;
+import com.zigu.ziguwas.domains.trade.dto.request.TradeProposeReqDto;
 import com.zigu.ziguwas.domains.trade.dto.response.BlockSource;
 import com.zigu.ziguwas.domains.trade.dto.response.ItemBlockRangeResDto;
 import com.zigu.ziguwas.domains.trade.entity.Trade;
@@ -37,7 +40,11 @@ public class TradeService {
     private final TradeRepository tradeRepository;
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
+
+    private final BlockRepository blockRepository;
+
     private final ItemBlockService itemBlockService;
+
     // 거래 상태 변경 시 알림 이벤트를 발행하기 위한 퍼블리셔
     private final ApplicationEventPublisher eventPublisher;
 
@@ -85,6 +92,11 @@ public class TradeService {
         Item item = itemRepository.findById(dto.getItemId()).orElseThrow(
                 () -> new CustomException(ErrorCode.ITEM_NOT_FOUND)
         );
+
+        // 2-1. 요청글(DEMAND)은 임대인이 제안하는 구조이므로 이 경로로는 요청할 수 없음
+        if (item.getPostType() != PostType.SUPPLY) {
+            throw new CustomException(ErrorCode.INVALID_POST_TYPE);
+        }
 
         // 3. 임대인 조회
         User renter = item.getUser();
@@ -141,7 +153,102 @@ public class TradeService {
         // 9. 거래ID 반환
         return saved.getId();
     }
-    
+
+    /**
+     * 요청글 대여 제안 서비스
+     *
+     * 공급자가 요청글(DEMAND)에 물건을 빌려주겠다고 제안한다.
+     * 공급글과 달리 요청글 작성자가 임차인(rentee), 제안한 사용자가 임대인(renter)이 되며,
+     * 대여 기간은 요청글에 적힌 희망 기간으로 확정된다.
+     *
+     * @param details 제안하는 공급자(임대인 예정자) 로그인 정보
+     * @param dto 요청글 아이템ID
+     * @return 거래ID
+     */
+    @Transactional
+    public Long proposeToDemand(
+            CustomUserDetails details,
+            TradeProposeReqDto dto
+    ){
+        // 1. 제안자(임대인 예정자) 조회
+        User renter = getCurrentUser(details.getUsername());
+
+        // 2. 요청글 조회
+        Item item = itemRepository.findById(dto.getItemId()).orElseThrow(
+                () -> new CustomException(ErrorCode.ITEM_NOT_FOUND)
+        );
+
+        // 3. 요청글이 아니면 제안 불가
+        if (item.getPostType() != PostType.DEMAND) {
+            throw new CustomException(ErrorCode.INVALID_POST_TYPE);
+        }
+
+        // 4. 요청글 작성자(임차인 예정자) 조회
+        User rentee = item.getUser();
+
+        // 5. 같은 대학이 아니면 거래 불가
+        if (!renter.getUniv().getUnivId().equals(rentee.getUniv().getUnivId())) {
+            throw new CustomException(ErrorCode.DIFFERENT_UNIVERSITY_ACCESS);
+        }
+
+        // 6. 본인 요청글에는 제안 불가
+        if (renter.getId().equals(rentee.getId())) {
+            throw new CustomException(ErrorCode.SELF_PROPOSAL_NOT_ALLOWED);
+        }
+
+        // 7. 어느 한쪽이라도 상대를 차단한 상태면 제안 불가
+        if (blockRepository.existsBlockBetween(renter.getId(), rentee.getId())) {
+            throw new CustomException(ErrorCode.BLOCKED_USER_ACCESS);
+        }
+
+        // 8. 이미 매칭 완료된 요청글이면 제안 불가
+        if (item.getItemStatus() != ItemStatus.REGISTERED) {
+            throw new CustomException(ErrorCode.ITEM_ALREADY_RENTING);
+        }
+
+        // 9. 같은 공급자의 중복 제안 방지 (요청/진행 중인 거래가 이미 있는 경우)
+        if (tradeRepository.existsByItemAndRenterAndTradeStatusIn(
+                item, renter, List.of(TradeStatus.REQUESTED, TradeStatus.IN_PROGRESS))) {
+            throw new CustomException(ErrorCode.ACTIVE_TRADE_EXISTS);
+        }
+
+        // 10. 요청글의 희망 기간 확인 (기간이 없거나 이미 지난 요청글은 제안 불가)
+        LocalDate startDate = item.getDesiredStartDate();
+        LocalDate endDate = item.getDesiredEndDate();
+        if (startDate == null || endDate == null || endDate.isBefore(LocalDate.now())) {
+            throw new CustomException(ErrorCode.INVALID_DESIRED_PERIOD);
+        }
+
+        // 11. 제안 전송. 수락일은 제안 당시에 존재하지 않으므로 미기입
+        Trade trade = Trade.builder()
+                .item(item)
+                .renter(renter)
+                .rentee(rentee)
+                .tradeStdate(startDate)
+                .tradeEndate(endDate)
+                .period(ChronoUnit.DAYS.between(startDate, endDate) + 1)
+                .tradeStatus(TradeStatus.REQUESTED)
+                .tradeReqdate(LocalDate.now())
+                .proposedByRenter(true)
+                .build();
+
+        Trade saved = tradeRepository.save(trade);
+
+        // 12. 요청글 작성자에게 대여 제안 알림 이벤트 발행
+        eventPublisher.publishEvent(new NotificationCreatedEvent(
+                rentee.getId(),
+                NotificationType.RENTAL_REQUEST,
+                "새로운 대여 제안",
+                renter.getNickname() + "님이 " + item.getTitle() + " 요청에 물건을 빌려주겠다고 제안했어요.",
+                saved.getId().toString(),
+                item.getId(),
+                item.getTitle()
+        ));
+
+        // 13. 거래ID 반환
+        return saved.getId();
+    }
+
 
     /**
      * 대여 제안 응답 서비스 -> 승인 혹은 거절
@@ -156,8 +263,8 @@ public class TradeService {
             Long tradeId,
             boolean isApproved
     ){
-        // 1. 임대인 조회
-        User renter = getCurrentUser(details.getUsername());
+        // 1. 응답자 조회
+        User responder = getCurrentUser(details.getUsername());
 
         // 2. 거래 조회
         Trade trade = getCurrentTrade(tradeId);
@@ -173,9 +280,12 @@ public class TradeService {
             throw new CustomException(ErrorCode.DELETED_ITEM);
         }
 
-        // 4. 임대인 일치 확인
-        if(!renter.getId().equals(trade.getRenter().getId())) {
-            throw new CustomException(ErrorCode.RENTER_NOT_MATCHED);
+        // 4. 응답 권한자 일치 확인
+        // 공급글은 임대인이, 요청글은 요청글 작성자(임차인)가 제안에 응답한다.
+        boolean isDemand = item.getPostType() == PostType.DEMAND;
+        User expectedResponder = isDemand ? trade.getRentee() : trade.getRenter();
+        if(!responder.getId().equals(expectedResponder.getId())) {
+            throw new CustomException(isDemand ? ErrorCode.REQUESTER_NOT_MATCHED : ErrorCode.RENTER_NOT_MATCHED);
         }
 
         // 5. 거래 요청 상태 확인(대여 오류 방지)
@@ -191,6 +301,12 @@ public class TradeService {
             // row 락을 걸고 다시 조회한 뒤, 그 사이 겹치는 거래가 승인되지 않았는지 최종 검증
             itemRepository.findByIdForUpdate(item.getId())
                     .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
+
+            // 요청글은 한 번 매칭되면 끝나므로, 이미 다른 제안이 수락(반납 완료 포함)된 요청글이면 수락 불가
+            if (isDemand && item.getItemStatus() != ItemStatus.REGISTERED) {
+                throw new CustomException(ErrorCode.ITEM_ALREADY_RENTING);
+            }
+
             if (tradeRepository.existsOverlappingTrade(
                     item, TradeStatus.IN_PROGRESS, trade.getTradeStdate(), trade.getTradeEndate())) {
                 throw new CustomException(ErrorCode.TRADE_PERIOD_CONFLICT);
@@ -219,18 +335,29 @@ public class TradeService {
         // 8. 거래 변경 상태 저장
         tradeRepository.save(trade);
 
-        // 9. 승인/거절 여부에 따라 임차인에게 보낼 알림 메시지 구성
+        // 9. 승인/거절 여부에 따라 요청자에게 보낼 알림 메시지 구성
+        // 공급글은 요청한 임차인에게, 요청글은 제안한 임대인에게 보낸다.
         NotificationType notificationType = isApproved
                 ? NotificationType.RENTAL_ACCEPT
                 : NotificationType.RENTAL_REJECT;
-        String title = isApproved ? "대여 요청 승인" : "대여 요청 거절";
-        String content = isApproved
-                ? "요청한 " + item.getTitle() + " 대여가 승인되었습니다."
-                : "요청한 " + item.getTitle() + " 대여가 거절되었습니다.";
+        String title;
+        String content;
+        if (isDemand) {
+            title = isApproved ? "대여 제안 수락" : "대여 제안 거절";
+            content = isApproved
+                    ? "제안한 " + item.getTitle() + " 요청이 수락되었습니다."
+                    : "제안한 " + item.getTitle() + " 요청이 거절되었습니다.";
+        } else {
+            title = isApproved ? "대여 요청 승인" : "대여 요청 거절";
+            content = isApproved
+                    ? "요청한 " + item.getTitle() + " 대여가 승인되었습니다."
+                    : "요청한 " + item.getTitle() + " 대여가 거절되었습니다.";
+        }
+        User notifyTarget = isDemand ? trade.getRenter() : trade.getRentee();
 
-        // 10. 임차인에게 승인/거절 알림 이벤트 발행
+        // 10. 알림 이벤트 발행
         eventPublisher.publishEvent(new NotificationCreatedEvent(
-                trade.getRentee().getId(),
+                notifyTarget.getId(),
                 notificationType,
                 title,
                 content,

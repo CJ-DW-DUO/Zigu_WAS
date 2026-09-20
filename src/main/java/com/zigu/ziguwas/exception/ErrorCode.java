@@ -44,6 +44,7 @@ public enum ErrorCode {
     ITEM_NOT_RENTING(400, "해당 매물이 현재 대여중이지 않습니다."),
     WITHDRAWN_USER_ITEM(404, "탈퇴한 작성자의 매물 게시글은 상세 정보를 확인할 수 없습니다."),
     DELETED_ITEM(404, "이미 삭제된 item입니다."),
+    INVALID_DESIRED_PERIOD(400, "희망 대여 기간이 올바르지 않습니다."),
 
     // 거래 관련
     TRADE_NOT_FOUND(404, "해당 거래내역을 찾을 수 없습니다." ),
@@ -53,6 +54,9 @@ public enum ErrorCode {
     SELF_TRADE_NOT_ALLOWED(400, "자기 자신의 물건을 빌릴 수 없습니다."),
     ACTIVE_TRADE_EXISTS(400, "진행중인 거래가 있습니다." ),
     TRADE_PERIOD_CONFLICT(409, "선택한 기간은 이미 대여 중입니다."),
+    INVALID_POST_TYPE(400, "해당 게시글 유형에서는 처리할 수 없는 요청입니다."),
+    SELF_PROPOSAL_NOT_ALLOWED(400, "자신의 요청글에는 제안할 수 없습니다."),
+    REQUESTER_NOT_MATCHED(400, "로그인정보와 요청글 작성자 정보가 일치하지 않습니다."),
 
     // 등록자 대여 불가 차단 관련
     PAST_DATE_NOT_BLOCKABLE(400, "지난 날짜는 차단할 수 없습니다."),

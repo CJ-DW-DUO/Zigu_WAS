@@ -7,6 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
@@ -32,25 +34,31 @@ public interface MyPageTradeRepository extends JpaRepository<Trade, Long> {
     List<Trade> findAllByRenterAndTradeStatus(User renter, TradeStatus status);
 
     /**
-     * 내가 보낸 대여 요청 목록을 상태별로 필터링하여 조회합니다.
+     * 내가 먼저 보낸 요청/제안 목록을 상태별로 필터링하여 조회합니다.
+     * 공급글은 임차인(나)이 보낸 대여 요청, 요청글은 임대인(나)이 보낸 대여 제안이 해당합니다.
      *
-     * @param rentee   빌린 사람(나)
+     * @param user     요청을 보낸 사람(나)
      * @param statuses 조회할 상태 목록 (예: 전체 선택 시 [REQUESTED, IN_PROGRESS, REJECTED])
      * @param pageable 페이징 및 정렬 정보
      * @return 필터링된 거래 내역 페이징 객체
      */
-    @EntityGraph(attributePaths = {"item", "renter"})
-    Page<Trade> findAllByRenteeAndTradeStatusIn(User rentee, Collection<TradeStatus> statuses, Pageable pageable);
+    @EntityGraph(attributePaths = {"item", "renter", "rentee"})
+    @Query("SELECT t FROM Trade t WHERE t.tradeStatus IN :statuses AND " +
+            "((t.rentee = :user AND t.proposedByRenter = false) OR (t.renter = :user AND t.proposedByRenter = true))")
+    Page<Trade> findSentRequests(@Param("user") User user, @Param("statuses") Collection<TradeStatus> statuses, Pageable pageable);
 
     /**
-     * 내가 받은 대여 요청 목록을 상태별로 필터링하여 조회합니다.
+     * 내가 받은 요청/제안 목록을 상태별로 필터링하여 조회합니다.
+     * 공급글은 임대인(나)이 받은 대여 요청, 요청글은 임차인(나)이 받은 대여 제안이 해당합니다.
      *
-     * @param renter   빌린 사람(나)
+     * @param user     요청을 받은 사람(나)
      * @param statuses 조회할 상태 목록 (예: 전체 선택 시 [REQUESTED, IN_PROGRESS, REJECTED])
      * @param pageable 페이징 및 정렬 정보
      * @return 필터링된 거래 내역 페이징 객체
      */
-    @EntityGraph(attributePaths = {"item", "rentee"})
-    Page<Trade> findAllByRenterAndTradeStatusIn(User renter, Collection<TradeStatus> statuses, Pageable pageable);
+    @EntityGraph(attributePaths = {"item", "renter", "rentee"})
+    @Query("SELECT t FROM Trade t WHERE t.tradeStatus IN :statuses AND " +
+            "((t.renter = :user AND t.proposedByRenter = false) OR (t.rentee = :user AND t.proposedByRenter = true))")
+    Page<Trade> findReceivedRequests(@Param("user") User user, @Param("statuses") Collection<TradeStatus> statuses, Pageable pageable);
 
 }
