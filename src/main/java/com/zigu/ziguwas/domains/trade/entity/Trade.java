@@ -2,6 +2,7 @@ package com.zigu.ziguwas.domains.trade.entity;
 
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemStatus;
+import com.zigu.ziguwas.domains.item.entity.PostType;
 import com.zigu.ziguwas.domains.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -73,7 +74,8 @@ public class Trade {
 
         if (newTradeStatus == TradeStatus.IN_PROGRESS) {
             this.item.updateItemStatus(ItemStatus.RENTING);
-        } else if (newTradeStatus == TradeStatus.RETURNED) {
+        } else if (newTradeStatus == TradeStatus.RETURNED && this.item.getPostType() != PostType.DEMAND) {
+            // 요청글은 한 번 매칭되면 반납 후에도 "매칭완료"로 남겨 다른 제안이 다시 수락되지 않게 한다.
             this.item.updateItemStatus(ItemStatus.REGISTERED);
         }
     }

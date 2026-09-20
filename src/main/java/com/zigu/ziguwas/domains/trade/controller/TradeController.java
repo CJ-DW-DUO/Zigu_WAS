@@ -2,8 +2,10 @@ package com.zigu.ziguwas.domains.trade.controller;
 
 import com.zigu.ziguwas.domains.trade.api.TradeApi;
 import com.zigu.ziguwas.domains.trade.dto.request.TradeOfferReqDto;
+import com.zigu.ziguwas.domains.trade.dto.request.TradeProposeReqDto;
 import com.zigu.ziguwas.domains.trade.service.TradeService;
 import com.zigu.ziguwas.security.CustomUserDetails;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -39,9 +41,27 @@ public class TradeController implements TradeApi {
     }
 
     /**
+     * 요청글 대여 제안 API
+     *
+     * @param details 물건을 빌려주려는 공급자 로그인 정보
+     * @param dto 요청글(아이템)ID
+     * @return 만들어진 거래 정보
+     */
+    @PostMapping("/proposals")
+    public ResponseEntity<?> proposeToDemand(
+            @AuthenticationPrincipal CustomUserDetails details,
+            @RequestBody @Valid TradeProposeReqDto dto
+    ){
+        return ResponseEntity.created(URI.create("/api/v1/trades/" +
+                tradeService.proposeToDemand(details, dto))).build();
+    }
+
+    /**
      * 대여 제안 수락 API
      *
-     * @param details 임대인 로그인 정보
+     * 공급글은 임대인이, 요청글은 요청글 작성자(임차인)가 수락한다.
+     *
+     * @param details 수락 권한자 로그인 정보
      * @param tradeId 거래ID
      * @return 성공여부
      */

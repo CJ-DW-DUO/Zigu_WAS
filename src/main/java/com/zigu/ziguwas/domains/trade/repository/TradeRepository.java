@@ -36,6 +36,12 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
     boolean existsByItemAndTradeStatusIn(Item item, List<TradeStatus> statuses);
 
     /**
+     * 특정 아이템에 대해 해당 임대인이 이미 요청/진행 중인 거래를 가지고 있는지 확인합니다.
+     * (요청글에 같은 공급자가 중복 제안하는 것을 막는 용도)
+     */
+    boolean existsByItemAndRenterAndTradeStatusIn(Item item, User renter, List<TradeStatus> statuses);
+
+    /**
      * 특정 거래를 제외하고, 같은 아이템에 주어진 상태인 다른 거래가 있는지 확인합니다.
      * (반납 처리 시 이 거래 말고도 여전히 진행 중인 다른 예약이 있는지 확인하는 용도)
      */

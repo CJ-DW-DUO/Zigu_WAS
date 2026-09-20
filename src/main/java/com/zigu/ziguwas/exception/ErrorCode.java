@@ -54,6 +54,9 @@ public enum ErrorCode {
     SELF_TRADE_NOT_ALLOWED(400, "자기 자신의 물건을 빌릴 수 없습니다."),
     ACTIVE_TRADE_EXISTS(400, "진행중인 거래가 있습니다." ),
     TRADE_PERIOD_CONFLICT(409, "선택한 기간은 이미 대여 중입니다."),
+    INVALID_POST_TYPE(400, "해당 게시글 유형에서는 처리할 수 없는 요청입니다."),
+    SELF_PROPOSAL_NOT_ALLOWED(400, "자신의 요청글에는 제안할 수 없습니다."),
+    REQUESTER_NOT_MATCHED(400, "로그인정보와 요청글 작성자 정보가 일치하지 않습니다."),
 
     // 아이템 이미지 관련
     IMAGE_NOT_FOUND(404, "이미지를 찾을 수 없습니다." ),
