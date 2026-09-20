@@ -4,11 +4,13 @@ import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemCategory;
 import com.zigu.ziguwas.domains.item.entity.ItemImage;
 import com.zigu.ziguwas.domains.item.entity.ItemStatus;
+import com.zigu.ziguwas.domains.item.entity.PostType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Getter
@@ -27,6 +29,21 @@ public class ItemResDto {
 
     @Schema(description = "본인 게시글 여부", example = "true")
     private final boolean isMine;
+
+    @Schema(description = "게시글 유형 (SUPPLY: 빌려드려요, DEMAND: 빌려주세요)", example = "SUPPLY", allowableValues = {"SUPPLY", "DEMAND"})
+    private final PostType postType;
+
+    @Schema(description = "게시글 유형 한글 표시명", example = "빌려드려요")
+    private final String postTypeKor;
+
+    @Schema(description = "희망 대여 시작일 (요청글 전용, 공급글은 null)", example = "2026-10-01")
+    private final LocalDate desiredStartDate;
+
+    @Schema(description = "희망 대여 종료일 (요청글 전용, 공급글은 null)", example = "2026-10-05")
+    private final LocalDate desiredEndDate;
+
+    @Schema(description = "거래 희망 장소/시간 등 메모 (요청글 전용, 공급글은 null)", example = "평일 오후 정문 앞에서 거래 원해요")
+    private final String memo;
 
     @Schema(description = "아이템 카테고리 (Enum)", example = "ELECTRONICS")
     private final ItemCategory itemCategory;
@@ -67,6 +84,11 @@ public class ItemResDto {
                 .writerId(item.getUser().getId())
                 .profileImageUrl(item.getUser().getProfilePhotoUrl())
                 .isMine(isMine)
+                .postType(item.getPostType())
+                .postTypeKor(item.getPostType().getDescription())
+                .desiredStartDate(item.getDesiredStartDate())
+                .desiredEndDate(item.getDesiredEndDate())
+                .memo(item.getMemo())
                 .itemCategory(item.getCategory())
                 .categoryName(item.getCategory().getDescription())
                 .itemStatus(item.getItemStatus())

@@ -23,6 +23,12 @@ public class ItemListResDto {
     @Schema(description = "본인 게시글 여부", example = "true")
     private final boolean isMine;
 
+    @Schema(description = "게시글 유형 (SUPPLY: 빌려드려요, DEMAND: 빌려주세요)", example = "SUPPLY", allowableValues = {"SUPPLY", "DEMAND"})
+    private final String postType;
+
+    @Schema(description = "게시글 유형 한글 표시명", example = "빌려드려요")
+    private final String postTypeKor;
+
     @Schema(description = "아이템 제목", example = "제목입니다 빌려가세요")
     private final String title;
 
@@ -51,6 +57,8 @@ public class ItemListResDto {
                 .itemId(item.getId())
                 .writerId(item.getUser().getId())
                 .isMine(isMine)
+                .postType(item.getPostType().name())
+                .postTypeKor(item.getPostType().getDescription())
                 .title(item.getTitle())
                 .dayPerPrice(item.getDayPerPrice())
                 .itemStatus(item.getItemStatus().name())
