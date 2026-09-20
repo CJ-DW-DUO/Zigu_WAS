@@ -17,6 +17,7 @@ import com.zigu.ziguwas.domains.chat.repository.ChatMessageRepository;
 import com.zigu.ziguwas.domains.chat.repository.ChatParticipantRepository;
 import com.zigu.ziguwas.domains.chat.repository.ChatRoomRepository;
 import com.zigu.ziguwas.domains.item.entity.Item;
+import com.zigu.ziguwas.domains.item.entity.PostType;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
 import com.zigu.ziguwas.domains.notification.entity.NotificationType;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
@@ -468,7 +469,7 @@ public class ChatService {
                 () -> new CustomException(ErrorCode.ITEM_NOT_FOUND)
         );
 
-        // 채팅을 만드려고 하는 사람(임차인)이 해당 물품을 업로드한 사람(임대인)의 대학과 다르면 접근 제한
+        // 채팅을 만드려고 하는 사람이 해당 게시글 작성자의 대학과 다르면 접근 제한
         if(!item.getUser().getUniv().getUnivId().equals(details.getUnivId())) {
             throw new CustomException(ErrorCode.DIFFERENT_UNIVERSITY_ACCESS);
         }
@@ -575,26 +576,43 @@ public class ChatService {
                 () -> new CustomException(ErrorCode.DELETED_ITEM)
         );
 
-        // 5. 거래상태 조회 (아이템 + 사용자 기준)
-        // Trade는 chatRoom과 직접 연결되지 않으므로, 채팅방의 아이템과 현재 사용자로 거래를 조회한다.
-        // 현재 사용자가 임대인(renter)인 거래를 먼저 찾고, 없으면 임차인(rentee)인 거래를 찾는다.
-        Trade trade = tradeRepository.findByItemAndRenter(item, user)
-                .or(() -> tradeRepository.findByItemAndRentee(item, user))
+        // 5. 사용자 역할 판별
+        // 게시글 작성자는 공급글이면 임대인(RENTER), 요청글이면 임차인(RENTEE)이고, 상대방은 그 반대이다.
+        boolean isOwner = item.getUser().getId().equals(user.getId());
+        boolean isRenter = isOwner != (item.getPostType() == PostType.DEMAND);
+
+        // 6. 거래상태 조회 (아이템 + 채팅방의 두 참여자 기준)
+        // Trade는 chatRoom과 직접 연결되지 않으므로, 채팅방의 아이템과 두 참여자 조합으로 거래를 조회한다.
+        // 한 아이템에 여러 사용자와의 거래가 있을 수 있으므로 이 채팅방 상대와의 거래만, 그중 가장 최근 건을 사용한다.
+        Long otherUserId = chatParticipantRepository.findAllByChatRoomId(chatRoomId).stream()
+                .map(ChatParticipant::getUserId)
+                .filter(participantId -> !participantId.equals(user.getId()))
+                .findFirst()
                 .orElse(null);
+
+        Trade trade = null;
+        if (otherUserId != null) {
+            Long renterId = isRenter ? user.getId() : otherUserId;
+            Long renteeId = isRenter ? otherUserId : user.getId();
+            trade = tradeRepository
+                    .findFirstByItemAndRenterIdAndRenteeIdOrderByIdDesc(item, renterId, renteeId)
+                    .orElse(null);
+        }
 
         String imageUrl = null;
         if (item.getImageUrl() != null && !item.getImageUrl().isEmpty()) {
             imageUrl = item.getImageUrl().get(0).toString();
         }
 
-        // 6. 반환
+        // 7. 반환
         return ChatRoomItemAndTradeInfoResDto.builder()
                 .chatroomId(chatRoomId)
                 .itemId(item.getId())
                 .itemTitle(item.getTitle())
                 .itemPrice(item.getDayPerPrice())
                 .imageUrl(imageUrl)
-                .userRole((item.getUser().getId().equals(user.getId())) ? "RENTER" : "RENTEE")
+                .postType(item.getPostType().name())
+                .userRole(isRenter ? "RENTER" : "RENTEE")
                 .tradeStatus((trade != null) ? trade.getTradeStatus().toString() : "NO_TRADE")
                 .build();
     }
