@@ -64,4 +64,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(new ErrorDto(400, name + " 파라미터 형식이 올바르지 않습니다."));
     }
 
+    // 요청 본문(JSON) 파싱 실패 - 잘못된 enum 값, 날짜 형식, 문법 오류 등
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    protected ResponseEntity<ErrorDto> handleMessageNotReadable(
+            org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest().body(new ErrorDto(400, "요청 형식이 올바르지 않습니다."));
+    }
+
 }

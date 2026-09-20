@@ -27,16 +27,24 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class TradeService {
 
+    // 캘린더 조회 시 from/to를 안 주면 오늘부터 이 기간만큼 기본으로 펼쳐서 보여준다.
+    private static final int DEFAULT_BLOCK_RANGE_WINDOW_DAYS = 90;
+
     private final TradeRepository tradeRepository;
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
+
     private final BlockRepository blockRepository;
+
+    private final ItemBlockService itemBlockService;
+
     // 거래 상태 변경 시 알림 이벤트를 발행하기 위한 퍼블리셔
     private final ApplicationEventPublisher eventPublisher;
 
@@ -107,6 +115,11 @@ public class TradeService {
 
         // 5-1. 요청한 기간이 이미 승인/진행 중인 다른 거래와 겹치면 신청 자체를 막음
         if (tradeRepository.existsOverlappingTrade(item, TradeStatus.IN_PROGRESS, dto.getStartDate(), dto.getEndDate())) {
+            throw new CustomException(ErrorCode.TRADE_PERIOD_CONFLICT);
+        }
+
+        // 5-2. 요청한 기간에 등록자가 직접 차단한 날짜/요일이 껴있으면 신청 자체를 막음
+        if (itemBlockService.isPeriodBlockedByOwner(item, dto.getStartDate(), dto.getEndDate())) {
             throw new CustomException(ErrorCode.TRADE_PERIOD_CONFLICT);
         }
 
@@ -298,6 +311,10 @@ public class TradeService {
                     item, TradeStatus.IN_PROGRESS, trade.getTradeStdate(), trade.getTradeEndate())) {
                 throw new CustomException(ErrorCode.TRADE_PERIOD_CONFLICT);
             }
+            // 신청 이후 승인 사이에 등록자가 해당 기간을 차단했을 수도 있으므로 승인 시점에도 재검증
+            if (itemBlockService.isPeriodBlockedByOwner(item, trade.getTradeStdate(), trade.getTradeEndate())) {
+                throw new CustomException(ErrorCode.TRADE_PERIOD_CONFLICT);
+            }
 
             // 7A - 2. 거래 상태 변경 (대여 시작/종료일은 신청 시점에 이미 확정되어 있으므로 유지)
             trade.updateStatus(TradeStatus.IN_PROGRESS);
@@ -421,25 +438,40 @@ public class TradeService {
 
     /**
      * 특정 아이템의 대여 불가 기간 목록을 조회합니다.
-     * 승인/진행 중(IN_PROGRESS)인 거래의 기간을 반환합니다.
+     * 승인/진행 중(IN_PROGRESS)인 거래의 기간 + 등록자가 지정한 차단(특정 날짜/반복 요일)을
+     * 함께 반환합니다. 반복 요일 차단은 그 자체로는 캘린더에 표시할 수 없어 [from, to] 구간의
+     * 실제 날짜들로 펼쳐서 내려줍니다.
      *
      * @param itemId 조회할 아이템 ID
+     * @param from   조회 시작일 (생략 시 오늘)
+     * @param to     조회 종료일 (생략 시 from + 90일)
      * @return 대여 불가 기간 목록
      */
     @Transactional(readOnly = true)
-    public ItemBlockRangeResDto getBlockRanges(Long itemId) {
+    public ItemBlockRangeResDto getBlockRanges(Long itemId, LocalDate from, LocalDate to) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
 
+        LocalDate rangeFrom = (from != null) ? from : LocalDate.now();
+        LocalDate rangeTo = (to != null) ? to : rangeFrom.plusDays(DEFAULT_BLOCK_RANGE_WINDOW_DAYS);
+
+        if (rangeTo.isBefore(rangeFrom)) {
+            throw new CustomException(ErrorCode.INVALID_DATE_RANGE);
+        }
+
         List<Trade> activeTrades = tradeRepository.findAllByItemAndTradeStatus(item, TradeStatus.IN_PROGRESS);
 
-        List<ItemBlockRangeResDto.BlockRangeItem> blockRange = activeTrades.stream()
-                .map(trade -> ItemBlockRangeResDto.BlockRangeItem.builder()
+        List<ItemBlockRangeResDto.BlockRangeItem> blockRange = new ArrayList<>();
+
+        activeTrades.stream()
+                .filter(trade -> !trade.getTradeEndate().isBefore(rangeFrom) && !trade.getTradeStdate().isAfter(rangeTo))
+                .forEach(trade -> blockRange.add(ItemBlockRangeResDto.BlockRangeItem.builder()
                         .startDate(trade.getTradeStdate())
                         .endDate(trade.getTradeEndate())
                         .source(BlockSource.RESERVATION)
-                        .build())
-                .toList();
+                        .build()));
+
+        blockRange.addAll(itemBlockService.getOwnerBlockedRanges(item, rangeFrom, rangeTo));
 
         return ItemBlockRangeResDto.builder().blockRange(blockRange).build();
     }
