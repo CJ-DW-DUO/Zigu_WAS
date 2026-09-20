@@ -62,7 +62,7 @@ public class ItemListResDto {
                 .title(item.getTitle())
                 .dayPerPrice(item.getDayPerPrice())
                 .itemStatus(item.getItemStatus().name())
-                .itemStatusKor(item.getItemStatus().getDescription())
+                .itemStatusKor(item.getItemStatus().descriptionFor(item.getPostType()))
                 .itemCategory(item.getCategory().name())
                 .itemCategoryKor(item.getCategory().getDescription())
                 .mainImageUrl(item.getImageUrl().stream()

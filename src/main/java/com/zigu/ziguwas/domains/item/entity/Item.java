@@ -113,6 +113,12 @@ public class Item {
         this.description = description;
     }
 
+    public void updateDemandInfo(LocalDate desiredStartDate, LocalDate desiredEndDate, String memo) {
+        this.desiredStartDate = desiredStartDate;
+        this.desiredEndDate = desiredEndDate;
+        this.memo = memo;
+    }
+
     public void updateItemStatus(ItemStatus itemStatus) {
         this.itemStatus = itemStatus;
     }

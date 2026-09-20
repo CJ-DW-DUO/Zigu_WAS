@@ -92,7 +92,7 @@ public class ItemResDto {
                 .itemCategory(item.getCategory())
                 .categoryName(item.getCategory().getDescription())
                 .itemStatus(item.getItemStatus())
-                .itemStatusKor(item.getItemStatus().getDescription())
+                .itemStatusKor(item.getItemStatus().descriptionFor(item.getPostType()))
                 .dayPerPrice(item.getDayPerPrice())
                 .nickname(item.getUser().getNickname())
                 .imageIds(itemImages.stream().map(ItemImage::getImageId).toList())

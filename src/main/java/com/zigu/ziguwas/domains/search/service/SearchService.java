@@ -1,6 +1,7 @@
 package com.zigu.ziguwas.domains.search.service;
 
 import com.zigu.ziguwas.domains.item.entity.Item;
+import com.zigu.ziguwas.domains.item.entity.PostType;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
 import com.zigu.ziguwas.domains.item.repository.spec.ItemSpecs;
 import com.zigu.ziguwas.domains.search.dto.request.ItemSearchReqDto;
@@ -53,8 +54,11 @@ public class SearchService {
 
         Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
-        // 3. 검색 조건 조합 및 조회 : 키워드 + 카테고리 + 대학ID 기반으로 조회
+        // 3. 검색 조건 조합 및 조회 : 게시글 유형 + 키워드 + 카테고리 + 대학ID 기반으로 조회
+        // 유형을 지정하지 않으면 요청글을 모르는 기존 클라이언트를 위해 공급글만 검색한다.
+        PostType postType = reqDto.getPostType() != null ? reqDto.getPostType() : PostType.SUPPLY;
         Specification<Item> spec = Specification.allOf(
+                ItemSpecs.withPostType(postType),
                 ItemSpecs.withTitleContains(reqDto.getKeyword()),
                 ItemSpecs.withCategory(reqDto.getCategory()),
                 ItemSpecs.withUniversity(univId)

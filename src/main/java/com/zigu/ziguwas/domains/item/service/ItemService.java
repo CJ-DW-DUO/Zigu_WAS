@@ -7,6 +7,7 @@ import com.zigu.ziguwas.domains.item.dto.request.ItemUpdateReqDto;
 import com.zigu.ziguwas.domains.item.dto.response.ItemResDto;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemImage;
+import com.zigu.ziguwas.domains.item.entity.PostType;
 import com.zigu.ziguwas.domains.item.event.ItemImagesDeletedEvent;
 import com.zigu.ziguwas.domains.item.repository.ItemImageRepository;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -52,6 +54,11 @@ public class ItemService {
     public ItemResDto registerItem(ItemRegisterReqDto itemRegisterReqDto, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (itemRegisterReqDto.resolvePostType() == PostType.DEMAND) {
+            validateDesiredPeriod(itemRegisterReqDto.getDesiredStartDate(), itemRegisterReqDto.getDesiredEndDate());
+        }
+
         Item item = itemRegisterReqDto.toEntity(user);
 
         Item savedItem = itemRepository.save(item);
@@ -158,6 +165,16 @@ public class ItemService {
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
 
+        // 요청글은 희망 기간을 함께 검증하고 반영한다. (공급글은 요청글 전용 필드를 무시)
+        if (item.getPostType() == PostType.DEMAND) {
+            validateDesiredPeriod(itemUpdateReqDto.getDesiredStartDate(), itemUpdateReqDto.getDesiredEndDate());
+            item.updateDemandInfo(
+                    itemUpdateReqDto.getDesiredStartDate(),
+                    itemUpdateReqDto.getDesiredEndDate(),
+                    itemUpdateReqDto.getMemo()
+            );
+        }
+
         item.updateItemPost(
                 itemUpdateReqDto.getTitle(),
                 itemUpdateReqDto.getCategory(),
@@ -166,6 +183,20 @@ public class ItemService {
         );
 
         return ItemResDto.fromEntity(item, userId);
+    }
+
+    /**
+     * 요청글의 희망 대여 기간을 검증합니다.
+     * 시작일/종료일이 모두 있어야 하고, 시작일이 종료일보다 늦거나 종료일이 이미 지난 경우는 허용하지 않습니다.
+     *
+     * @throws CustomException INVALID_DESIRED_PERIOD: 희망 기간이 올바르지 않은 경우
+     */
+    private void validateDesiredPeriod(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null
+                || startDate.isAfter(endDate)
+                || endDate.isBefore(LocalDate.now())) {
+            throw new CustomException(ErrorCode.INVALID_DESIRED_PERIOD);
+        }
     }
 
     /**
