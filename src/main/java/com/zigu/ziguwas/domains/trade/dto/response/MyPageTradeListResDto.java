@@ -19,6 +19,9 @@ public class MyPageTradeListResDto {
     @Schema(description = "아이템 ID", example = "2")
     private final Long itemId;
 
+    @Schema(description = "게시글 유형 (SUPPLY: 빌려드려요, DEMAND: 빌려주세요). 삭제된 게시글이면 null", example = "SUPPLY")
+    private final String postType;
+
     @Schema(description = "제목", example = "제목입니다")
     private final String title;
 
@@ -39,6 +42,7 @@ public class MyPageTradeListResDto {
         return MyPageTradeListResDto.builder()
                 .tradeId(trade.getId())
                 .itemId(itemDeleted ? null : trade.getItem().getId())
+                .postType(itemDeleted ? null : trade.getItem().getPostType().name())
                 .title(itemDeleted ? "삭제된 게시글입니다." : trade.getItem().getTitle())
                 .period(trade.getPeriod())
                 .totalPrice(itemDeleted ? 0L : trade.calculateTotalPrice())

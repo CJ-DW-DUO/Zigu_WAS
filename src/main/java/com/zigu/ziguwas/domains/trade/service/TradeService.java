@@ -216,6 +216,7 @@ public class TradeService {
                 .period(ChronoUnit.DAYS.between(startDate, endDate) + 1)
                 .tradeStatus(TradeStatus.REQUESTED)
                 .tradeReqdate(LocalDate.now())
+                .proposedByRenter(true)
                 .build();
 
         Trade saved = tradeRepository.save(trade);

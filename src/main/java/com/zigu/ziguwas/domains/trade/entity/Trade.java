@@ -18,6 +18,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDate;
 
@@ -64,6 +65,13 @@ public class Trade {
 
     @Column(name = "trade_resdate")
     private LocalDate tradeResdate; // 대여 수락일
+
+    // 요청글에 공급자(임대인)가 먼저 제안한 거래인지 여부. 마이페이지 보낸/받은 요청 방향 구분에 사용한다.
+    // 기존 거래는 모두 임차인이 먼저 요청한 거래이므로 DB 기본값을 false로 지정한다.
+    @Builder.Default
+    @ColumnDefault("false")
+    @Column(name = "proposed_by_renter", nullable = false)
+    private boolean proposedByRenter = false;
 
     /**
      * 거래 상태를 변경하고 아이템의 상태도 함께 제어합니다.
