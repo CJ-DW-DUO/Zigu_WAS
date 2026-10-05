@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Schema(description = "아이템 등록 수정 정보")
 @Getter
@@ -46,4 +47,15 @@ public class ItemUpdateReqDto {
     @Schema(description = "거래 희망 장소/시간 등 메모 (요청글 전용, 공급글은 무시)", example = "평일 오후 정문 앞에서 거래 원해요")
     @Size(max = 500, message = "메모는 최대 500자까지 입력 가능합니다.")
     private final String memo;
+
+    @Schema(description = "거래 희망 시간 무관 여부 (미입력 시 true). true면 preferredHours는 무시", example = "false")
+    private final Boolean timeFlexible;
+
+    @Schema(description = "거래 희망 시간 목록 (0~23시). timeFlexible=false일 때 1개 이상 필수, 중복 제거 후 오름차순 저장", example = "[8, 9, 15]")
+    @Size(max = 24, message = "거래 희망 시간은 최대 24개까지 선택 가능합니다.")
+    private final List<Integer> preferredHours;
+
+    @Schema(description = "거래 희망 장소 (공급글/요청글 공통)", example = "정문 앞 편의점")
+    @Size(max = 100, message = "거래 희망 장소는 최대 100자까지 입력 가능합니다.")
+    private final String tradeLocation;
 }

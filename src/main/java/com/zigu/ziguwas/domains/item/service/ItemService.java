@@ -60,6 +60,10 @@ public class ItemService {
         }
 
         Item item = itemRegisterReqDto.toEntity(user);
+        applyTradePreference(item,
+                itemRegisterReqDto.getTimeFlexible(),
+                itemRegisterReqDto.getPreferredHours(),
+                itemRegisterReqDto.getTradeLocation());
 
         Item savedItem = itemRepository.save(item);
 
@@ -182,7 +186,36 @@ public class ItemService {
                 itemUpdateReqDto.getDescription()
         );
 
+        applyTradePreference(item,
+                itemUpdateReqDto.getTimeFlexible(),
+                itemUpdateReqDto.getPreferredHours(),
+                itemUpdateReqDto.getTradeLocation());
+
         return ItemResDto.fromEntity(item, userId);
+    }
+
+    /**
+     * 거래 희망 시간대/장소를 검증한 뒤 게시글에 반영합니다. (공급글/요청글 공통)
+     * 시간무관(미입력 포함)이면 시간 목록은 비우고, 시간을 고른 경우 0~23시 중 1개 이상이어야 하며
+     * 중복을 제거해 오름차순으로 저장합니다. 장소는 앞뒤 공백을 제거하고, 비어 있으면 null로 저장합니다.
+     *
+     * @throws CustomException INVALID_PREFERRED_HOURS: 시간을 고르지 않았거나 범위를 벗어난 경우
+     */
+    private void applyTradePreference(Item item, Boolean timeFlexible, List<Integer> preferredHours, String tradeLocation) {
+        boolean flexible = timeFlexible == null || timeFlexible;
+
+        List<Integer> hours = List.of();
+        if (!flexible) {
+            if (preferredHours == null || preferredHours.isEmpty()
+                    || preferredHours.stream().anyMatch(h -> h == null || h < 0 || h > 23)) {
+                throw new CustomException(ErrorCode.INVALID_PREFERRED_HOURS);
+            }
+            hours = preferredHours.stream().distinct().sorted().toList();
+        }
+
+        String location = (tradeLocation == null || tradeLocation.isBlank()) ? null : tradeLocation.strip();
+
+        item.updateTradePreference(flexible, hours, location);
     }
 
     /**
