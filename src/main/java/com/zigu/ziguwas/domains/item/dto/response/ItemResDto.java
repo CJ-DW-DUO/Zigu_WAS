@@ -42,8 +42,17 @@ public class ItemResDto {
     @Schema(description = "희망 대여 종료일 (요청글 전용, 공급글은 null)", example = "2026-10-05")
     private final LocalDate desiredEndDate;
 
-    @Schema(description = "거래 희망 장소/시간 등 메모 (요청글 전용, 공급글은 null)", example = "평일 오후 정문 앞에서 거래 원해요")
+    @Schema(description = "기타 메모 (요청글 전용, 공급글은 null)", example = "충전기도 같이 빌려주시면 좋아요")
     private final String memo;
+
+    @Schema(description = "거래 희망 시간 무관 여부 (공급글/요청글 공통)", example = "false")
+    private final boolean timeFlexible;
+
+    @Schema(description = "거래 희망 시간 목록 (0~23시, 오름차순). 시간무관이면 빈 배열", example = "[8, 9, 15]")
+    private final List<Integer> preferredHours;
+
+    @Schema(description = "거래 희망 장소 (공급글/요청글 공통, 미입력 시 null)", example = "정문 앞 편의점")
+    private final String tradeLocation;
 
     @Schema(description = "아이템 카테고리 (Enum)", example = "ELECTRONICS")
     private final ItemCategory itemCategory;
@@ -89,6 +98,9 @@ public class ItemResDto {
                 .desiredStartDate(item.getDesiredStartDate())
                 .desiredEndDate(item.getDesiredEndDate())
                 .memo(item.getMemo())
+                .timeFlexible(item.isTimeFlexible())
+                .preferredHours(item.getPreferredHours() == null ? List.of() : item.getPreferredHours())
+                .tradeLocation(item.getTradeLocation())
                 .itemCategory(item.getCategory())
                 .categoryName(item.getCategory().getDescription())
                 .itemStatus(item.getItemStatus())

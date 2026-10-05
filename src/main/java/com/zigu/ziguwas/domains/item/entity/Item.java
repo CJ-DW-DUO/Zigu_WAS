@@ -69,7 +69,7 @@ public class Item {
     private LocalDate desiredEndDate; // 요청글(DEMAND) 전용: 희망 대여 종료일
 
     @Column(name = "memo", length = 500)
-    private String memo; // 요청글(DEMAND) 전용: 거래 희망 장소/시간 등 자유 메모
+    private String memo; // 요청글(DEMAND) 전용: 기타 자유 메모 (거래 시간/장소는 아래 전용 필드 사용)
 
     // 거래 희망 시간대. 시간무관이면 true이고 preferredHours는 비어 있다. (공급글/요청글 공통)
     // 기존 게시글은 모두 시간무관으로 취급하도록 DB 기본값을 true로 지정한다.

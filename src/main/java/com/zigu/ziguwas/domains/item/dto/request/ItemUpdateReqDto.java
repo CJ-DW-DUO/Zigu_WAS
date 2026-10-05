@@ -44,7 +44,7 @@ public class ItemUpdateReqDto {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private final LocalDate desiredEndDate;
 
-    @Schema(description = "거래 희망 장소/시간 등 메모 (요청글 전용, 공급글은 무시)", example = "평일 오후 정문 앞에서 거래 원해요")
+    @Schema(description = "기타 메모 (요청글 전용, 공급글은 무시). 거래 시간/장소는 timeFlexible, preferredHours, tradeLocation 사용", example = "충전기도 같이 빌려주시면 좋아요")
     @Size(max = 500, message = "메모는 최대 500자까지 입력 가능합니다.")
     private final String memo;
 
