@@ -36,7 +36,14 @@ public interface ItemApi {
 
     @Operation(
             summary = "1단계: 아이템 기본 정보 등록",
-            description = "새로운 아이템의 텍스트 정보를 먼저 등록합니다."
+            description = """
+                    새로운 아이템의 텍스트 정보를 먼저 등록합니다.
+
+                    거래 희망 시간/장소 (공급글/요청글 공통)
+                    - 시간무관: timeFlexible=true, preferredHours=[] (timeFlexible 미입력 시에도 시간무관)
+                    - 시간 선택: timeFlexible=false, preferredHours=[8, 9, 15] (0~23시 중 1개 이상, 중복 제거 후 오름차순 저장)
+                    - tradeLocation: 최대 100자 텍스트, 미입력 시 null
+                    """
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "아이템 등록 성공",
@@ -49,6 +56,9 @@ public interface ItemApi {
                                 """),
                             @ExampleObject(name = "접근 권한 없음", value = """
                                 { "status": 400, "message": "허용되지 않은 접근입니다." }
+                                """),
+                            @ExampleObject(name = "거래 희망 시간 오류", value = """
+                                { "status": 400, "message": "거래 희망 시간을 1개 이상 선택해 주세요. (0~23시)" }
                                 """)
                     })
             ),
@@ -136,12 +146,24 @@ public interface ItemApi {
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
     );
 
-    @Operation(summary = "아이템 수정", description = "기존에 등록된 아이템의 정보를 수정합니다.")
+    @Operation(
+            summary = "아이템 수정",
+            description = """
+                    기존에 등록된 아이템의 정보를 수정합니다. (전체 교체 방식)
+
+                    거래 희망 시간/장소(timeFlexible, preferredHours, tradeLocation)도 요청 값으로 통째로 교체되므로,
+                    수정 화면에서는 상세 조회로 받은 기존 값을 그대로 함께 보내야 합니다. (생략 시 시간무관, 장소 없음으로 저장)
+                    """
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "수정 성공",
                     content = @Content(schema = @Schema(implementation = ItemResDto.class))
             ),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청 파라미터"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 파라미터",
+                    content = @Content(examples = @ExampleObject(name = "거래 희망 시간 오류", value = """
+                            { "status": 400, "message": "거래 희망 시간을 1개 이상 선택해 주세요. (0~23시)" }
+                            """))
+            ),
             @ApiResponse(responseCode = "404", description = "아이템을 찾을 수 없음")
     })
     @PutMapping("/{itemId}")
@@ -184,7 +206,8 @@ public interface ItemApi {
 
     @Operation(
             summary = "아이템 상세 조회",
-            description = "아이템의 상세 정보를 조회하며, 호출 시 조회수가 1 증가합니다."
+            description = "아이템의 상세 정보를 조회하며, 호출 시 조회수가 1 증가합니다. "
+                    + "거래 희망 시간/장소(timeFlexible, preferredHours, tradeLocation)를 함께 반환하므로 수정 화면의 기존 선택값으로 사용합니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",

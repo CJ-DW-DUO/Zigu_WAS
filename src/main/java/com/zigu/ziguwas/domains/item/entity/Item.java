@@ -69,7 +69,22 @@ public class Item {
     private LocalDate desiredEndDate; // 요청글(DEMAND) 전용: 희망 대여 종료일
 
     @Column(name = "memo", length = 500)
-    private String memo; // 요청글(DEMAND) 전용: 거래 희망 장소/시간 등 자유 메모
+    private String memo; // 요청글(DEMAND) 전용: 기타 자유 메모 (거래 시간/장소는 아래 전용 필드 사용)
+
+    // 거래 희망 시간대. 시간무관이면 true이고 preferredHours는 비어 있다. (공급글/요청글 공통)
+    // 기존 게시글은 모두 시간무관으로 취급하도록 DB 기본값을 true로 지정한다.
+    @Builder.Default
+    @ColumnDefault("true")
+    @Column(name = "time_flexible", nullable = false)
+    private boolean timeFlexible = true;
+
+    @Builder.Default
+    @Convert(converter = PreferredHoursConverter.class)
+    @Column(name = "preferred_hours", length = 100)
+    private List<Integer> preferredHours = new ArrayList<>(); // 물건을 주고받기 원하는 시간(0~23시) 목록
+
+    @Column(name = "trade_location", length = 100)
+    private String tradeLocation; // 물건을 주고받기 원하는 장소 (공급글/요청글 공통)
 
     @Column(name = "is_reported", nullable = false)
     private boolean isReported; // 신고처리
@@ -117,6 +132,12 @@ public class Item {
         this.desiredStartDate = desiredStartDate;
         this.desiredEndDate = desiredEndDate;
         this.memo = memo;
+    }
+
+    public void updateTradePreference(boolean timeFlexible, List<Integer> preferredHours, String tradeLocation) {
+        this.timeFlexible = timeFlexible;
+        this.preferredHours = List.copyOf(preferredHours); // 리스트를 통째로 교체해야 변경이 감지된다
+        this.tradeLocation = tradeLocation;
     }
 
     public void updateItemStatus(ItemStatus itemStatus) {
