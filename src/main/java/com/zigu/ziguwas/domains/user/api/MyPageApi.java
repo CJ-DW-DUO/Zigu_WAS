@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -109,15 +110,32 @@ public interface MyPageApi {
     );
 
     @Operation(
+            summary = "프로필 조회",
+            description = "프로필 수정 화면 진입 시 이름, 프로필 이미지, 학번, 성별, 성별 표시 여부를 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = MyPageProfileResDto.class))),
+            @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음",
+                    content = @Content(examples = @ExampleObject(value = """
+                { "status": 404, "message": "해당 사용자를 찾을 수 없습니다." }
+                """)))
+    })
+    @GetMapping("/profile")
+    ResponseEntity<MyPageProfileResDto> getProfile(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails
+    );
+
+    @Operation(
             summary = "프로필 수정",
-            description = "닉네임과 프로필 이미지를 수정합니다. 이미지는 선택 사항입니다."
+            description = "이름, 학번, 성별, 성별 표시 여부, 프로필 이미지를 수정합니다. null로 보낸 필드와 이미지는 변경하지 않습니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "수정 성공",
                     content = @Content(schema = @Schema(implementation = MyPageProfileResDto.class))),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청 (닉네임 중복 등)",
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 (학번 형식 오류 등)",
                     content = @Content(examples = @ExampleObject(value = """
-                { "status": 409, "message": "이미 사용 중인 닉네임입니다." }
+                { "status": 400, "message": "학번은 숫자로만 입력해주세요." }
                 """))),
             @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음",
                     content = @Content(examples = @ExampleObject(value = """
@@ -128,8 +146,8 @@ public interface MyPageApi {
     ResponseEntity<MyPageProfileResDto> updateProfile(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails customUserDetails,
 
-            @RequestPart(value = "data")
-            @Parameter(description = "수정할 닉네임 정보 (JSON)", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
+            @Valid @RequestPart(value = "data")
+            @Parameter(description = "수정할 프로필 정보 (JSON)", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE))
 
             MyPageProfileReqDto reqDto,
 

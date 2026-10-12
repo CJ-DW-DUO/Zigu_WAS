@@ -7,6 +7,7 @@ import com.zigu.ziguwas.domains.user.dto.mypage.response.MyPageProfileResDto;
 import com.zigu.ziguwas.domains.user.dto.mypage.response.MyRegisteredItemResDto;
 import com.zigu.ziguwas.domains.user.service.MyPageService;
 import com.zigu.ziguwas.security.CustomUserDetails;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -52,18 +53,29 @@ public class MyPageController implements MyPageApi {
     }
 
     /**
-     * 프로필을 수정 합니다.
-     * 이미지와 닉네임
+     * 프로필 수정 화면에 필요한 기존 프로필 정보를 조회합니다.
      *
      * @param customUserDetails 인증된 객체 정보
-     * @param reqDto 요청할 profile 수정 (닉네임)
+     * @return 이름, 사진, 학번, 성별, 성별 표시 여부
+     */
+    @GetMapping("/profile")
+    public ResponseEntity<MyPageProfileResDto> getProfile(@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        return ResponseEntity.ok(myPageService.getProfile(customUserDetails.getUserId()));
+    }
+
+    /**
+     * 프로필을 수정 합니다.
+     * 이미지, 이름, 학번, 성별, 성별 표시 여부
+     *
+     * @param customUserDetails 인증된 객체 정보
+     * @param reqDto 요청할 profile 수정 (이름, 학번, 성별, 성별 표시 여부)
      * @param profileImage 요청할 profile 수정 (이미지)
      * @return 수정된 DTO
      */
     @PutMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MyPageProfileResDto> updateProfile(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
-            @RequestPart(value = "data") MyPageProfileReqDto reqDto,
+            @Valid @RequestPart(value = "data") MyPageProfileReqDto reqDto,
             @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
     ) {
         MyPageProfileResDto response = myPageService.updateProfile(

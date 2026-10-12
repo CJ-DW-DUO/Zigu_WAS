@@ -66,10 +66,25 @@ public class MyPageService {
 
 
     /**
-     * 사용자의 프로필(닉네임, 사진)을 수정합니다.
+     * 프로필 수정 화면 진입 시 기존 프로필 정보를 조회합니다.
      *
      * @param userId 현재 사용자 ID
-     * @param reqDto 수정할 닉네임 정보
+     * @return 이름, 사진, 학번, 성별, 성별 표시 여부
+     */
+    @Transactional(readOnly = true)
+    public MyPageProfileResDto getProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        return MyPageProfileResDto.fromEntity(user);
+    }
+
+    /**
+     * 사용자의 프로필(이름, 학번, 성별, 성별 표시 여부, 사진)을 수정합니다.
+     * null로 전달된 필드는 변경하지 않습니다.
+     *
+     * @param userId 현재 사용자 ID
+     * @param reqDto 수정할 프로필 정보
      * @param profileImage 새 프로필 이미지 파일 (선택 사항)
      * @return 수정된 프로필 정보 응답 DTO
      */
@@ -78,16 +93,19 @@ public class MyPageService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        // 1. 프로필 정보 업데이트 (이름은 실명이라 중복 허용)
         String newNickname = reqDto.getNickname();
         if (newNickname != null && !newNickname.isBlank()) {
-            newNickname = newNickname.trim();
-
-            if (!newNickname.equals(user.getNickname())) {
-                if (userRepository.existsByNickname(newNickname)) {
-                    throw new CustomException(ErrorCode.NICKNAME_CONFLICT);
-                }
-                user.updateNickname(newNickname);
-            }
+            user.updateNickname(newNickname.trim());
+        }
+        if (reqDto.getStudentNumber() != null) {
+            user.updateStudentNumber(reqDto.getStudentNumber());
+        }
+        if (reqDto.getGender() != null) {
+            user.updateGender(reqDto.getGender());
+        }
+        if (reqDto.getGenderVisible() != null) {
+            user.updateGenderVisible(reqDto.getGenderVisible());
         }
 
         // 2. 이미지 업데이트

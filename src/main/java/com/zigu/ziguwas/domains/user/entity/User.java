@@ -46,9 +46,23 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    // 닉네임
-    @Column(unique = true , nullable = false)
+    // 이름(실명) - 동명이인이 있을 수 있어 중복 허용
+    @Column(nullable = false)
     private String nickname;
+
+    // 학번 (예: 20261234)
+    @Column(name = "student_number", length = 20)
+    private String studentNumber;
+
+    // 성별
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender")
+    private Gender gender;
+
+    // 프로필에 성별 표시 여부
+    @Builder.Default
+    @Column(name = "gender_visible", nullable = false)
+    private boolean genderVisible = false;
 
     // 비밀번호
     @Column(nullable = false)
@@ -86,6 +100,18 @@ public class User {
 
     public void updateNickname(String nickname){
         this.nickname = nickname;
+    }
+
+    public void updateStudentNumber(String studentNumber) {
+        this.studentNumber = studentNumber;
+    }
+
+    public void updateGender(Gender gender) {
+        this.gender = gender;
+    }
+
+    public void updateGenderVisible(boolean genderVisible) {
+        this.genderVisible = genderVisible;
     }
 
     public void updateProfileImage(String profilePhotoUrl) {
