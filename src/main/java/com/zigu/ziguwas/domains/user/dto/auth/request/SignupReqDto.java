@@ -1,9 +1,11 @@
 package com.zigu.ziguwas.domains.user.dto.auth.request;
 
+import com.zigu.ziguwas.domains.user.entity.Gender;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data
@@ -14,9 +16,19 @@ public class SignupReqDto {
     @NotBlank(message = "이메일은 필수 입력입니다.")
     private String email;
 
-    @Schema(description = "사용자 닉네임", example = "도서관새내기")
-    @NotBlank(message = "닉네임은 필수 입력입니다.")
+    @Schema(description = "사용자 이름(실명, 중복 허용)", example = "홍길동")
+    @NotBlank(message = "이름은 필수 입력입니다.")
     private String nickname;
+
+    @Schema(description = "학번 (숫자만)", example = "20261234")
+    @Pattern(regexp = "^\\d{1,20}$", message = "학번은 숫자로만 입력해주세요.")
+    private String studentNumber;
+
+    @Schema(description = "성별 (MALE, FEMALE)", example = "MALE")
+    private Gender gender;
+
+    @Schema(description = "프로필에 성별 표시 여부", example = "false")
+    private boolean genderVisible;
 
     @Schema(description = "비밀번호", example = "zigu123123")
     @NotBlank(message = "비밀번호는 필수 입력입니다.")

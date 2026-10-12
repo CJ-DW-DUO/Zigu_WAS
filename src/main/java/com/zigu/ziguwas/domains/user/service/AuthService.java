@@ -263,10 +263,7 @@ public class AuthService {
         }
         redisService.deleteData(dto.getEmail());
 
-        // 3. 닉네임 검증
-        validateNickname(dto.getNickname());
-
-        // 4. 대학 찾기
+        // 3. 대학 찾기
 
         // 이메일에서 해당 대학 이메일 부분 추출
         String univDomain = dto.getEmail().substring(dto.getEmail().indexOf("@") + 1);
@@ -276,9 +273,12 @@ public class AuthService {
                 () -> new CustomException(ErrorCode.UNIVERSITY_NOT_FOUND)
         );
 
-        // 5. 회원가입
+        // 4. 회원가입
         return userRepository.save(User.builder()
-                .nickname(dto.getNickname())
+                .nickname(dto.getNickname().trim())
+                .studentNumber(dto.getStudentNumber())
+                .gender(dto.getGender())
+                .genderVisible(dto.isGenderVisible())
                 .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword()))
                 .univ(univ)
