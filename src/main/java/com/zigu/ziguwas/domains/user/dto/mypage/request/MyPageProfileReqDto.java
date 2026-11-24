@@ -18,8 +18,8 @@ public class MyPageProfileReqDto {
     @Schema(description = "이름(실명) 수정", example = "홍길동")
     private String nickname;
 
-    @Schema(description = "학번 (숫자만)", example = "20261234")
-    @Pattern(regexp = "^\\d{1,20}$", message = "학번은 숫자로만 입력해주세요.")
+    @Schema(description = "학번 (학교가 부여한 학생번호 전체, 숫자 7~10자리)", example = "20261234")
+    @Pattern(regexp = "^\\d{7,10}$", message = "학번은 7~10자리 숫자로 입력해주세요.")
     private String studentNumber;
 
     @Schema(description = "성별 (MALE, FEMALE)", example = "MALE")
