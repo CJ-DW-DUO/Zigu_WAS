@@ -64,6 +64,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(new ErrorDto(400, name + " 파라미터 형식이 올바르지 않습니다."));
     }
 
+    // 업로드 파일 크기 초과 (spring.servlet.multipart 한도)
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    protected ResponseEntity<ErrorDto> handleMaxUploadSize(
+            org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        ErrorCode errorCode = ErrorCode.FILE_SIZE_EXCEEDED;
+        return ResponseEntity.status(errorCode.getStatus())
+                .body(new ErrorDto(errorCode.getStatus(), errorCode.getMessage(), errorCode.name()));
+    }
+
     // 요청 본문(JSON) 파싱 실패 - 잘못된 enum 값, 날짜 형식, 문법 오류 등
     @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
     protected ResponseEntity<ErrorDto> handleMessageNotReadable(

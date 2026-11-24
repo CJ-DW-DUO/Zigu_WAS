@@ -88,6 +88,9 @@ public enum ErrorCode {
 
     // 파일 관련
     FILE_UPLOAD_FAIL(400, "파일업로드 실패"),
+    INVALID_FILE_TYPE(400, "지원하지 않는 파일 형식입니다. (jpg, png, webp, gif, heic, heif 이미지만 가능)"),
+    FILE_SIZE_EXCEEDED(400, "파일 크기가 너무 큽니다."),
+    TOO_MANY_FILES(400, "사진은 한 번에 최대 5장까지 올릴 수 있습니다."),
     FAIL_DELETE_FILE(400, "파일 삭제 실패" ),
 
     // 검색 관련

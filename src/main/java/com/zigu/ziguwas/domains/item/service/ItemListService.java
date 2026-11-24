@@ -47,7 +47,9 @@ public class ItemListService {
 
         // 3. 검색 조건 조합 및 조회 : 게시글 유형, 카테고리, 대학ID, 차단 여부 기반으로 조회
         // 유형을 지정하지 않으면 요청글을 모르는 기존 클라이언트를 위해 공급글만 조회한다.
-        PostType postType = cond.getPostType() != null ? cond.getPostType() : PostType.SUPPLY;
+        // allTypes=true 이면 유형 조건 없이 공급글·요청글을 함께 조회한다 (홈 통합 피드용, null = 유형 필터 없음).
+        PostType postType = cond.isAllTypes() ? null
+                : (cond.getPostType() != null ? cond.getPostType() : PostType.SUPPLY);
         Specification<Item> spec = Specification.allOf(
                 ItemSpecs.withPostType(postType),
                 ItemSpecs.withCategory(cond.getCategory()),

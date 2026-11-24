@@ -28,7 +28,7 @@ public interface ItemListApi {
 
     @Operation(
             summary = "아이템 목록 페이징 조회",
-            description = "카테고리 필터와 정렬(최신순, 인기순, 낮은가격순)을 적용하여 목록을 조회합니다."
+            description = "카테고리 필터와 정렬(최신순, 인기순, 낮은가격순)을 적용하여 목록을 조회합니다. postType 을 생략하면 공급글(SUPPLY)만 조회하며, allTypes=true 를 주면 공급글·요청글을 함께 조회합니다. 응답에는 createdAt(등록 일시)·viewCount(조회수)가 포함됩니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",

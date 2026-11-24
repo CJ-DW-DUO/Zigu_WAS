@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.search.service;
 
+import com.zigu.ziguwas.domains.block.repository.BlockRepository;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.PostType;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
@@ -33,6 +34,7 @@ public class SearchService {
     private final ItemRepository itemRepository;
     private final SearchHistoryRepository searchHistoryRepository;
     private final UserRepository userRepository;
+    private final BlockRepository blockRepository;
 
     /**
      * 키워드, 카테고리, 정렬 조건을 결합하여 아이템을 페이징 검색합니다.
@@ -54,20 +56,26 @@ public class SearchService {
 
         Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
-        // 3. 검색 조건 조합 및 조회 : 게시글 유형 + 키워드 + 카테고리 + 대학ID 기반으로 조회
+        // 3. 요청자가 차단한 사용자 ID 목록 조회 (차단한 사용자의 글은 목록과 마찬가지로 검색 결과에서도 제외)
+        List<Long> blockedUserIds = blockRepository.findBlockedUserIdsByBlockerId(userId);
+
+        // 4. 검색 조건 조합 및 조회 : 게시글 유형 + 키워드 + 카테고리 + 대학ID + 차단 여부 기반으로 조회
         // 유형을 지정하지 않으면 요청글을 모르는 기존 클라이언트를 위해 공급글만 검색한다.
-        PostType postType = reqDto.getPostType() != null ? reqDto.getPostType() : PostType.SUPPLY;
+        // allTypes=true 이면 유형 조건 없이 공급글·요청글을 함께 검색한다 (null = 유형 필터 없음).
+        PostType postType = reqDto.isAllTypes() ? null
+                : (reqDto.getPostType() != null ? reqDto.getPostType() : PostType.SUPPLY);
         Specification<Item> spec = Specification.allOf(
                 ItemSpecs.withPostType(postType),
                 ItemSpecs.withTitleContains(reqDto.getKeyword()),
                 ItemSpecs.withCategory(reqDto.getCategory()),
-                ItemSpecs.withUniversity(univId)
+                ItemSpecs.withUniversity(univId),
+                ItemSpecs.excludeBlockedUsers(blockedUserIds)
         );
 
-        // 4. 검색 수행
+        // 5. 검색 수행
         Page<Item> items = itemRepository.findAll(spec, sortedPageable);
 
-        // 5. 반환
+        // 6. 반환
         return items.map(item -> ItemSearchResDto.fromEntity(item, userId));
     }
 

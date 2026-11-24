@@ -24,6 +24,9 @@ public class ItemSearchReqDto {
     @Schema(description = "게시글 유형 필터 (미입력 시 SUPPLY만 검색)", example = "SUPPLY", allowableValues = {"SUPPLY", "DEMAND"})
     private PostType postType;
 
+    @Schema(description = "true 면 유형 구분 없이 공급글·요청글 통합 검색 (postType 무시, 기본 false)", example = "false")
+    private boolean allTypes;
+
     @Schema(description = "정렬 기준 (인기순, 낮은가격순, 최신순)", example = "최신순")
     private String sort;
 }

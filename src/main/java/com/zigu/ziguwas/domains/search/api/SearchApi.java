@@ -29,7 +29,7 @@ import java.util.List;
 @RequestMapping(value = "/api/v1/search", produces = MediaType.APPLICATION_JSON_VALUE)
 public interface SearchApi {
 
-    @Operation(summary = "아이템 검색", description = "키워드와 카테고리를 이용해 아이템을 페이징 검색하고 검색 기록을 저장합니다.")
+    @Operation(summary = "아이템 검색", description = "키워드와 카테고리를 이용해 아이템을 페이징 검색하고 검색 기록을 저장합니다. 내가 차단한 사용자의 게시글은 결과에서 제외됩니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "검색 성공",
                     content = @Content(schema = @Schema(implementation = ItemListResDto.class))
