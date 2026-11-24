@@ -39,6 +39,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -62,6 +63,7 @@ public class ChatService {
 
     private final SimpMessageSendingOperations messagingTemplate;
     private final S3Service s3Service;
+    private final TransactionTemplate transactionTemplate;
 
     // 채팅방을 나간 적이 없는 참여자의 조회 하한선으로 사용하는 기준 시각.
     // 모든 메시지의 timestamp는 이 시각보다 뒤이므로, 하한선이 없는 경우와 동일하게 동작한다.
@@ -600,20 +602,26 @@ public class ChatService {
         }
 
         // 6. 채팅방 생성 (존재하는 채팅방이 없을 경우)
+        // 방과 참여자 2명을 한 트랜잭션으로 저장한다. 따로 저장하면 방만 저장되고 참여자 저장이 실패했을 때
+        // 참여자 없는 방이 남아, (물품, 요청자) 유니크 때문에 그 사람이 그 물품으로 영영 채팅을 못 만든다.
         ChatRoom chatRoom;
         try {
-            chatRoom = chatRoomRepository.save(ChatRoom.builder().itemId(item.getId()).requesterId(sender.getId()).build());
+            chatRoom = transactionTemplate.execute(status -> {
+                ChatRoom saved = chatRoomRepository.saveAndFlush(
+                        ChatRoom.builder().itemId(item.getId()).requesterId(sender.getId()).build());
+
+                // 7. 참여자 등록 (발신자, 수신자 모두 등록)
+                // leftAt과 visibleFrom은 null로 두어 참여중 + 전체 대화 조회 가능 상태로 시작한다.
+                chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(saved.getId()).userId(sender.getId()).build());
+                chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(saved.getId()).userId(receiver.getId()).build());
+                return saved;
+            });
         } catch (DataIntegrityViolationException e) {
-            // 같은 물품·같은 요청자의 방이 동시에 만들어졌다 — 유니크 키가 막았으니 먼저 만들어진 방을 쓴다.
+            // 같은 물품·같은 요청자의 방이 동시에 만들어졌다 — 유니크 키가 막았으니(우리 쪽은 전부 롤백) 먼저 만들어진 방을 쓴다.
             return chatRoomRepository.findByItemIdAndRequesterId(item.getId(), sender.getId())
                     .orElseThrow(() -> e)
                     .getId();
         }
-
-        // 7. 참여자 등록 (발신자, 수신자 모두 등록)
-        // leftAt과 visibleFrom은 null로 두어 참여중 + 전체 대화 조회 가능 상태로 시작한다.
-        chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(chatRoom.getId()).userId(sender.getId()).build());
-        chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(chatRoom.getId()).userId(receiver.getId()).build());
 
         // 8. 채팅방 ID 반환
         return chatRoom.getId();

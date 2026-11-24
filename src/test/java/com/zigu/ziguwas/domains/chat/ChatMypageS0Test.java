@@ -35,6 +35,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -72,6 +74,7 @@ class ChatMypageS0Test {
     @Mock BlockRepository blockRepository;
     @Mock SimpMessageSendingOperations messagingTemplate;
     @Mock S3Service s3Service;
+    @Mock TransactionTemplate transactionTemplate;
     @InjectMocks ChatService chatService;
 
     University univ = new University(1L, "한동대", "handong.ac.kr");
@@ -103,7 +106,9 @@ class ChatMypageS0Test {
         when(itemRepository.findById(1L)).thenReturn(Optional.of(supply));
         when(itemRepository.findById(2L)).thenReturn(Optional.of(demand));
         when(chatParticipantRepository.findAllByUserId(anyLong())).thenReturn(List.of());
-        when(chatRoomRepository.save(any())).thenReturn(ChatRoom.builder().id("room1").itemId(1L).build());
+        when(chatRoomRepository.saveAndFlush(any())).thenReturn(ChatRoom.builder().id("room1").itemId(1L).build());
+        // 트랜잭션 템플릿은 콜백을 그대로 실행한다
+        when(transactionTemplate.execute(any())).thenAnswer(inv -> ((TransactionCallback<?>) inv.getArgument(0)).doInTransaction(null));
     }
 
     private CreateChatRoomReqDto req(Long receiverId, Long itemId) {
