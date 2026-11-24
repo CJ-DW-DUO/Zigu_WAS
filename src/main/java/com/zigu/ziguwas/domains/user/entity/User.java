@@ -4,6 +4,7 @@ import com.zigu.ziguwas.domains.university.entity.University;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
@@ -24,11 +25,12 @@ import java.util.UUID;
 
 
 @Entity
+@Table(name = "users") // user 는 PostgreSQL 예약어
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Builder
-@SQLDelete(sql = "UPDATE user SET is_deleted = true, deleted_at = NOW() WHERE id = ?")
+@SQLDelete(sql = "UPDATE users SET is_deleted = true, deleted_at = NOW() WHERE id = ?")
 @SQLRestriction("is_deleted = false")
 public class User {
 
