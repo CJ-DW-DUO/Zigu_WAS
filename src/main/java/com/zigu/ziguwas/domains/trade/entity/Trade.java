@@ -106,6 +106,9 @@ public class Trade {
      */
     public void updateStatus(TradeStatus newTradeStatus) {
         this.tradeStatus = newTradeStatus;
+        if (newTradeStatus == TradeStatus.RETURNED) {
+            this.returnedAt = LocalDateTime.now();
+        }
 
         if (newTradeStatus == TradeStatus.IN_PROGRESS) {
             this.item.updateItemStatus(ItemStatus.RENTING);
