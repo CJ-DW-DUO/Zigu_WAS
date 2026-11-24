@@ -7,6 +7,7 @@ import com.zigu.ziguwas.exception.CustomAuthenticationEntryPoint;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import com.zigu.ziguwas.redis.RedisService;
+import com.zigu.ziguwas.websocket.ChatDeliveryInterceptor;
 import com.zigu.ziguwas.websocket.StompHandler;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +43,8 @@ class TokenGuardTest {
     void setUp() {
         SecurityContextHolder.clearContext();
         filter = new JwtAuthenticationFilter(jwtUtil, userDetailService, new CustomAuthenticationEntryPoint(), redisService);
-        stompHandler = new StompHandler(jwtUtil, userRepository, mock(ChatParticipantRepository.class), redisService);
+        stompHandler = new StompHandler(jwtUtil, userRepository, mock(ChatParticipantRepository.class), redisService,
+                new ChatDeliveryInterceptor(mock(ChatParticipantRepository.class)));
     }
 
     private MockHttpServletRequest bearer(String token) {
@@ -97,6 +99,8 @@ class TokenGuardTest {
         StompHeaderAccessor acc = StompHeaderAccessor.create(StompCommand.CONNECT);
         acc.setNativeHeader("Authorization", "Bearer " + token);
         acc.setSessionAttributes(new HashMap<>());
+        // 실제 웹소켓 CONNECT 에는 항상 세션ID가 있다. (StompHandler 가 세션ID로 전달 대상을 등록한다)
+        acc.setSessionId("test-session");
         return MessageBuilder.createMessage(new byte[0], acc.getMessageHeaders());
     }
 }
