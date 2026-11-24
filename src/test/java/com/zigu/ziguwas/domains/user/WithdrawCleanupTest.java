@@ -17,7 +17,7 @@ import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.domains.user.service.AuthService;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
-import com.zigu.ziguwas.redis.RedisService;
+import com.zigu.ziguwas.kv.KeyValueService;
 import com.zigu.ziguwas.security.JwtUtil;
 import com.zigu.ziguwas.security.TokenService;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +58,7 @@ class WithdrawCleanupTest {
     @Mock PushTokenRepository pushTokenRepository;
     @Mock TokenService tokenService;
     @Mock JwtUtil jwtUtil;
-    @Mock RedisService redisService;
+    @Mock KeyValueService keyValueService;
     @Mock ItemListRepository itemListRepository;
     @Mock SearchHistoryRepository searchHistoryRepository;
     @Mock BlockRepository blockRepository;

@@ -8,7 +8,7 @@ import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.domains.user.service.AuthService;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
-import com.zigu.ziguwas.redis.RedisService;
+import com.zigu.ziguwas.kv.KeyValueService;
 import com.zigu.ziguwas.security.JwtUtil;
 import com.zigu.ziguwas.security.TokenService;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ class LoginEmailNormalizeTest {
 
     @Mock UserRepository userRepository;
     @Mock PasswordEncoder passwordEncoder;
-    @Mock RedisService redisService;
+    @Mock KeyValueService keyValueService;
     @Mock JwtUtil jwtUtil;
     @Mock TokenService tokenService;
     @InjectMocks AuthService authService;
@@ -57,7 +57,7 @@ class LoginEmailNormalizeTest {
         var res = authService.tryLogin(login("A@SNU.AC.KR"), new MockHttpServletResponse());
 
         verify(userRepository).findByEmail("a@snu.ac.kr");
-        verify(redisService).deleteData("PWRESET:a@snu.ac.kr");
+        verify(keyValueService).deleteData("PWRESET:a@snu.ac.kr");
         verify(jwtUtil).createAccessToken("a@snu.ac.kr");
         assertEquals("access", res.getAccessToken());
     }

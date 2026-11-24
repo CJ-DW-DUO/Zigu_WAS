@@ -4,7 +4,7 @@ import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
-import com.zigu.ziguwas.redis.RedisService;
+import com.zigu.ziguwas.kv.KeyValueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class TokenService {
 
-    private final RedisService redisService;
+    private final KeyValueService keyValueService;
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
 
@@ -24,7 +24,7 @@ public class TokenService {
      */
     public void saveRefreshToken(Long userId, String refreshToken) {
         // JwtUtil의 refreshValid와 동일하게 7일
-        redisService.setDataExpire(RT_PREFIX + userId, refreshToken, jwtUtil.getRefreshValid());
+        keyValueService.setDataExpire(RT_PREFIX + userId, refreshToken, jwtUtil.getRefreshValid());
     }
 
     /**
@@ -34,7 +34,7 @@ public class TokenService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        redisService.deleteData(RT_PREFIX + userId);
+        keyValueService.deleteData(RT_PREFIX + userId);
     }
 
     /**
@@ -42,6 +42,6 @@ public class TokenService {
      * (로그아웃/탈퇴로 이미 삭제됐다면 null이 반환되어 재발급이 거부됨)
      */
     public String getRefreshToken(Long userId) {
-        return redisService.getData(RT_PREFIX + userId);
+        return keyValueService.getData(RT_PREFIX + userId);
     }
 }

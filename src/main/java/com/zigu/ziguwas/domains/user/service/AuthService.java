@@ -27,7 +27,7 @@ import com.zigu.ziguwas.domains.user.entity.VerificationStatus;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
-import com.zigu.ziguwas.redis.RedisService;
+import com.zigu.ziguwas.kv.KeyValueService;
 import com.zigu.ziguwas.security.JwtUtil;
 import com.zigu.ziguwas.security.TokenService;
 import io.jsonwebtoken.JwtException;
@@ -81,7 +81,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final UniversityRepository universityRepository;
     private final JavaMailSender mailSender;
-    private final RedisService redisService;
+    private final KeyValueService keyValueService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final TokenService tokenService;
@@ -167,11 +167,11 @@ public class AuthService {
      */
     private void reserveSendCooldown(String codeKey) {
         synchronized (lockFor(codeKey)) {
-            if (redisService.getData(SEND_COOLDOWN_PREFIX + codeKey) != null) {
+            if (keyValueService.getData(SEND_COOLDOWN_PREFIX + codeKey) != null) {
                 throw new CustomException(ErrorCode.VERIFY_CODE_RESEND_TOO_SOON);
             }
 
-            redisService.setDataExpire(SEND_COOLDOWN_PREFIX + codeKey, "1", SEND_COOLDOWN_MS);
+            keyValueService.setDataExpire(SEND_COOLDOWN_PREFIX + codeKey, "1", SEND_COOLDOWN_MS);
         }
     }
 
@@ -187,7 +187,7 @@ public class AuthService {
         try {
             mailSender.send(message);
         } catch (RuntimeException e) {
-            redisService.deleteData(SEND_COOLDOWN_PREFIX + codeKey);
+            keyValueService.deleteData(SEND_COOLDOWN_PREFIX + codeKey);
             throw e;
         }
     }
@@ -198,7 +198,7 @@ public class AuthService {
      * @param codeKey 인증코드를 저장하는 Redis key
      */
     private void validateVerifyAttempts(String codeKey) {
-        String record = redisService.getData(VERIFY_FAIL_PREFIX + codeKey);
+        String record = keyValueService.getData(VERIFY_FAIL_PREFIX + codeKey);
 
         if (record == null) {
             return;
@@ -220,7 +220,7 @@ public class AuthService {
      */
     private void recordVerifyFailure(String codeKey) {
         String failKey = VERIFY_FAIL_PREFIX + codeKey;
-        String record = redisService.getData(failKey);
+        String record = keyValueService.getData(failKey);
         long now = System.currentTimeMillis();
 
         int count = 1;
@@ -241,17 +241,19 @@ public class AuthService {
             remaining = VERIFY_FAIL_WINDOW_MS;
         }
 
-        redisService.setDataExpire(failKey, count + ":" + startedAt, remaining);
+        keyValueService.setDataExpire(failKey, count + ":" + startedAt, remaining);
     }
 
     /**
      * 이메일 인증코드 발송
      *
-     * Redis를 이용한 랜덤 인증 코드 생성 후 발송
+     * 키-값 저장소를 이용한 랜덤 인증 코드 생성 후 발송
+     *
+     * 트랜잭션을 걸지 않는다. 걸면 재발송 대기 키가 메일 발송이 끝난 뒤에야 커밋되어, 동시에 같은 이메일로
+     * 요청한 쪽이 대기 키를 못 보고 통과하고(메일 2통) 메일 발송 동안 DB 연결과 잠금을 붙잡는다.
      *
      * @param dto 이메일
      */
-    @Transactional
     public void emailCodeSend(EmailReqDto dto) {
         String email = normalizeEmail(dto.getEmail());
         // 1. 이메일 검증
@@ -266,7 +268,7 @@ public class AuthService {
         String verificationCode = String.valueOf((int)(Math.random() * 899999) + 100000);
 
         // Redis에 저장 / 이메일, 인증코드, 5분
-        redisService.setDataExpire(email, verificationCode, 300 * 1000);
+        keyValueService.setDataExpire(email, verificationCode, 300 * 1000);
 
         // 3. 이메일 발송
         SimpleMailMessage message = new SimpleMailMessage();
@@ -280,7 +282,7 @@ public class AuthService {
     /**
      * 이메일 코드 확인
      *
-     * Redis 만 쓰므로 트랜잭션을 걸지 않는다. 같은 이메일의 요청이 잠금에서 기다리는 동안 DB 연결을 붙잡고 있지 않기 위해서다.
+     * 키-값 저장소만 쓰므로 트랜잭션을 걸지 않는다. 같은 이메일의 요청이 잠금에서 기다리는 동안 DB 연결을 붙잡고 있지 않기 위해서다.
      *
      * @param dto 이메일, 인증코드
      * @return 인증코드 일치 여부
@@ -294,7 +296,7 @@ public class AuthService {
             validateVerifyAttempts(email);
 
             // 1. Redis에 저장된 인증코드 불러오기
-            String savedCode = redisService.getData(email);
+            String savedCode = keyValueService.getData(email);
             if(savedCode == null){
                 // 코드 자체가 없다면 서비스 단 예외처리로 반환
                 throw new CustomException(ErrorCode.VERIFY_CODE_NOT_FOUND);
@@ -303,10 +305,10 @@ public class AuthService {
             // 2. 인증코드 매치 확인
             if(savedCode.equals(dto.getCode())){
                 // 인증 코드는 삭제
-                redisService.deleteData(email);
-                redisService.deleteData(VERIFY_FAIL_PREFIX + email);
+                keyValueService.deleteData(email);
+                keyValueService.deleteData(VERIFY_FAIL_PREFIX + email);
                 // 인증된 메일 상태는 10분간 유지하도록
-                redisService.setDataExpire(email, "DONE", 600 * 1000);
+                keyValueService.setDataExpire(email, "DONE", 600 * 1000);
             } else {
                 // 인증 정보가 다를경우 틀린 횟수를 기록하고 예외
                 recordVerifyFailure(email);
@@ -320,9 +322,10 @@ public class AuthService {
      *
      * 회원가입과 반대로, 이미 가입되어 있는 이메일인지 확인 후 코드를 발송합니다.
      *
+     * 트랜잭션을 걸지 않는다(이유는 emailCodeSend 와 같다). 키-값 저장은 호출마다 바로 커밋된다.
+     *
      * @param dto 이메일
      */
-    @Transactional
     public void passwordResetEmailSend(EmailReqDto dto) {
         String email = normalizeEmail(dto.getEmail());
         // 1. 가입된 유저인지 확인
@@ -335,7 +338,7 @@ public class AuthService {
 
         // 2. 인증코드 생성 및 레디스 저장 (회원가입용 key와 구분되는 prefix 사용)
         String verificationCode = String.valueOf((int)(Math.random() * 899999) + 100000);
-        redisService.setDataExpire(PW_RESET_PREFIX + email, verificationCode, 300 * 1000);
+        keyValueService.setDataExpire(PW_RESET_PREFIX + email, verificationCode, 300 * 1000);
 
         // 3. 이메일 발송
         SimpleMailMessage message = new SimpleMailMessage();
@@ -348,7 +351,7 @@ public class AuthService {
     /**
      * 비밀번호 재설정을 위한 이메일 인증코드 확인
      *
-     * Redis 만 쓰므로 트랜잭션을 걸지 않는다. (잠금 대기 중 DB 연결을 붙잡지 않기 위함)
+     * 키-값 저장소만 쓰므로 트랜잭션을 걸지 않는다. (잠금 대기 중 DB 연결을 붙잡지 않기 위함)
      *
      * @param dto 이메일, 인증코드
      */
@@ -361,7 +364,7 @@ public class AuthService {
             validateVerifyAttempts(key);
 
             // 1. Redis에 저장된 인증코드 불러오기
-            String savedCode = redisService.getData(key);
+            String savedCode = keyValueService.getData(key);
             if(savedCode == null){
                 throw new CustomException(ErrorCode.VERIFY_CODE_NOT_FOUND);
             }
@@ -369,9 +372,9 @@ public class AuthService {
             // 2. 인증코드 매치 확인
             if(savedCode.equals(dto.getCode())){
                 // 인증 코드는 삭제하고, 인증된 상태를 10분간 유지
-                redisService.deleteData(key);
-                redisService.deleteData(VERIFY_FAIL_PREFIX + key);
-                redisService.setDataExpire(key, "DONE", 600 * 1000);
+                keyValueService.deleteData(key);
+                keyValueService.deleteData(VERIFY_FAIL_PREFIX + key);
+                keyValueService.setDataExpire(key, "DONE", 600 * 1000);
             } else {
                 recordVerifyFailure(key);
                 throw new CustomException(ErrorCode.VERIFY_CODE_NOT_MATCHED);
@@ -392,7 +395,7 @@ public class AuthService {
         String key = PW_RESET_PREFIX + email;
 
         // 1. 해당 이메일이 인증 완료 상태인지 확인
-        if(!"DONE".equals(redisService.getData(key))){
+        if(!"DONE".equals(keyValueService.getData(key))){
             throw new CustomException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
 
@@ -407,7 +410,7 @@ public class AuthService {
         user.updatePassWord(passwordEncoder.encode(dto.getNewPassword()));
 
         // 4. 인증 상태 정리
-        redisService.deleteData(key);
+        keyValueService.deleteData(key);
     }
 
     /**
@@ -437,10 +440,10 @@ public class AuthService {
         validateEmail(email);
 
         // 2. 해당 이메일이 현재 인증 상태인지
-        if(redisService.getData(email) == null || !redisService.getData(email).equals("DONE")){
+        if(keyValueService.getData(email) == null || !keyValueService.getData(email).equals("DONE")){
             throw new CustomException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
-        redisService.deleteData(email);
+        keyValueService.deleteData(email);
 
         // 3. 대학 찾기
 
@@ -494,7 +497,7 @@ public class AuthService {
 
         // 기존 비밀번호를 기억해 로그인에 성공했다면, 이전에 요청했던 비밀번호 재설정 인증 상태(코드 발송/DONE)는 철회
         // (재설정을 요청했지만 실제로는 비밀번호를 기억해서 그냥 로그인한 케이스 방어)
-        redisService.deleteData(PW_RESET_PREFIX + email);
+        keyValueService.deleteData(PW_RESET_PREFIX + email);
 
         // 3. JWT 토큰 발급
         String accessToken = createAccessToken(email);
@@ -666,7 +669,7 @@ public class AuthService {
         tokenService.deleteRefreshToken(userId);
 
         long remainingTime = jwtUtil.getExpiration(accessToken);
-        redisService.setDataExpire("BLACKLIST:" + accessToken, "logout", remainingTime);
+        keyValueService.setDataExpire("BLACKLIST:" + accessToken, "logout", remainingTime);
     }
 
     /**
@@ -705,7 +708,7 @@ public class AuthService {
         // 토큰 처리
         tokenService.deleteRefreshToken(userId);
         long remainingTime = jwtUtil.getExpiration(accessToken);
-        redisService.setDataExpire("BLACKLIST:" + accessToken, "withdrawn", remainingTime);
+        keyValueService.setDataExpire("BLACKLIST:" + accessToken, "withdrawn", remainingTime);
 
         // 푸시 토큰 삭제 (탈퇴한 계정으로 알림이 계속 가지 않도록)
         pushTokenRepository.deleteByUserId(userId);

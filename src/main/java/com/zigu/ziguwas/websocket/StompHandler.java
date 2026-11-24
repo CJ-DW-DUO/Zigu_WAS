@@ -5,7 +5,7 @@ import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
-import com.zigu.ziguwas.redis.RedisService;
+import com.zigu.ziguwas.kv.KeyValueService;
 import com.zigu.ziguwas.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
@@ -31,7 +31,7 @@ public class StompHandler implements ChannelInterceptor {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final ChatParticipantRepository chatParticipantRepository;
-    private final RedisService redisService;
+    private final KeyValueService keyValueService;
     private final ChatDeliveryInterceptor chatDeliveryInterceptor;
 
     /**
@@ -101,7 +101,7 @@ public class StompHandler implements ChannelInterceptor {
         }
 
         // 로그아웃·탈퇴로 블랙리스트에 오른 access 토큰도 연결할 수 없다 (REST 필터 JwtAuthenticationFilter 와 같은 키).
-        if (redisService.getData("BLACKLIST:" + token) != null) {
+        if (keyValueService.getData("BLACKLIST:" + token) != null) {
             throw new CustomException(ErrorCode.BLACKLIST_TOKEN);
         }
 

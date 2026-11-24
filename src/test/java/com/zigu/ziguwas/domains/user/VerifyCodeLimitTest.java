@@ -7,7 +7,7 @@ import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.domains.user.service.AuthService;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
-import com.zigu.ziguwas.redis.RedisService;
+import com.zigu.ziguwas.kv.KeyValueService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +51,7 @@ class VerifyCodeLimitTest {
     @Mock UserRepository userRepository;
     @Mock UniversityRepository universityRepository;
     @Mock JavaMailSender mailSender;
-    @Mock RedisService redisService;
+    @Mock KeyValueService keyValueService;
     @InjectMocks AuthService authService;
 
     Map<String, String> redis = new ConcurrentHashMap<>();
@@ -60,7 +60,7 @@ class VerifyCodeLimitTest {
 
     @BeforeEach
     void setUp() {
-        when(redisService.getData(anyString())).thenAnswer(i -> {
+        when(keyValueService.getData(anyString())).thenAnswer(i -> {
             String key = i.getArgument(0);
             if (slowFailRead && key.startsWith("VERIFYFAIL:")) {
                 Thread.sleep(2);
@@ -68,8 +68,8 @@ class VerifyCodeLimitTest {
             return redis.get(key);
         });
         doAnswer(i -> redis.put(i.getArgument(0), i.getArgument(1)))
-                .when(redisService).setDataExpire(anyString(), anyString(), anyLong());
-        doAnswer(i -> redis.remove(i.<String>getArgument(0))).when(redisService).deleteData(anyString());
+                .when(keyValueService).setDataExpire(anyString(), anyString(), anyLong());
+        doAnswer(i -> redis.remove(i.<String>getArgument(0))).when(keyValueService).deleteData(anyString());
         when(universityRepository.existsByUnivEmail("snu.ac.kr")).thenReturn(true);
         when(userRepository.existsByEmail("a@snu.ac.kr")).thenReturn(false);
     }

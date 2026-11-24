@@ -2,7 +2,7 @@ package com.zigu.ziguwas.security;
 
 import com.zigu.ziguwas.exception.CustomAuthenticationEntryPoint;
 import com.zigu.ziguwas.exception.ErrorCode;
-import com.zigu.ziguwas.redis.RedisService;
+import com.zigu.ziguwas.kv.KeyValueService;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,7 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final CustomUserDetailService customUserDetailService;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
-    private final RedisService redisService;
+    private final KeyValueService keyValueService;
 
 
     @Override
@@ -36,7 +36,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 // 2. 블랙리스트 체크 (가장 먼저 수행!)
 
-                if (redisService.getData("BLACKLIST:" + token) != null) {
+                if (keyValueService.getData("BLACKLIST:" + token) != null) {
                     // 블랙리스트에 있으면 다음 로직을 타지 않고 바로 예외 처리 지점으로 보냄
                     request.setAttribute("exception", ErrorCode.BLACKLIST_TOKEN);
                     filterChain.doFilter(request, response);

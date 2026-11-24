@@ -6,7 +6,7 @@ import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomAuthenticationEntryPoint;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
-import com.zigu.ziguwas.redis.RedisService;
+import com.zigu.ziguwas.kv.KeyValueService;
 import com.zigu.ziguwas.websocket.ChatDeliveryInterceptor;
 import com.zigu.ziguwas.websocket.StompHandler;
 import jakarta.servlet.FilterChain;
@@ -31,7 +31,7 @@ import static org.mockito.Mockito.*;
 class TokenGuardTest {
 
     private final JwtUtil jwtUtil = new JwtUtil("test-secret-key-test-secret-key-test-secret-key-1234");
-    private final RedisService redisService = mock(RedisService.class);
+    private final KeyValueService keyValueService = mock(KeyValueService.class);
     private final CustomUserDetailService userDetailService = mock(CustomUserDetailService.class);
     private final UserRepository userRepository = mock(UserRepository.class);
     private final FilterChain chain = mock(FilterChain.class);
@@ -42,8 +42,8 @@ class TokenGuardTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
-        filter = new JwtAuthenticationFilter(jwtUtil, userDetailService, new CustomAuthenticationEntryPoint(), redisService);
-        stompHandler = new StompHandler(jwtUtil, userRepository, mock(ChatParticipantRepository.class), redisService,
+        filter = new JwtAuthenticationFilter(jwtUtil, userDetailService, new CustomAuthenticationEntryPoint(), keyValueService);
+        stompHandler = new StompHandler(jwtUtil, userRepository, mock(ChatParticipantRepository.class), keyValueService,
                 new ChatDeliveryInterceptor(mock(ChatParticipantRepository.class)));
     }
 
@@ -76,7 +76,7 @@ class TokenGuardTest {
     @Test
     void stomp_블랙리스트_access토큰은_연결_거부() {
         String access = jwtUtil.createAccessToken("a@x.com");
-        when(redisService.getData("BLACKLIST:" + access)).thenReturn("logout");
+        when(keyValueService.getData("BLACKLIST:" + access)).thenReturn("logout");
 
         CustomException e = assertThrows(CustomException.class, () -> stompHandler.preSend(connect(access), null));
         assertEquals(ErrorCode.BLACKLIST_TOKEN, e.getErrorCode());
