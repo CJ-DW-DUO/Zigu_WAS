@@ -45,8 +45,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -577,28 +575,10 @@ public class ChatService {
             throw new CustomException(ErrorCode.BLOCKED_USER_CHAT);
         }
 
-        // 3. 해당 물품과 거래로 이루어진 채팅방이 이미 존재한다면, 그냥 해당 ID를 반환
-//        ChatRoom chatRoom = chatRoomRepository.findByItemAndParticipants(item, sender, receiver).orElse(null);
-
-        // 4. sender 참여 방 ID 목록
-        Set<String> senderRoomIds = chatParticipantRepository.findAllByUserId(sender.getId())
-                // 리스트를 스트림 파이프라인으로 변환
+        // 3. 해당 물품으로 두 사람이 이미 참여 중인(나간 방 포함) 채팅방이 있다면, 그냥 해당 ID를 반환
+        Optional<ChatRoom> existingRoom = chatRoomRepository
+                .findAllByItemIdAndParticipants(item.getId(), sender.getId(), receiver.getId())
                 .stream()
-                // 각 ChatParticipant 객체에서 chatRoomId(String)만 꺼내기 (p -> p.getChatRoomId()로 쓸 수 있음.)
-                .map(ChatParticipant::getChatRoomId)
-                // 결과 모으기 (중복 제거를 위해 Set으로)
-                .collect(Collectors.toSet());
-
-        // 5. receiver 참여 목록 중 sender와 겹치는 방 찾기
-        Optional<ChatRoom> existingRoom = chatParticipantRepository.findAllByUserId(receiver.getId())
-                .stream()
-                // receiver의 참여 목록 중 chatRoomId가 sender의 방 ID 목록에 포함되는 것만 남김. 즉 두 사람이 같이 있는 방만 걸러냄(남은요소)
-                .filter(p -> senderRoomIds.contains(p.getChatRoomId()))
-                // 걸러진 결과로 chatRoom객체를 조회하여 반환받음(새배열)
-                .map(p -> chatRoomRepository.findById(p.getChatRoomId()).orElse(null))
-                // 조회된 ChatRoom 중 itemId가 요청한 item과 일치하는 것만 남김. 즉, 두 사람이 참여하고 있는 방 중에서 해당 물품과 연결된 방만 남김(남은 요소)
-                .filter(room -> room != null && room.getItemId().equals(item.getId()))
-                // 조건을 만족하는 첫번째 ChatRoom을 Optional로 반환.
                 .findFirst();
 
         if (existingRoom.isPresent()) {
