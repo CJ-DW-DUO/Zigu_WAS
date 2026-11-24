@@ -1,6 +1,7 @@
 package com.zigu.ziguwas.domains.item.service;
 
 import com.zigu.ziguwas.S3.S3Service;
+import com.zigu.ziguwas.config.Kst;
 import com.zigu.ziguwas.domains.block.repository.BlockRepository;
 import com.zigu.ziguwas.domains.item.dto.request.ItemRegisterReqDto;
 import com.zigu.ziguwas.domains.item.dto.request.ItemUpdateReqDto;
@@ -227,7 +228,7 @@ public class ItemService {
     private void validateDesiredPeriod(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null
                 || startDate.isAfter(endDate)
-                || endDate.isBefore(LocalDate.now())) {
+                || endDate.isBefore(Kst.today())) {
             throw new CustomException(ErrorCode.INVALID_DESIRED_PERIOD);
         }
     }

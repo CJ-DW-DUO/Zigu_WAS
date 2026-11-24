@@ -44,7 +44,7 @@ public class MyPageTradeService {
      * 내가 빌려준 물건 내역을 조회합니다.
      *
      * @param userId 현재 로그인한 사용자의 ID
-     * @return 대여 해준 거래 정보 DTO 리스트
+     * @return 대여 해준 거래 정보 DTO 리스트 (대여중 + 반납완료 — FE 가 상태로 탭을 거른다)
      */
     @Transactional(readOnly = true)
     public List<MyPageTradeListResDto> findRenterItems(Long userId) {
@@ -52,7 +52,7 @@ public class MyPageTradeService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        return myPageTradeRepository.findAllByRenterAndTradeStatus(user,TradeStatus.IN_PROGRESS)
+        return myPageTradeRepository.findAllByRenterAndTradeStatusIn(user, List.of(TradeStatus.IN_PROGRESS, TradeStatus.RETURNED))
                 .stream().map(MyPageTradeListResDto::fromEntity).toList();
     }
 

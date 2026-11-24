@@ -34,7 +34,7 @@ public class TradeController implements TradeApi {
     @PostMapping
     public ResponseEntity<?> tradeOffer(
             @AuthenticationPrincipal CustomUserDetails details,
-            @RequestBody TradeOfferReqDto dto
+            @RequestBody @Valid TradeOfferReqDto dto
     ){
         return ResponseEntity.created(URI.create("/api/v1/trades/" +
                 tradeService.tradeOffer(details, dto))).build();

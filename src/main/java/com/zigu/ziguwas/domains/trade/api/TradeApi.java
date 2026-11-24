@@ -22,9 +22,17 @@ public interface TradeApi {
     @Operation(summary = "거래 제안", description = "임차인이 특정 매물에 대해 대여 거래를 제안합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "거래 제안 성공"),
-            @ApiResponse(responseCode = "403", description = "다른 대학교 매물에 대한 거래 제안 시도",
+            @ApiResponse(responseCode = "400", description = "요청 값 오류 (날짜 누락은 {필드: 메시지} 형태로 응답)",
                     content = @Content(mediaType = "application/json", examples = {
-                            @ExampleObject(name = "대학 불일치", value = "{\"status\": 403, \"message\": \"해당 대학에 대한 권한이 없습니다.\"}")
+                            @ExampleObject(name = "날짜 누락", value = "{\"startDate\": \"대여시작 날짜는 비울 수 없습니다.\", \"endDate\": \"대여종료 날짜는 비울 수 없습니다.\"}"),
+                            @ExampleObject(name = "종료일이 시작일보다 빠름", value = "{\"status\": 400, \"message\": \"종료일은 시작일보다 빠를 수 없습니다.\"}"),
+                            @ExampleObject(name = "지난 날짜", value = "{\"status\": 400, \"message\": \"지난 날짜로는 대여를 신청할 수 없습니다.\"}"),
+                            @ExampleObject(name = "중복 신청", value = "{\"status\": 400, \"message\": \"진행중인 거래가 있습니다.\"}")
+                    })),
+            @ApiResponse(responseCode = "403", description = "다른 대학교 매물이거나 차단 관계",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(name = "대학 불일치", value = "{\"status\": 403, \"message\": \"해당 대학에 대한 권한이 없습니다.\"}"),
+                            @ExampleObject(name = "차단 관계", value = "{\"status\": 403, \"message\": \"차단 관계인 사용자와는 거래할 수 없습니다.\"}")
                     })),
             @ApiResponse(responseCode = "404", description = "사용자 또는 아이템을 찾을 수 없음",
                     content = @Content(mediaType = "application/json", examples = {
@@ -34,7 +42,7 @@ public interface TradeApi {
     })
     ResponseEntity<?> tradeOffer(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails details,
-            @Parameter(description = "대여 제안 요청 정보") @RequestBody TradeOfferReqDto dto
+            @Parameter(description = "대여 제안 요청 정보") @RequestBody @Valid TradeOfferReqDto dto
     );
 
     @Operation(summary = "요청글 대여 제안",
