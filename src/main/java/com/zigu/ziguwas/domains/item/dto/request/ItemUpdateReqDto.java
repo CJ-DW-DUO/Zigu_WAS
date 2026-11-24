@@ -3,6 +3,8 @@ package com.zigu.ziguwas.domains.item.dto.request;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.zigu.ziguwas.domains.item.entity.ItemCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -29,7 +31,9 @@ public class ItemUpdateReqDto {
     private final ItemCategory category;
 
     @NotNull(message = "대여 가격을 입력해 주세요.")
-    @Schema(description = "1일 대여 가격 (원)", example = "5000")
+    @Min(value = 0, message = "대여 가격은 0원 이상이어야 합니다.")
+    @Max(value = 999999, message = "대여 가격은 최대 999,999원까지 입력할 수 있습니다.")
+    @Schema(description = "1일 대여 가격 (원, 0~999999)", example = "5000")
     private final Long dayPerPrice;
 
     @NotBlank(message = "물건에 대한 설명을 적어주세요.")
