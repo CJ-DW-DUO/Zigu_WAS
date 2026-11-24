@@ -47,7 +47,7 @@ public class Item {
     @Column(name = "category", nullable = false)
     private ItemCategory category;
 
-    @Column(name = "description", nullable = false)
+    @Column(name = "description", nullable = false, columnDefinition = "text")
     private String description;
 
     @Column(name = "day_per_price", nullable = false)
