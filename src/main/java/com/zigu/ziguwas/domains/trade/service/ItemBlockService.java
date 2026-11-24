@@ -169,7 +169,9 @@ public class ItemBlockService {
             return false;
         }
 
-        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+        // 7일이면 모든 요일이 한 번씩 나오므로, 기간이 길어도 앞의 최대 7일만 확인하면 된다
+        LocalDate lastDateToCheck = endDate.isAfter(startDate.plusDays(6)) ? startDate.plusDays(6) : endDate;
+        for (LocalDate date = startDate; !date.isAfter(lastDateToCheck); date = date.plusDays(1)) {
             if (blockedWeekdays.contains(date.getDayOfWeek())) {
                 return true;
             }
