@@ -47,6 +47,18 @@ public class AuthService {
     // 회원가입용 이메일 인증 Redis key(이메일 그대로)와 겹치지 않도록 분리한 prefix
     private static final String PW_RESET_PREFIX = "PWRESET:";
 
+    // 같은 이메일로 인증번호를 다시 요청할 수 있을 때까지의 대기 표시 / 오답 시도 횟수 기록 Redis key prefix
+    // (인증코드 key 앞에 붙인다: 회원가입은 이메일 그대로, 비밀번호 재설정은 PWRESET:이메일)
+    private static final String SEND_COOLDOWN_PREFIX = "VERIFYCOOL:";
+    private static final String VERIFY_FAIL_PREFIX = "VERIFYFAIL:";
+
+    // 인증번호 재발송 대기 시간(ms)
+    private static final long SEND_COOLDOWN_MS = 60 * 1000L;
+
+    // 인증번호 오답 허용 횟수와 그 횟수를 세는 시간(ms): 이메일별로 1분에 5번까지 틀릴 수 있다.
+    private static final int MAX_VERIFY_FAILURES = 5;
+    private static final long VERIFY_FAIL_WINDOW_MS = 60 * 1000L;
+
     // 현재 서비스 약관 버전 (약관 개정 시 갱신)
     private static final String CURRENT_TERMS_VERSION = "v1.0";
 
@@ -96,6 +108,91 @@ public class AuthService {
     }
 
     /**
+     * 같은 이메일로 인증번호를 너무 빨리 다시 요청했는지 검증
+     *
+     * @param codeKey 인증코드를 저장하는 Redis key (회원가입은 이메일, 비밀번호 재설정은 PWRESET:이메일)
+     */
+    private void validateSendCooldown(String codeKey) {
+        if (redisService.getData(SEND_COOLDOWN_PREFIX + codeKey) != null) {
+            throw new CustomException(ErrorCode.VERIFY_CODE_RESEND_TOO_SOON);
+        }
+    }
+
+    /**
+     * 인증번호 메일을 보내고 재발송 대기를 건다
+     *
+     * 메일 발송이 실패하면 사용자가 바로 다시 요청할 수 있도록 대기를 푼다.
+     *
+     * @param codeKey 인증코드를 저장하는 Redis key
+     * @param message 보낼 메일
+     */
+    private void sendCodeMail(String codeKey, SimpleMailMessage message) {
+        String cooldownKey = SEND_COOLDOWN_PREFIX + codeKey;
+
+        // ponytail: 확인(validateSendCooldown)과 기록 사이가 원자적이지 않아 같은 순간 두 번 요청하면 메일이 두 번 나갈 수 있다. 엄격하게 막으려면 원자적 저장 연산(setIfAbsent)이 필요하다.
+        redisService.setDataExpire(cooldownKey, "1", SEND_COOLDOWN_MS);
+
+        try {
+            mailSender.send(message);
+        } catch (RuntimeException e) {
+            redisService.deleteData(cooldownKey);
+            throw e;
+        }
+    }
+
+    /**
+     * 인증번호를 이미 너무 많이 틀렸는지 검증
+     *
+     * @param codeKey 인증코드를 저장하는 Redis key
+     */
+    private void validateVerifyAttempts(String codeKey) {
+        String record = redisService.getData(VERIFY_FAIL_PREFIX + codeKey);
+
+        if (record == null) {
+            return;
+        }
+
+        // 기록은 "틀린 횟수:처음 틀린 시각(ms)" 형태이고, 처음 틀린 때부터 1분 뒤에 Redis 에서 사라진다.
+        if (Integer.parseInt(record.split(":")[0]) >= MAX_VERIFY_FAILURES) {
+            throw new CustomException(ErrorCode.VERIFY_CODE_TOO_MANY_ATTEMPTS);
+        }
+    }
+
+    /**
+     * 인증번호를 틀린 횟수를 한 번 더 기록
+     *
+     * 새로 세기 시작한 시각을 함께 저장해 두고 남은 시간만큼만 보관하므로,
+     * 틀릴 때마다 1분이 새로 시작되지 않고 처음 틀린 때부터 1분 동안 센다.
+     *
+     * @param codeKey 인증코드를 저장하는 Redis key
+     */
+    private void recordVerifyFailure(String codeKey) {
+        String failKey = VERIFY_FAIL_PREFIX + codeKey;
+        String record = redisService.getData(failKey);
+        long now = System.currentTimeMillis();
+
+        int count = 1;
+        long startedAt = now;
+
+        if (record != null) {
+            String[] parts = record.split(":");
+            count = Integer.parseInt(parts[0]) + 1;
+            startedAt = Long.parseLong(parts[1]);
+        }
+
+        long remaining = VERIFY_FAIL_WINDOW_MS - (now - startedAt);
+
+        // 기록이 만료되기 직전에 읽혀 남은 시간이 없으면 지금부터 새로 센다.
+        if (remaining <= 0) {
+            count = 1;
+            startedAt = now;
+            remaining = VERIFY_FAIL_WINDOW_MS;
+        }
+
+        redisService.setDataExpire(failKey, count + ":" + startedAt, remaining);
+    }
+
+    /**
      * 이메일 인증코드 발송
      *
      * Redis를 이용한 랜덤 인증 코드 생성 후 발송
@@ -106,6 +203,9 @@ public class AuthService {
     public void emailCodeSend(EmailReqDto dto) {
         // 1. 이메일 검증
         validateEmail(dto.getEmail());
+
+        // 같은 이메일로 너무 빨리 다시 요청하면 거절
+        validateSendCooldown(dto.getEmail());
 
         // 2. 인증코드 생성 및 레디스 저장
 
@@ -120,7 +220,7 @@ public class AuthService {
         message.setTo(dto.getEmail());
         message.setSubject("[Zigu] 회원가입 인증 번호 안내");
         message.setText("인증 번호는 [" + verificationCode + "] 입니다. 5분 내에 입력해주세요.");
-        mailSender.send(message);
+        sendCodeMail(dto.getEmail(), message);
     }
 
 
@@ -133,6 +233,9 @@ public class AuthService {
     @Transactional
     public void emailVerification(EmailVerifyReqDto dto) {
 
+        // 오답을 너무 많이 낸 이메일은 코드가 맞더라도 잠시 거절
+        validateVerifyAttempts(dto.getEmail());
+
         // 1. Redis에 저장된 인증코드 불러오기
         String savedCode = redisService.getData(dto.getEmail());
         if(savedCode == null){
@@ -144,10 +247,12 @@ public class AuthService {
         if(savedCode.equals(dto.getCode())){
             // 인증 코드는 삭제
             redisService.deleteData(dto.getEmail());
+            redisService.deleteData(VERIFY_FAIL_PREFIX + dto.getEmail());
             // 인증된 메일 상태는 10분간 유지하도록
             redisService.setDataExpire(dto.getEmail(), "DONE", 600 * 1000);
         } else {
-            // 인증 정보가 다를경우 예외
+            // 인증 정보가 다를경우 틀린 횟수를 기록하고 예외
+            recordVerifyFailure(dto.getEmail());
             throw new CustomException(ErrorCode.VERIFY_CODE_NOT_MATCHED);
         }
 
@@ -167,6 +272,9 @@ public class AuthService {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
         }
 
+        // 같은 이메일로 너무 빨리 다시 요청하면 거절
+        validateSendCooldown(PW_RESET_PREFIX + dto.getEmail());
+
         // 2. 인증코드 생성 및 레디스 저장 (회원가입용 key와 구분되는 prefix 사용)
         String verificationCode = String.valueOf((int)(Math.random() * 899999) + 100000);
         redisService.setDataExpire(PW_RESET_PREFIX + dto.getEmail(), verificationCode, 300 * 1000);
@@ -176,7 +284,7 @@ public class AuthService {
         message.setTo(dto.getEmail());
         message.setSubject("[Zigu] 비밀번호 재설정 인증 번호 안내");
         message.setText("인증 번호는 [" + verificationCode + "] 입니다. 5분 내에 입력해주세요.");
-        mailSender.send(message);
+        sendCodeMail(PW_RESET_PREFIX + dto.getEmail(), message);
     }
 
     /**
@@ -188,6 +296,9 @@ public class AuthService {
     public void passwordResetEmailVerify(EmailVerifyReqDto dto) {
         String key = PW_RESET_PREFIX + dto.getEmail();
 
+        // 오답을 너무 많이 낸 이메일은 코드가 맞더라도 잠시 거절
+        validateVerifyAttempts(key);
+
         // 1. Redis에 저장된 인증코드 불러오기
         String savedCode = redisService.getData(key);
         if(savedCode == null){
@@ -198,8 +309,10 @@ public class AuthService {
         if(savedCode.equals(dto.getCode())){
             // 인증 코드는 삭제하고, 인증된 상태를 10분간 유지
             redisService.deleteData(key);
+            redisService.deleteData(VERIFY_FAIL_PREFIX + key);
             redisService.setDataExpire(key, "DONE", 600 * 1000);
         } else {
+            recordVerifyFailure(key);
             throw new CustomException(ErrorCode.VERIFY_CODE_NOT_MATCHED);
         }
     }

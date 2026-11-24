@@ -23,6 +23,8 @@ public enum ErrorCode {
     EMAIL_NOT_VERIFIED(401, "해당 이메일은 인증되지 않았습니다."),
     VERIFY_CODE_NOT_FOUND(404, "인증코드를 발급하지 않은 이메일 입니다."),
     VERIFY_CODE_NOT_MATCHED(400, "인증코드가 일치하지 않습니다."),
+    VERIFY_CODE_RESEND_TOO_SOON(429, "인증번호는 1분 뒤에 다시 요청할 수 있습니다."),
+    VERIFY_CODE_TOO_MANY_ATTEMPTS(429, "인증번호를 너무 많이 틀렸습니다. 1분 뒤에 다시 시도해 주세요."),
     NICKNAME_CONFLICT(409, "이미 사용중인 닉네임입니다."),
     INCORRECT_PASSWORD(401, "비밀번호가 일치하지 않습니다."),
     INVALID_OLD_PASSWORD(401, "기존 비밀번호와 입력하신 비밀번호는 일치하지 않습니다." ),
