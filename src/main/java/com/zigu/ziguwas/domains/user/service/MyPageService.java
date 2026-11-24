@@ -2,6 +2,7 @@ package com.zigu.ziguwas.domains.user.service;
 
 import com.zigu.ziguwas.S3.S3Service;
 import com.zigu.ziguwas.domains.item.entity.Item;
+import com.zigu.ziguwas.domains.item.entity.PostType;
 import com.zigu.ziguwas.domains.item.event.ItemImagesDeletedEvent;
 import com.zigu.ziguwas.domains.item.repository.ItemListRepository;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
@@ -46,7 +47,10 @@ public class MyPageService {
         // 해당 유저가 등록한 물건 중 최신순으로 3개만 조회
         List<Item> top3Items = itemRepository.findTop3ByUserOrderByCreatedAtDesc(user);
 
-        return MyPageMainResDto.fromEntity(user, top3Items);
+        // 요청글(빌려주세요)은 따로 최신순 3개를 담아 내려준다.
+        List<Item> top3DemandItems = itemRepository.findTop3ByUserAndPostTypeOrderByCreatedAtDesc(user, PostType.DEMAND);
+
+        return MyPageMainResDto.fromEntity(user, top3Items, top3DemandItems);
     }
 
     /**

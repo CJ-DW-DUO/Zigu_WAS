@@ -1,6 +1,7 @@
 package com.zigu.ziguwas.domains.item.repository;
 
 import com.zigu.ziguwas.domains.item.entity.Item;
+import com.zigu.ziguwas.domains.item.entity.PostType;
 import com.zigu.ziguwas.domains.user.entity.User;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,6 +19,9 @@ import java.util.Optional;
 public interface ItemRepository extends JpaRepository<Item, Long>, JpaSpecificationExecutor<Item> {
 
     List<Item> findTop3ByUserOrderByCreatedAtDesc(User user);
+
+    // 특정 유형(예: 요청글)의 게시글만 최신순으로 3개 조회 (마이페이지 메인용)
+    List<Item> findTop3ByUserAndPostTypeOrderByCreatedAtDesc(User user, PostType postType);
 
     /**
      * 조회수만 별도의 짧은 트랜잭션(REQUIRES_NEW)으로 증가시킵니다.

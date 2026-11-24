@@ -22,6 +22,9 @@ public class MyPageProfileResDto {
     @Schema(description = "학번", example = "20261234")
     private final String studentNumber;
 
+    @Schema(description = "이메일", example = "zigu@handong.ac.kr")
+    private final String email;
+
     @Schema(description = "성별 (MALE, FEMALE)", example = "MALE")
     private final Gender gender;
 
@@ -33,6 +36,7 @@ public class MyPageProfileResDto {
                 .nickname(user.getNickname())
                 .profilePhotoUrl(user.getProfilePhotoUrl())
                 .studentNumber(user.getStudentNumber())
+                .email(user.getEmail())
                 .gender(user.getGender())
                 .genderVisible(user.isGenderVisible())
                 .build();
