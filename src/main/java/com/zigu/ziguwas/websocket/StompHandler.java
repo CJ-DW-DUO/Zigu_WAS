@@ -32,6 +32,7 @@ public class StompHandler implements ChannelInterceptor {
     private final UserRepository userRepository;
     private final ChatParticipantRepository chatParticipantRepository;
     private final RedisService redisService;
+    private final ChatDeliveryInterceptor chatDeliveryInterceptor;
 
     /**
      * 허용되는 유일한 구독 주소 형식.
@@ -124,6 +125,9 @@ public class StompHandler implements ChannelInterceptor {
 
         sessionAttributes.put(SESSION_USER_EMAIL, email);
         sessionAttributes.put(SESSION_USER_ID, user.getId());
+
+        // 나가는 메시지(outbound)에는 세션 속성이 실리지 않으므로, 전달 직전 수신자 확인용으로 세션ID도 따로 등록한다.
+        chatDeliveryInterceptor.register(accessor.getSessionId(), user.getId());
     }
 
     /**
