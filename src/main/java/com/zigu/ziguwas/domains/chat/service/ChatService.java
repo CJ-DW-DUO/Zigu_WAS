@@ -17,6 +17,7 @@ import com.zigu.ziguwas.domains.chat.repository.ChatMessageRepository;
 import com.zigu.ziguwas.domains.chat.repository.ChatParticipantRepository;
 import com.zigu.ziguwas.domains.chat.repository.ChatRoomRepository;
 import com.zigu.ziguwas.domains.item.entity.Item;
+import com.zigu.ziguwas.domains.item.entity.ItemImage;
 import com.zigu.ziguwas.domains.item.entity.PostType;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
 import com.zigu.ziguwas.domains.notification.entity.NotificationType;
@@ -28,6 +29,7 @@ import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
+import com.zigu.ziguwas.redis.RedisService;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -62,6 +64,14 @@ public class ChatService {
 
     private final SimpMessageSendingOperations messagingTemplate;
     private final S3Service s3Service;
+    private final RedisService redisService;
+
+    // 같은 clientMessageId 재전송을 중복으로 판단하는 기간(ms). 재전송은 전송 실패·타임아웃 직후에 일어나므로 짧게 둔다.
+    // ponytail: 기록이 Redis 에만 있어 이 기간이 지나면 같은 ID 도 새 메시지로 저장된다. 더 길게 보장해야 하면 메시지 저장소의 유니크 키로 옮긴다.
+    private static final long CLIENT_MESSAGE_ID_TTL_MS = 10 * 60 * 1000L;
+
+    // 첫 요청이 아직 저장 중일 때 clientMessageId 기록에 임시로 넣어두는 값
+    private static final String SAVING = "SAVING";
 
     // 채팅방을 나간 적이 없는 참여자의 조회 하한선으로 사용하는 기준 시각.
     // 모든 메시지의 timestamp는 이 시각보다 뒤이므로, 하한선이 없는 경우와 동일하게 동작한다.
@@ -154,6 +164,22 @@ public class ChatService {
     }
 
     /**
+     * 물품의 대표 이미지 URL을 반환하는 서비스
+     *
+     * 대표 이미지가 없으면 첫 번째 이미지를, 이미지가 하나도 없으면 null을 반환한다.
+     *
+     * @param item 물품
+     */
+    private String resolveThumbnailUrl(Item item) {
+        return item.getImageUrl().stream()
+                .filter(ItemImage::isMainImageUrl)
+                .findFirst()
+                .or(() -> item.getImageUrl().stream().findFirst())
+                .map(ItemImage::getImageUrl)
+                .orElse(null);
+    }
+
+    /**
      * 참여중인 채팅방 조회 DTO
      *
      * @param customUserDetails 로그인 사용자 정보
@@ -223,6 +249,9 @@ public class ChatService {
                     .map(User::getNickname)
                     .orElse("탈퇴한 사용자");
 
+            // 3-3-3. 물품 정보 조회 (소프트 딜리트된 물품이면 제목·이미지는 null)
+            Item item = itemRepository.findById(room.getItemId()).orElse(null);
+
             // 3-4. 마지막으로 대화한 시각 조회
 
             LocalDateTime lastSendTime = null;
@@ -243,6 +272,12 @@ public class ChatService {
                             .roomName(roomName)
                             .lastMessage(lastMessageContent)
                             .lastMessageTimestamp(lastSendTime)
+                            .lastMessageId(lastMessage != null ? lastMessage.getId() : null)
+                            .lastSenderId(lastMessage != null ? lastMessage.getSenderId() : null)
+                            .itemId(room.getItemId())
+                            .receiverId(otherUserId)
+                            .itemTitle(item != null ? item.getTitle() : null)
+                            .itemImageUrl(item != null ? resolveThumbnailUrl(item) : null)
                             .build());
         }
 
@@ -454,10 +489,43 @@ public class ChatService {
 
         String content = dto.hasImage() ? dto.getImageUrl() : dto.getMessage();
 
+        // 4-2. 같은 clientMessageId 로 이미 받은 메시지인지 확인 (재전송이면 새로 저장하지 않는다)
+        // 먼저 선점한 요청 하나만 저장하도록 Redis 에 먼저 자리를 잡는다. 동시에 두 번 들어와도 하나만 통과한다.
+        String clientMessageId = dto.resolveClientMessageId();
+        String clientMessageKey = (clientMessageId != null)
+                ? "CHATMSG:" + chatRoomId + ":" + sender.getId() + ":" + clientMessageId : null;
+        boolean isResend = clientMessageKey != null
+                && !redisService.setDataIfAbsent(clientMessageKey, SAVING, CLIENT_MESSAGE_ID_TTL_MS);
+
+        ChatMessage saved = null;
+
+        if (isResend) {
+            saved = findAlreadySaved(clientMessageKey);
+
+            // 첫 요청이 아직 저장 중이면 그 요청이 전송까지 마치므로 여기서는 아무것도 하지 않는다.
+            if (saved == null) {
+                return;
+            }
+        }
+
         // 5. 메시지 저장
         // 전송보다 저장이 먼저여야 한다. 전송을 먼저 하면 저장이 실패했을 때
         // 상대 화면에는 떴다가 새로고침하면 사라지는 유령 메시지가 남는다.
-        ChatMessage saved = saveMessage(content, sender, chatRoom, dto.hasImage());
+        if (!isResend) {
+            try {
+                saved = saveMessage(content, sender, chatRoom, dto.hasImage());
+            } catch (RuntimeException e) {
+                // 저장에 실패하면 같은 ID 로 다시 보낼 수 있도록 자리를 비운다.
+                if (clientMessageKey != null) {
+                    redisService.deleteData(clientMessageKey);
+                }
+                throw e;
+            }
+
+            if (clientMessageKey != null) {
+                redisService.setDataExpire(clientMessageKey, saved.getId(), CLIENT_MESSAGE_ID_TTL_MS);
+            }
+        }
 
         // 6. 메시지 전송
         // 저장된 ID와 시각을 함께 내려보내, 클라이언트가 목록 조회 결과와 비교해
@@ -469,15 +537,38 @@ public class ChatService {
                         .senderId(sender.getId())
                         .chatRoomId(chatRoomId)
                         .senderNickname(sender.getNickname())
-                        .message(!dto.hasImage() ? dto.getMessage() : null)
-                        .imageUrl(dto.hasImage() ? dto.getImageUrl() : null)
+                        .message(saved.getMessage())
+                        .imageUrl(saved.getImageUrl())
+                        .clientMessageId(clientMessageId)
                         .build()
         );
+
+        // 재전송이면 이미 알림까지 나갔으므로 같은 알림을 다시 만들지 않는다.
+        if (isResend) {
+            return;
+        }
 
         // 7. 알림 발행 (나갔던 수신자의 채팅방 재활성화 포함)
         // 매물명은 알림 목록/푸시 표시용 스냅샷이므로, 조회 실패(소프트 딜리트 등) 시에도 메시지 전송 자체는 막지 않는다.
         String itemTitle = itemRepository.findById(chatRoom.getItemId()).map(Item::getTitle).orElse(null);
         notifyParticipants(content, sender, chatRoom, dto.hasImage(), itemTitle);
+    }
+
+    /**
+     * clientMessageId 기록으로 이미 저장된 메시지를 찾는 서비스
+     *
+     * @param clientMessageKey 중복 확인용 키
+     * @return 이미 저장된 메시지, 아직 저장 중이거나 찾을 수 없으면 null
+     */
+    private ChatMessage findAlreadySaved(String clientMessageKey) {
+        String savedMessageId = redisService.getData(clientMessageKey);
+
+        // 기록이 없거나, 첫 요청이 아직 저장 중이면 찾을 메시지가 없다.
+        if (savedMessageId == null || SAVING.equals(savedMessageId)) {
+            return null;
+        }
+
+        return chatMessageRepository.findById(savedMessageId).orElse(null);
     }
 
     /**

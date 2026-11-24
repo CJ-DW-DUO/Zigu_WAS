@@ -37,6 +37,10 @@ public class ChatSendInfoDto {
     @Schema(description = "이미지 URL", example = "https://example.com/image.jpg")
     private String imageUrl;
 
+    // 보낸 사람이 요청에 실어 보낸 식별자를 그대로 돌려준다. 보낸 사람이 "내가 보낸 그 메시지"임을 확인하는 용도이며, 없으면 null.
+    @Schema(description = "보낸 사람이 요청에 담은 클라이언트 메시지 식별자 (없으면 null)", example = "pending:1732413000000-ab12")
+    private String clientMessageId;
+
     public boolean hasImage() {
         return imageUrl != null && !imageUrl.isEmpty();
     }
