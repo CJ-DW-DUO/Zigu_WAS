@@ -16,6 +16,8 @@ import com.zigu.ziguwas.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -108,17 +110,28 @@ public class MyPageService {
             user.updateGenderVisible(reqDto.getGenderVisible());
         }
 
-        // 2. 이미지 업데이트
+        // 2. 이미지 업데이트 (새 업로드 성공 → DB 갱신 → 이전 이미지 삭제 순서)
         if (profileImage != null && !profileImage.isEmpty()) {
-            // 기존 이미지가 있다면 삭제 처리 (S3 용량 관리)
-            if (user.getProfilePhotoUrl() != null) {
-                s3Service.deleteFile(user.getProfilePhotoUrl());
-            }
+            String oldImageUrl = user.getProfilePhotoUrl();
 
-            // 새 이미지 업로드
+            // 새 이미지 업로드 (실패하면 예외로 끝나 기존 이미지는 그대로 남는다)
             String uploadedUrl = s3Service.uploadSingleFile(profileImage);
             if (!uploadedUrl.isEmpty()) {
                 user.updateProfileImage(uploadedUrl);
+
+                // 이전 이미지는 DB 커밋이 끝난 뒤에 삭제한다 (S3 용량 관리)
+                if (oldImageUrl != null) {
+                    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            try {
+                                s3Service.deleteFile(oldImageUrl);
+                            } catch (CustomException ignored) {
+                                // ponytail: 삭제 실패 시 이전 객체가 S3 에 남을 뿐 프로필 수정은 유지, 고아 객체가 문제되면 정리 배치로
+                            }
+                        }
+                    });
+                }
             }
         }
 
