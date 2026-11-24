@@ -155,7 +155,7 @@ public class ItemController implements ItemApi {
             @RequestParam(value = "to", required = false) LocalDate to,
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
-        return ResponseEntity.ok(tradeService.getBlockRanges(itemId, from, to));
+        return ResponseEntity.ok(tradeService.getBlockRanges(itemId, customUserDetails.getUnivId(), from, to));
     }
 
     /**

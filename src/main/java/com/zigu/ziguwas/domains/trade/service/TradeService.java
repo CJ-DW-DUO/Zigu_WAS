@@ -464,14 +464,20 @@ public class TradeService {
      * 실제 날짜들로 펼쳐서 내려줍니다.
      *
      * @param itemId 조회할 아이템 ID
+     * @param univId 조회 요청자의 대학 ID (아이템 등록자와 같은 대학이어야 한다)
      * @param from   조회 시작일 (생략 시 오늘)
      * @param to     조회 종료일 (생략 시 from + 90일)
      * @return 대여 불가 기간 목록
      */
     @Transactional(readOnly = true)
-    public ItemBlockRangeResDto getBlockRanges(Long itemId, LocalDate from, LocalDate to) {
+    public ItemBlockRangeResDto getBlockRanges(Long itemId, Long univId, LocalDate from, LocalDate to) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
+
+        // 다른 대학 사용자는 아이템 ID 만으로 차단 기간을 조회할 수 없다 (상세조회와 같은 기준)
+        if (!item.getUser().getUniv().getUnivId().equals(univId)) {
+            throw new CustomException(ErrorCode.DIFFERENT_UNIVERSITY_ACCESS);
+        }
 
         LocalDate rangeFrom = (from != null) ? from : Kst.today();
         LocalDate rangeTo = (to != null) ? to : rangeFrom.plusDays(DEFAULT_BLOCK_RANGE_WINDOW_DAYS);

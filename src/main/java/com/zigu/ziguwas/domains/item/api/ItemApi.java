@@ -258,6 +258,11 @@ public interface ItemApi {
                         { "status": 400, "message": "종료일은 시작일보다 빠를 수 없습니다." }
                         """))
             ),
+            @ApiResponse(responseCode = "403", description = "다른 대학 사용자의 조회",
+                    content = @Content(examples = @ExampleObject(value = """
+                        { "status": 403, "message": "해당 대학에 대한 권한이 없습니다.", "code": "DIFFERENT_UNIVERSITY_ACCESS" }
+                        """))
+            ),
             @ApiResponse(responseCode = "404", description = "아이템 없음",
                     content = @Content(examples = @ExampleObject(value = """
                         { "status": 404, "message": "아이템을 찾을 수 없습니다." }
