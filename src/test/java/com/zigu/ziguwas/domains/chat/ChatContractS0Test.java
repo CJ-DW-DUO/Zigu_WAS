@@ -25,7 +25,6 @@ import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
-import com.zigu.ziguwas.redis.RedisService;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import com.zigu.ziguwas.websocket.StompErrorHandler;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -39,6 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
@@ -77,7 +77,6 @@ class ChatContractS0Test {
     @Mock BlockRepository blockRepository;
     @Mock SimpMessageSendingOperations messagingTemplate;
     @Mock S3Service s3Service;
-    @Mock RedisService redisService;
     @InjectMocks ChatService chatService;
 
     User author = user(10L, "author@handong.ac.kr");
@@ -157,21 +156,19 @@ class ChatContractS0Test {
     }
 
     // W-25 — 같은 clientMessageId 재전송: 저장·알림은 1번, 전송(echo)은 매번 같은 messageId·clientMessageId 로.
+    // (PG 이관 후: Redis 선점 대신 chat_message 의 (방, 보낸 사람, clientMessageId) 유니크 키로 판단)
     @Test
     void branchMessage_같은_clientMessageId_재전송은_중복저장_없이_echo() throws Exception {
-        String key = "CHATMSG:room1:" + other.getId() + ":cm-1";
         ChatMessage saved = ChatMessage.builder().id("m1").chatRoomId("room1").senderId(other.getId())
-                .message("hello").timestamp(LocalDateTime.now()).build();
+                .message("hello").timestamp(LocalDateTime.now()).clientMessageId("cm-1").build();
         when(chatMessageRepository.save(any())).thenReturn(saved);
-        when(chatMessageRepository.findById("m1")).thenReturn(Optional.of(saved));
-        when(redisService.setDataIfAbsent(eq(key), anyString(), anyLong())).thenReturn(true, false);
-        when(redisService.getData(key)).thenReturn("m1");
+        when(chatMessageRepository.findByChatRoomIdAndSenderIdAndClientMessageId("room1", other.getId(), "cm-1"))
+                .thenReturn(Optional.empty(), Optional.of(saved));
 
         chatService.branchMessage("room1", reqWithClientId("cm-1"), other.getEmail());
         chatService.branchMessage("room1", reqWithClientId("cm-1"), other.getEmail());
 
         verify(chatMessageRepository, times(1)).save(any());
-        verify(redisService).setDataExpire(eq(key), eq("m1"), anyLong());
         verify(eventPublisher, times(1)).publishEvent(any(Object.class));
         ArgumentCaptor<Object> sent = ArgumentCaptor.forClass(Object.class);
         verify(messagingTemplate, times(2)).convertAndSend(eq("/sub/chat/room/room1"), sent.capture());
@@ -183,18 +180,26 @@ class ChatContractS0Test {
         }
     }
 
-    // W-25 — 첫 요청이 아직 저장 중이면 아무것도 하지 않고, ID 없는 요청은 기존처럼 매번 저장한다.
+    // W-25 — 동시 재전송: 조회 시점엔 없었지만 저장 때 유니크 키가 막으면 먼저 저장된 메시지를 echo 하고 알림은 만들지 않는다.
     @Test
-    void branchMessage_저장중이면_무시_ID없으면_기존_동작() throws Exception {
-        String key = "CHATMSG:room1:" + other.getId() + ":cm-2";
-        when(redisService.setDataIfAbsent(eq(key), anyString(), anyLong())).thenReturn(false);
-        when(redisService.getData(key)).thenReturn("SAVING");
+    void branchMessage_동시_재전송은_유니크_충돌_뒤_기존_메시지로_echo() throws Exception {
+        ChatMessage existing = ChatMessage.builder().id("m3").chatRoomId("room1").senderId(other.getId())
+                .message("hello").timestamp(LocalDateTime.now()).clientMessageId("cm-3").build();
+        when(chatMessageRepository.findByChatRoomIdAndSenderIdAndClientMessageId("room1", other.getId(), "cm-3"))
+                .thenReturn(Optional.empty(), Optional.of(existing));
+        when(chatMessageRepository.save(any())).thenThrow(new DataIntegrityViolationException("duplicate key"));
 
-        chatService.branchMessage("room1", reqWithClientId("cm-2"), other.getEmail());
+        chatService.branchMessage("room1", reqWithClientId("cm-3"), other.getEmail());
 
-        verify(chatMessageRepository, never()).save(any());
-        verify(messagingTemplate, never()).convertAndSend(anyString(), any(Object.class));
+        ArgumentCaptor<Object> sent = ArgumentCaptor.forClass(Object.class);
+        verify(messagingTemplate, times(1)).convertAndSend(eq("/sub/chat/room/room1"), sent.capture());
+        assertEquals("m3", ((ChatSendInfoDto) sent.getValue()).getMessageId());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
 
+    // W-25 — ID 없는 요청은 기존처럼 매번 저장하고, 유니크 위반이 ID 없는 요청에서 나면 그대로 던진다.
+    @Test
+    void branchMessage_ID없으면_매번_저장() throws Exception {
         ChatMessage saved = ChatMessage.builder().id("m2").chatRoomId("room1").senderId(other.getId())
                 .message("hello").timestamp(LocalDateTime.now()).build();
         when(chatMessageRepository.save(any())).thenReturn(saved);
@@ -204,7 +209,7 @@ class ChatContractS0Test {
         chatService.branchMessage("room1", noId, other.getEmail());
 
         verify(chatMessageRepository, times(2)).save(any());
-        verify(redisService, never()).setDataExpire(anyString(), anyString(), anyLong());
+        verify(chatMessageRepository, never()).findByChatRoomIdAndSenderIdAndClientMessageId(anyString(), anyLong(), anyString());
     }
 
     // W-26 — 인증 예외는 ERROR 프레임의 message 헤더·본문에 ErrorDto 형태로 담긴다. 모르는 예외는 기본 동작.

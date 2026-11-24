@@ -39,6 +39,16 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, String
     Slice<ChatMessage> findByChatRoomIdAndTimestampAfter(String chatRoomId, LocalDateTime timestamp, Pageable pageable);
 
     /**
+     * 같은 clientMessageId 로 이미 저장된 메시지를 조회합니다. (재전송 감지, 동시 재전송 충돌 후 기존 메시지 조회)
+     *
+     * @param chatRoomId 채팅방ID
+     * @param senderId 보낸 사람 ID
+     * @param clientMessageId 클라이언트가 만든 메시지 식별자
+     * @return 이미 저장된 메시지
+     */
+    Optional<ChatMessage> findByChatRoomIdAndSenderIdAndClientMessageId(String chatRoomId, Long senderId, String clientMessageId);
+
+    /**
      * 특정 채팅방의 메시지를 모두 삭제합니다.
      *
      * 보관기간이 지난 채팅방을 정리할 때 사용합니다.

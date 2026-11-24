@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Builder;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,7 +17,12 @@ import java.time.LocalDateTime;
 
 @Entity
 // 채팅방 상세조회 : 특정 채팅방의 메시지를 최신순으로 페이징하고, 조회 하한선(visibleFrom) 이후만 걸러내기 위한 인덱스
-@Table(name = "chat_message", indexes = @Index(name = "idx_chat_message_room_ts", columnList = "chat_room_id, timestamp"))
+@Table(
+        name = "chat_message",
+        indexes = @Index(name = "idx_chat_message_room_ts", columnList = "chat_room_id, timestamp"),
+        // 같은 clientMessageId 재전송을 막는 중복 제거 키. client_message_id 가 null 인 행끼리는 PostgreSQL 유니크 제약이 충돌로 보지 않는다
+        uniqueConstraints = @UniqueConstraint(name = "uk_chat_message_room_sender_cmid", columnNames = {"chat_room_id", "sender_id", "client_message_id"})
+)
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -44,5 +50,9 @@ public class ChatMessage {
     // 클라이언트가 보낸 문자열을 그대로 저장하므로 text
     @Column(columnDefinition = "text")
     private String imageUrl;
+
+    // 보낸 사람이 요청에 담은 중복 제거용 식별자(선택, resolveClientMessageId 로 100자 이하만). 없으면 null
+    @Column(length = 100)
+    private String clientMessageId;
 
 }

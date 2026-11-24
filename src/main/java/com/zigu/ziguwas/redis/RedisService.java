@@ -20,11 +20,6 @@ public class RedisService {
         valueOperations.set(key, value, expireDuration);
     }
 
-    // 값이 없을 때만 저장 (이미 있으면 false). 같은 키로 동시에 들어온 요청 중 하나만 통과시키는 용도
-    public boolean setDataIfAbsent(String key, String value, long duration) {
-        return Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, value, Duration.ofMillis(duration)));
-    }
-
     // 저장된 인증 코드 가져오기
     public String getData(String key) {
         return redisTemplate.opsForValue().get(key);
