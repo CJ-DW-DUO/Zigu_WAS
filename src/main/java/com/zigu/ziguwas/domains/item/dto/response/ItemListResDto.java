@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Getter
 @RequiredArgsConstructor
 @Builder
@@ -50,6 +52,12 @@ public class ItemListResDto {
     @Schema(description = "카테고리 한글 명칭", example = "전자기기")
     private final String itemCategoryKor;
 
+    @Schema(description = "등록 일시", example = "2026-08-20T12:34:56")
+    private final LocalDateTime createdAt;
+
+    @Schema(description = "조회수", example = "12")
+    private final Long viewCount;
+
     public static ItemListResDto fromEntity(Item item, Long currentUserId) {
 
         boolean isMine = currentUserId != null && item.getUser().getId().equals(currentUserId);
@@ -65,6 +73,8 @@ public class ItemListResDto {
                 .itemStatusKor(item.getItemStatus().descriptionFor(item.getPostType()))
                 .itemCategory(item.getCategory().name())
                 .itemCategoryKor(item.getCategory().getDescription())
+                .createdAt(item.getCreatedAt())
+                .viewCount(item.getViewCount() == null ? 0L : item.getViewCount())
                 .mainImageUrl(item.getImageUrl().stream()
                         .filter(ItemImage::isMainImageUrl)
                         .map(ItemImage::getImageUrl)

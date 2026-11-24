@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -84,6 +85,12 @@ public class ItemResDto {
     @Schema(description = "아이템 상세 설명", example = "거의 새 제품입니다. 키스킨 포함해서 대여해 드려요.")
     private final String description;
 
+    @Schema(description = "등록 일시", example = "2026-08-20T12:34:56")
+    private final LocalDateTime createdAt;
+
+    @Schema(description = "조회수", example = "12")
+    private final Long viewCount;
+
     public static ItemResDto fromEntity(Item item,Long currentUserId) {
         boolean isMine = currentUserId != null && item.getUser().getId().equals(currentUserId);
         List<ItemImage> itemImages = item.getImageUrl().stream().toList();
@@ -111,6 +118,8 @@ public class ItemResDto {
                 .imageUrl(itemImages.stream().map(ItemImage::getImageUrl).toList())
                 .title(item.getTitle())
                 .description(item.getDescription())
+                .createdAt(item.getCreatedAt())
+                .viewCount(item.getViewCount() == null ? 0L : item.getViewCount())
                 .build();
 
     }

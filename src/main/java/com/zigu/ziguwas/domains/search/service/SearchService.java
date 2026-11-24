@@ -61,7 +61,9 @@ public class SearchService {
 
         // 4. 검색 조건 조합 및 조회 : 게시글 유형 + 키워드 + 카테고리 + 대학ID + 차단 여부 기반으로 조회
         // 유형을 지정하지 않으면 요청글을 모르는 기존 클라이언트를 위해 공급글만 검색한다.
-        PostType postType = reqDto.getPostType() != null ? reqDto.getPostType() : PostType.SUPPLY;
+        // allTypes=true 이면 유형 조건 없이 공급글·요청글을 함께 검색한다 (null = 유형 필터 없음).
+        PostType postType = reqDto.isAllTypes() ? null
+                : (reqDto.getPostType() != null ? reqDto.getPostType() : PostType.SUPPLY);
         Specification<Item> spec = Specification.allOf(
                 ItemSpecs.withPostType(postType),
                 ItemSpecs.withTitleContains(reqDto.getKeyword()),
