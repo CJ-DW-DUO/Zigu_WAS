@@ -1,7 +1,8 @@
 version: '3.8'
 
-# 로컬 s3테스트용
+# 로컬 개발용: S3 대역(localstack)과 PostgreSQL
 services:
+  # S3 테스트용
   localstack:
     image: localstack/localstack:latest
     container_name: zigu-s3-test
@@ -10,3 +11,24 @@ services:
     environment:
       - SERVICES=s3
       - DEFAULT_REGION=ap-northeast-2
+
+  # 로컬 DB. 운영(서버 compose)과 같은 이미지이고, 값은 application-local.yml 의 기본값과 같다.
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: zigu-local-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: zigu
+      POSTGRES_USER: zigu
+      POSTGRES_PASSWORD: zigu_local
+    volumes:
+      - zigu-local-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zigu -d zigu"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  zigu-local-db-data:
