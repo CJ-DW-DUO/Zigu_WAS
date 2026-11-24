@@ -21,6 +21,8 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 등록자가 직접 설정하는 아이템 대여 불가 차단(특정 날짜 / 반복 요일)을 관리합니다.
@@ -56,9 +58,14 @@ public class ItemBlockService {
             throw new CustomException(ErrorCode.PAST_DATE_NOT_BLOCKABLE);
         }
 
+        // 날짜마다 존재 여부를 묻지 않고, 이미 차단된 날짜를 한 번에 불러와 걸러낸다
+        Set<LocalDate> alreadyBlocked = itemBlockedDateRepository.findAllByItem(item).stream()
+                .map(ItemBlockedDate::getBlockedDate)
+                .collect(Collectors.toSet());
+
         List<ItemBlockedDate> toSave = dates.stream()
                 .distinct()
-                .filter(date -> !itemBlockedDateRepository.existsByItemAndBlockedDate(item, date))
+                .filter(date -> !alreadyBlocked.contains(date))
                 .map(date -> ItemBlockedDate.builder()
                         .item(item)
                         .blockedDate(date)
@@ -102,9 +109,13 @@ public class ItemBlockService {
     public void addBlockedWeekdays(Long itemId, List<DayOfWeek> daysOfWeek, Long userId) {
         Item item = getOwnedItem(itemId, userId);
 
+        Set<DayOfWeek> alreadyBlocked = itemBlockWeekdayRepository.findAllByItem(item).stream()
+                .map(ItemBlockWeekday::getDayOfWeek)
+                .collect(Collectors.toSet());
+
         List<ItemBlockWeekday> toSave = daysOfWeek.stream()
                 .distinct()
-                .filter(day -> !itemBlockWeekdayRepository.existsByItemAndDayOfWeek(item, day))
+                .filter(day -> !alreadyBlocked.contains(day))
                 .map(day -> ItemBlockWeekday.builder()
                         .item(item)
                         .dayOfWeek(day)
@@ -158,7 +169,9 @@ public class ItemBlockService {
             return false;
         }
 
-        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+        // 7일이면 모든 요일이 한 번씩 나오므로, 기간이 길어도 앞의 최대 7일만 확인하면 된다
+        LocalDate lastDateToCheck = endDate.isAfter(startDate.plusDays(6)) ? startDate.plusDays(6) : endDate;
+        for (LocalDate date = startDate; !date.isAfter(lastDateToCheck); date = date.plusDays(1)) {
             if (blockedWeekdays.contains(date.getDayOfWeek())) {
                 return true;
             }
@@ -174,9 +187,8 @@ public class ItemBlockService {
     public List<ItemBlockRangeResDto.BlockRangeItem> getOwnerBlockedRanges(Item item, LocalDate from, LocalDate to) {
         List<ItemBlockRangeResDto.BlockRangeItem> result = new ArrayList<>();
 
-        itemBlockedDateRepository.findAllByItem(item).stream()
+        itemBlockedDateRepository.findAllByItemAndBlockedDateBetween(item, from, to).stream()
                 .map(ItemBlockedDate::getBlockedDate)
-                .filter(date -> !date.isBefore(from) && !date.isAfter(to))
                 .forEach(date -> result.add(ItemBlockRangeResDto.BlockRangeItem.builder()
                         .startDate(date)
                         .endDate(date)
