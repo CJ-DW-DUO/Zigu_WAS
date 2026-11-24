@@ -21,7 +21,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CustomException.class)
     protected ResponseEntity<?> customExceptionHandler(CustomException e) {
         ErrorCode errorCode = e.getErrorCode();
-        ErrorDto errorDto = new ErrorDto(errorCode.getStatus(), errorCode.getMessage());
+        ErrorDto errorDto = new ErrorDto(errorCode.getStatus(), errorCode.getMessage(), errorCode.name());
         return new ResponseEntity<>(errorDto, HttpStatusCode.valueOf(errorCode.getStatus()));
     }
 
@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     protected ResponseEntity<?> customServerException(Exception e){
         log.error("INTERNAL_SERVER_ERROR", e);
-        ErrorDto errorDto = new ErrorDto(ErrorCode.INTERNAL_SERVER_ERROR.getStatus(), ErrorCode.INTERNAL_SERVER_ERROR.getMessage());
+        ErrorDto errorDto = new ErrorDto(ErrorCode.INTERNAL_SERVER_ERROR.getStatus(), ErrorCode.INTERNAL_SERVER_ERROR.getMessage(), ErrorCode.INTERNAL_SERVER_ERROR.name());
         return new ResponseEntity<>(errorDto, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 

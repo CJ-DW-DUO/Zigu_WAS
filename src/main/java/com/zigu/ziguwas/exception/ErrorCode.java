@@ -30,6 +30,7 @@ public enum ErrorCode {
     SAME_AS_OLD_PASSWORD(401, "새로운 비밀번호와 기존비밀번호가 동일합니다." ),
     BLACKLIST_TOKEN(401, "탈퇴하거나 로그아웃 된 access token 입니다." ),
     JWT_TOKEN_PARSING_ERROR(400, "토큰 만료 혹은 파싱 에러"),
+    WITHDRAW_ACTIVE_TRADE_EXISTS(400, "진행중인 거래가 있습니다."),
 
     // 대학 관련
     UNIVERSITY_NOT_FOUND(404, "해당 대학교는 존재하지 않습니다."),
