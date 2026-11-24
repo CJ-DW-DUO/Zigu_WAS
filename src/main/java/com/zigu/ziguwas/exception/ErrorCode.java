@@ -30,6 +30,7 @@ public enum ErrorCode {
     INVALID_OLD_PASSWORD(401, "기존 비밀번호와 입력하신 비밀번호는 일치하지 않습니다." ),
     PASSWORD_MISMATCH(401, "새로운 비밀번호와 일치하지 않습니다." ),
     SAME_AS_OLD_PASSWORD(401, "새로운 비밀번호와 기존비밀번호가 동일합니다." ),
+    INVALID_STUDENT_NUMBER(400, "학번은 7~10자리 숫자로 입력해주세요."),
     BLACKLIST_TOKEN(401, "탈퇴하거나 로그아웃 된 access token 입니다." ),
     JWT_TOKEN_PARSING_ERROR(400, "토큰 만료 혹은 파싱 에러"),
     WITHDRAW_ACTIVE_TRADE_EXISTS(400, "진행중인 거래가 있습니다."),
