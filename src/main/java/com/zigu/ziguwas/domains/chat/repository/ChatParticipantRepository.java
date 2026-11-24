@@ -3,6 +3,7 @@ package com.zigu.ziguwas.domains.chat.repository;
 import com.zigu.ziguwas.domains.chat.entity.ChatParticipant;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,6 +49,16 @@ public interface ChatParticipantRepository extends MongoRepository<ChatParticipa
      * @return 해당 채팅방 참여자 리스트
      */
     List<ChatParticipant> findAllByChatRoomId(String chatRoomId);
+
+    /**
+     * 여러 채팅방의 참여자 목록을 한 번에 조회합니다.
+     *
+     * 거래 목록에서 거래마다 채팅방을 따로 조회(N+1)하지 않도록 묶어서 가져오는 용도입니다.
+     *
+     * @param chatRoomIds 채팅방 ID 목록
+     * @return 해당 채팅방들의 참여자 리스트
+     */
+    List<ChatParticipant> findAllByChatRoomIdIn(Collection<String> chatRoomIds);
 
     // 채팅방에 해당 유저가 있으면 참여자 객체 반환 (나간 상태여도 반환)
     Optional<ChatParticipant> findByChatRoomIdAndUserId(String chatRoomId, Long userId);

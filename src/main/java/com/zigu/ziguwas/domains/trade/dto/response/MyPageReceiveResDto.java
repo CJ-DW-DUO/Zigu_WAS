@@ -55,7 +55,13 @@ public class MyPageReceiveResDto {
     @Schema(description = "대여 종료일", example = "2026.04.30")
     private final LocalDate tradeEndate;
 
-    public static MyPageReceiveResDto fromEntity(Trade trade) {
+    @Schema(description = "상대방(요청을 보낸 사람) userId", example = "7")
+    private final Long counterpartUserId;
+
+    @Schema(description = "상대방과의 채팅방 ID. 아직 채팅방이 없거나 내가 나간 방이면 null", example = "665f1c2e9a3b4d0012ab34cd")
+    private final String chatRoomId;
+
+    public static MyPageReceiveResDto fromEntity(Trade trade, String chatRoomId) {
         boolean itemDeleted = trade.getItem() == null;
         return MyPageReceiveResDto.builder()
                 .tradeId(trade.getId())
@@ -76,6 +82,10 @@ public class MyPageReceiveResDto {
                 .tradeReqDate(trade.getTradeReqdate())
                 .tradeStdate(trade.getTradeStdate())
                 .tradeEndate(trade.getTradeEndate())
+                .counterpartUserId(trade.isProposedByRenter()
+                        ? trade.getRenter().getId()
+                        : trade.getRentee().getId())
+                .chatRoomId(chatRoomId)
                 .build();
     }
 

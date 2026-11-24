@@ -10,12 +10,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class MyPageTradeDetailService {
 
     private final MyPageTradeDetailRepository myPageTradeDetailRepository;
     private final UserRepository userRepository;
+    private final TradeChatRoomFinder tradeChatRoomFinder;
 
     /**
      * 거래 상세 내역을 조회합니다. (거래 당사자인 임대인/임차인 모두 조회 가능)
@@ -58,6 +61,7 @@ public class MyPageTradeDetailService {
             throw new CustomException(ErrorCode.TRADE_NOT_FOUND);
         }
 
-        return MyPageTradeDetailResDto.fromEntity(trade, userId);
+        String chatRoomId = tradeChatRoomFinder.find(userId, List.of(trade)).get(trade.getId());
+        return MyPageTradeDetailResDto.fromEntity(trade, userId, chatRoomId);
     }
 }
