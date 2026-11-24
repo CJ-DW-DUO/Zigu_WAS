@@ -266,10 +266,11 @@ public class AuthService {
     /**
      * 이메일 코드 확인
      *
+     * Redis 만 쓰므로 트랜잭션을 걸지 않는다. 같은 이메일의 요청이 잠금에서 기다리는 동안 DB 연결을 붙잡고 있지 않기 위해서다.
+     *
      * @param dto 이메일, 인증코드
      * @return 인증코드 일치 여부
      */
-    @Transactional
     public void emailVerification(EmailVerifyReqDto dto) {
         String email = normalizeEmail(dto.getEmail());
 
@@ -333,9 +334,10 @@ public class AuthService {
     /**
      * 비밀번호 재설정을 위한 이메일 인증코드 확인
      *
+     * Redis 만 쓰므로 트랜잭션을 걸지 않는다. (잠금 대기 중 DB 연결을 붙잡지 않기 위함)
+     *
      * @param dto 이메일, 인증코드
      */
-    @Transactional
     public void passwordResetEmailVerify(EmailVerifyReqDto dto) {
         String key = PW_RESET_PREFIX + normalizeEmail(dto.getEmail());
 
@@ -464,9 +466,10 @@ public class AuthService {
             LoginReqDto dto,
             HttpServletResponse res
     ) {
+        String email = normalizeEmail(dto.getEmail());
 
         // 1. 해당 유저부터 존재하는지
-        User user = userRepository.findByEmail(dto.getEmail()).orElseThrow(
+        User user = userRepository.findByEmail(email).orElseThrow(
                 () -> new CustomException(ErrorCode.USER_NOT_FOUND)
         );
 
@@ -477,11 +480,11 @@ public class AuthService {
 
         // 기존 비밀번호를 기억해 로그인에 성공했다면, 이전에 요청했던 비밀번호 재설정 인증 상태(코드 발송/DONE)는 철회
         // (재설정을 요청했지만 실제로는 비밀번호를 기억해서 그냥 로그인한 케이스 방어)
-        redisService.deleteData(PW_RESET_PREFIX + normalizeEmail(dto.getEmail()));
+        redisService.deleteData(PW_RESET_PREFIX + email);
 
         // 3. JWT 토큰 발급
-        String accessToken = createAccessToken(dto.getEmail());
-        String refreshToken = createRefreshToken(dto.getEmail());
+        String accessToken = createAccessToken(email);
+        String refreshToken = createRefreshToken(email);
 
         // redis에 refresh token 저장
         tokenService.saveRefreshToken(user.getId(), refreshToken);

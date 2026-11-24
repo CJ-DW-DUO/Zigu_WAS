@@ -230,4 +230,13 @@ class VerifyCodeLimitTest {
         assertEquals(1, accepted.get());
         verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
     }
+
+    // Redis 만 쓰는 확인 메서드는 트랜잭션(DB 연결)을 걸지 않는다: 잠금에서 기다리는 동안 DB 연결 풀을 붙잡지 않도록.
+    @Test
+    void 인증_확인_메서드는_트랜잭션을_걸지_않는다() throws Exception {
+        assertEquals(null, AuthService.class.getMethod("emailVerification", EmailVerifyReqDto.class)
+                .getAnnotation(org.springframework.transaction.annotation.Transactional.class));
+        assertEquals(null, AuthService.class.getMethod("passwordResetEmailVerify", EmailVerifyReqDto.class)
+                .getAnnotation(org.springframework.transaction.annotation.Transactional.class));
+    }
 }
