@@ -48,7 +48,7 @@ class TradeResponseTest {
         when(item.getPostType()).thenReturn(PostType.SUPPLY);
         when(item.getTitle()).thenReturn("카메라");
         trade = Trade.builder().id(5L).item(item).renter(renter).rentee(rentee)
-                .tradeStdate(LocalDate.of(2026, 12, 1)).tradeEndate(LocalDate.of(2026, 12, 3)).period(3L)
+                .dayPerPrice(1000L).tradeStdate(LocalDate.of(2026, 12, 1)).tradeEndate(LocalDate.of(2026, 12, 3)).period(3L)
                 .tradeStatus(TradeStatus.REQUESTED).tradeReqdate(LocalDate.of(2026, 11, 30)).build();
     }
 
@@ -63,6 +63,20 @@ class TradeResponseTest {
         MyPageTradeListResDto asRenter = MyPageTradeListResDto.fromEntity(trade, 2L, null);
         assertEquals(1L, asRenter.getCounterpartId());
         assertNull(asRenter.getChatRoomId());
+    }
+
+    @Test
+    void 물건_가격이_바뀌거나_물건이_지워져도_거래_총액은_그대로() {
+        when(item.getDayPerPrice()).thenReturn(9999L);
+        assertEquals(3000L, MyPageTradeListResDto.fromEntity(trade, 1L, null).getTotalPrice());
+
+        Trade deletedItemTrade = Trade.builder().id(6L).item(null).renter(renter).rentee(rentee)
+                .dayPerPrice(1000L).period(3L).tradeStatus(TradeStatus.RETURNED)
+                .tradeStdate(LocalDate.of(2026, 12, 1)).tradeEndate(LocalDate.of(2026, 12, 3))
+                .tradeReqdate(LocalDate.of(2026, 11, 30)).build();
+        assertEquals(3000L, MyPageTradeListResDto.fromEntity(deletedItemTrade, 1L, null).getTotalPrice());
+        assertEquals(3000L, MyPageTradeDetailResDto.fromEntity(deletedItemTrade, 1L, null).getTotalPrice());
+        assertEquals(1000L, MyPageTradeDetailResDto.fromEntity(deletedItemTrade, 1L, null).getDayPerPrice());
     }
 
     @Test

@@ -1,5 +1,8 @@
 package com.zigu.ziguwas.domains.user.entity;
 
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.data.annotation.CreatedDate;
+import jakarta.persistence.EntityListeners;
 import com.zigu.ziguwas.domains.university.entity.University;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
@@ -25,6 +28,7 @@ import java.util.UUID;
 
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "users") // user 는 PostgreSQL 예약어
 @NoArgsConstructor
 @AllArgsConstructor
@@ -96,6 +100,11 @@ public class User {
     // 동의한 약관 버전 (예: v1.0)
     @Column(name = "terms_version")
     private String termsVersion;
+
+    // 가입한 시각 (약관 동의 시점 기록용)
+    @CreatedDate
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private LocalDateTime createdAt;
 
     @Embedded
     private NotificationSetting notificationSetting;

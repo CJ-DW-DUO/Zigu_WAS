@@ -1,5 +1,9 @@
 package com.zigu.ziguwas.domains.report.entity;
 
+import java.time.LocalDateTime;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.data.annotation.CreatedDate;
+import jakarta.persistence.EntityListeners;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.user.entity.User;
 import jakarta.persistence.CollectionTable;
@@ -22,6 +26,7 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -49,6 +54,11 @@ public class Report {
 
     @Column
     private String reason;
+
+    // 신고가 접수된 시각
+    @CreatedDate
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private LocalDateTime createdAt;
 
 
 }

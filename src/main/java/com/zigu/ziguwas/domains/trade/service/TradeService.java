@@ -150,6 +150,7 @@ public class TradeService {
                 .tradeStdate(dto.getStartDate()) // 거래 시작 예정일 우선 기입
                 .tradeEndate(dto.getEndDate()) // 거래 종료 예정일 우선 기입
                 // 거래 기간 계산 (시작일, 종료일 모두 포함한 일수를 포함해야 하므로 +1를 해서 기간을 보정한다)
+                .dayPerPrice(item.getDayPerPrice()) // 거래 시점의 하루 단가를 남긴다
                 .period(ChronoUnit.DAYS.between(dto.getStartDate(), dto.getEndDate()) + 1)
                 .tradeStatus(TradeStatus.REQUESTED) // 요청됨
                 .tradeReqdate(Kst.today()) // 요청은 지금 보내는 것
@@ -245,6 +246,7 @@ public class TradeService {
                 .rentee(rentee)
                 .tradeStdate(startDate)
                 .tradeEndate(endDate)
+                .dayPerPrice(item.getDayPerPrice())
                 .period(ChronoUnit.DAYS.between(startDate, endDate) + 1)
                 .tradeStatus(TradeStatus.REQUESTED)
                 .tradeReqdate(Kst.today())

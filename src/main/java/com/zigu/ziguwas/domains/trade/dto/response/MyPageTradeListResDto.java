@@ -72,7 +72,7 @@ public class MyPageTradeListResDto {
                 .postType(itemDeleted ? null : trade.getItem().getPostType().name())
                 .title(itemDeleted ? "삭제된 게시글입니다." : trade.getItem().getTitle())
                 .period(trade.getPeriod())
-                .totalPrice(itemDeleted ? 0L : trade.calculateTotalPrice())
+                .totalPrice(trade.calculateTotalPrice())
                 .mainImageUrl(itemDeleted ? null : trade.getItem().getImageUrl().stream()
                         .filter(ItemImage::isMainImageUrl)
                         .map(ItemImage::getImageUrl)
