@@ -2,6 +2,7 @@ package com.zigu.ziguwas.domains.block.repository;
 
 import com.zigu.ziguwas.domains.block.entity.Block;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -38,4 +39,14 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
             "where (b.blocker.id = :userId1 and b.blocked.id = :userId2) " +
             "or (b.blocker.id = :userId2 and b.blocked.id = :userId1)")
     boolean existsBlockBetween(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
+
+    /**
+     * 특정 사용자가 차단했거나 차단당한 기록을 모두 삭제합니다.
+     * 회원 탈퇴 시 양방향 차단을 함께 정리할 때 사용합니다.
+     *
+     * @param userId 탈퇴하는 사용자 ID
+     */
+    @Modifying
+    @Query("delete from Block b where b.blocker.id = :userId or b.blocked.id = :userId")
+    void deleteAllInvolving(@Param("userId") Long userId);
 }

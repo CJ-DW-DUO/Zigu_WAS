@@ -1,6 +1,11 @@
 package com.zigu.ziguwas.domains.user.service;
 
+import com.zigu.ziguwas.domains.block.repository.BlockRepository;
+import com.zigu.ziguwas.domains.item.entity.Item;
+import com.zigu.ziguwas.domains.item.event.ItemImagesDeletedEvent;
+import com.zigu.ziguwas.domains.item.repository.ItemListRepository;
 import com.zigu.ziguwas.domains.notification.repository.PushTokenRepository;
+import com.zigu.ziguwas.domains.search.repository.SearchHistoryRepository;
 import com.zigu.ziguwas.domains.trade.entity.Trade;
 import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
 import com.zigu.ziguwas.domains.trade.repository.TradeRepository;
@@ -29,6 +34,8 @@ import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.mail.SimpleMailMessage;
@@ -37,10 +44,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -78,6 +87,11 @@ public class AuthService {
     private final TokenService tokenService;
     private final TradeRepository tradeRepository;
     private final PushTokenRepository pushTokenRepository;
+    private final ItemListRepository itemListRepository;
+    private final SearchHistoryRepository searchHistoryRepository;
+    private final BlockRepository blockRepository;
+    // 탈퇴로 지워지는 물건의 S3 이미지를 커밋 이후에 지우기 위한 이벤트 발행용
+    private final ApplicationEventPublisher eventPublisher;
 
 
     /**
@@ -696,11 +710,55 @@ public class AuthService {
         // 푸시 토큰 삭제 (탈퇴한 계정으로 알림이 계속 가지 않도록)
         pushTokenRepository.deleteByUserId(userId);
 
+        // 본인이 등록한 물건·검색 기록·차단 정리 (사용자 삭제보다 먼저 해야 조회가 탈퇴 처리에 걸리지 않는다)
+        cleanUpWithdrawnUserData(userId);
+
         // 개인정보 마스킹 및 사유 저장 (User 엔티티 내부 메서드 활용)
         user.applyWithdrawal(reason);
         userRepository.saveAndFlush(user);
 
         userRepository.delete(user);
+    }
+
+    /**
+     * 탈퇴하는 사용자의 물건·검색 기록·차단을 정리하는 서비스
+     *
+     * 탈퇴와 같은 트랜잭션 안에서 처리하므로 하나라도 실패하면 탈퇴 전체가 롤백된다.
+     * 거래·채팅 참여 정리는 하지 않는다.
+     *
+     * @param userId 탈퇴하는 사용자 ID
+     */
+    private void cleanUpWithdrawnUserData(Long userId) {
+
+        // 1. 본인 물건 삭제 (아이템 삭제와 같은 소프트 삭제, 이미지도 함께 삭제 처리)
+        // 대기 중(REQUESTED)·대여 중(IN_PROGRESS) 거래가 걸린 물건은 상대방의 거래 내역이 삭제된 물건을 가리키게 되므로 지우지 않고 남겨 둔다.
+        // 남겨 둘 물건은 조회 단계에서 빼서 아예 불러오지 않는다. 불러와 두면 뒤에서 사용자를 삭제할 때
+        // 삭제된 사용자를 참조하는 엔티티로 남아 커밋 시점에 TransientObjectException 이 난다.
+        List<Item> items = itemListRepository.findAllWithoutActiveTradeByUserId(
+                userId, List.of(TradeStatus.REQUESTED, TradeStatus.IN_PROGRESS));
+        // 남겨 둔 물건 수 확인용 (삭제 처리 전에 세야 한다. 처리 뒤에 세면 삭제된 물건이 빠져 값이 틀어진다)
+        long skippedCount = itemListRepository.countByUserId(userId) - items.size();
+        List<String> imageUrlsToDelete = new ArrayList<>();
+
+        for (Item item : items) {
+            item.getImageUrl().forEach(image -> imageUrlsToDelete.add(image.getImageUrl()));
+            itemListRepository.delete(item);
+        }
+
+        // S3 파일 삭제는 DB 커밋 이후로 분리 (S3 호출이 느려져도 DB 트랜잭션을 붙잡지 않도록)
+        if (!imageUrlsToDelete.isEmpty()) {
+            eventPublisher.publishEvent(new ItemImagesDeletedEvent(imageUrlsToDelete));
+        }
+
+        if (skippedCount > 0) {
+            log.info("탈퇴 시 진행 중인 거래가 있어 삭제하지 않고 남겨 둔 물건 {}개 (userId={})", skippedCount, userId);
+        }
+
+        // 2. 검색 기록 삭제 (본인만 보는 데이터)
+        searchHistoryRepository.deleteAllByUserId(userId);
+
+        // 3. 차단 삭제 (내가 차단한 것과 나를 차단한 것 모두)
+        blockRepository.deleteAllInvolving(userId);
     }
 
 
