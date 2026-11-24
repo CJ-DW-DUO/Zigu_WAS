@@ -42,8 +42,11 @@ class RetentionSchedulerTest {
     @Autowired ChatRoomRetentionScheduler chatScheduler;
     @Autowired NotificationRetentionScheduler notificationScheduler;
 
+    private long nextRequester = 1000L + System.nanoTime() % 100000;
+
     private ChatRoom roomWithMessage(LocalDateTime closedAt) {
-        ChatRoom room = rooms.save(ChatRoom.builder().itemId(1L).closedAt(closedAt).build());
+        // (물품, 요청자) 유니크라 방마다 요청자를 다르게 둔다
+        ChatRoom room = rooms.save(ChatRoom.builder().itemId(1L).requesterId(nextRequester++).closedAt(closedAt).build());
         messages.save(ChatMessage.builder().chatRoomId(room.getId()).senderId(1L).message("hi").timestamp(LocalDateTime.now()).build());
         participants.save(ChatParticipant.builder().chatRoomId(room.getId()).userId(1L).build());
         return room;

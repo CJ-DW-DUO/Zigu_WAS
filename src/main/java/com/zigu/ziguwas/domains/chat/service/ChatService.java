@@ -575,11 +575,8 @@ public class ChatService {
             throw new CustomException(ErrorCode.BLOCKED_USER_CHAT);
         }
 
-        // 3. 해당 물품으로 두 사람이 이미 참여 중인(나간 방 포함) 채팅방이 있다면, 그냥 해당 ID를 반환
-        Optional<ChatRoom> existingRoom = chatRoomRepository
-                .findAllByItemIdAndParticipants(item.getId(), sender.getId(), receiver.getId())
-                .stream()
-                .findFirst();
+        // 3. 이 물품에 이 사용자가 이미 만든 채팅방(나간 방 포함)이 있다면, 그냥 해당 ID를 반환
+        Optional<ChatRoom> existingRoom = chatRoomRepository.findByItemIdAndRequesterId(item.getId(), sender.getId());
 
         if (existingRoom.isPresent()) {
             ChatRoom room = existingRoom.get();
@@ -603,7 +600,15 @@ public class ChatService {
         }
 
         // 6. 채팅방 생성 (존재하는 채팅방이 없을 경우)
-        ChatRoom chatRoom = chatRoomRepository.save(ChatRoom.builder().itemId(item.getId()).build());
+        ChatRoom chatRoom;
+        try {
+            chatRoom = chatRoomRepository.save(ChatRoom.builder().itemId(item.getId()).requesterId(sender.getId()).build());
+        } catch (DataIntegrityViolationException e) {
+            // 같은 물품·같은 요청자의 방이 동시에 만들어졌다 — 유니크 키가 막았으니 먼저 만들어진 방을 쓴다.
+            return chatRoomRepository.findByItemIdAndRequesterId(item.getId(), sender.getId())
+                    .orElseThrow(() -> e)
+                    .getId();
+        }
 
         // 7. 참여자 등록 (발신자, 수신자 모두 등록)
         // leftAt과 visibleFrom은 null로 두어 참여중 + 전체 대화 조회 가능 상태로 시작한다.

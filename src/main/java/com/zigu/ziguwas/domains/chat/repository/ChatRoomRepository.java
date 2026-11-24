@@ -16,21 +16,13 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, String> {
     Optional<ChatRoom> findById(String id);
 
     /**
-     * 같은 물품에 대해 두 사용자가 모두 참여한 채팅방을 조회합니다. (나간 방도 포함 — 다시 들어올 때 같은 방을 쓰기 위해)
-     *
-     * 같은 물품·같은 두 사람의 방이 중복으로 만들어져 있어도 깨지지 않도록 목록으로 돌려준다.
+     * 같은 물품에 대해 이 요청자가 만든 채팅방을 조회합니다. (나간 방도 포함 — 다시 들어올 때 같은 방을 쓰기 위해)
      *
      * @param itemId 물품 ID
-     * @param userId 한 사용자 ID
-     * @param otherUserId 다른 사용자 ID
-     * @return 조건에 맞는 채팅방 목록
+     * @param requesterId 채팅을 건 사용자 ID (물품 주인이 아닌 쪽)
+     * @return 있으면 그 채팅방 (유니크 키가 있어 최대 1개)
      */
-    @Query("select r from ChatRoom r where r.itemId = :itemId"
-            + " and exists (select 1 from ChatParticipant p where p.chatRoomId = r.id and p.userId = :userId)"
-            + " and exists (select 1 from ChatParticipant p where p.chatRoomId = r.id and p.userId = :otherUserId)")
-    List<ChatRoom> findAllByItemIdAndParticipants(@Param("itemId") Long itemId,
-                                                  @Param("userId") Long userId,
-                                                  @Param("otherUserId") Long otherUserId);
+    Optional<ChatRoom> findByItemIdAndRequesterId(Long itemId, Long requesterId);
 
     /**
      * 내가 나가지 않은 채팅방 중 주어진 물품들에 걸린 방과 그 방의 상대방을 한 번에 조회합니다. (거래 응답의 chatRoomId 용)
