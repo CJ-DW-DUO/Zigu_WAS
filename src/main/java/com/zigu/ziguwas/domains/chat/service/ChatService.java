@@ -594,7 +594,7 @@ public class ChatService {
                 .stream()
                 // receiver의 참여 목록 중 chatRoomId가 sender의 방 ID 목록에 포함되는 것만 남김. 즉 두 사람이 같이 있는 방만 걸러냄(남은요소)
                 .filter(p -> senderRoomIds.contains(p.getChatRoomId()))
-                // 걸러진 결과로 chatRoom객체를 MongoDB에서 조회하여 반환받음(새배열)
+                // 걸러진 결과로 chatRoom객체를 조회하여 반환받음(새배열)
                 .map(p -> chatRoomRepository.findById(p.getChatRoomId()).orElse(null))
                 // 조회된 ChatRoom 중 itemId가 요청한 item과 일치하는 것만 남김. 즉, 두 사람이 참여하고 있는 방 중에서 해당 물품과 연결된 방만 남김(남은 요소)
                 .filter(room -> room != null && room.getItemId().equals(item.getId()))

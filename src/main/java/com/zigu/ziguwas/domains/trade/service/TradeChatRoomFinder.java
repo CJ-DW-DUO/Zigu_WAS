@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
 /**
  * 거래 목록·상세 응답에 넣을 "거래 상대와의 채팅방 ID" 를 찾는다.
  *
- * Mongo 조회가 거래 수만큼 늘어나지 않도록, 거래가 몇 건이든 조회 3번(내 참여 목록 / 채팅방 / 참여자)으로 끝낸다.
- * 채팅방을 못 찾거나 Mongo 조회가 실패해도 거래 응답은 그대로 내려가고 chatRoomId 만 null 이 된다.
+ * 채팅 저장소 조회가 거래 수만큼 늘어나지 않도록, 거래가 몇 건이든 조회 3번(내 참여 목록 / 채팅방 / 참여자)으로 끝낸다.
+ * 채팅방을 못 찾거나 조회가 실패해도 거래 응답은 그대로 내려가고 chatRoomId 만 null 이 된다.
  */
 @Slf4j
 @Component
@@ -82,7 +82,7 @@ public class TradeChatRoomFinder {
                 });
             }
         } catch (DataAccessException e) {
-            // 채팅 저장소(Mongo) 문제로 거래 목록 전체가 실패하지 않도록 chatRoomId 만 비운다.
+            // 채팅 저장소 조회 문제로 거래 목록 전체가 실패하지 않도록 chatRoomId 만 비운다.
             log.warn("거래 응답용 채팅방 조회 실패: {}", e.toString());
             return new HashMap<>();
         }
