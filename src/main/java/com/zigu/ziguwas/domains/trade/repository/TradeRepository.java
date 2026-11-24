@@ -56,10 +56,10 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
     boolean existsByItemAndTradeStatusInAndIdNot(Item item, List<TradeStatus> statuses, Long id);
 
     /**
-     * 반납 예정일이 지났는데 아직 반납 처리(IN_PROGRESS)되지 않은 거래 목록을 조회합니다.
-     * 반납기한 초과 알림 스케줄러에서 사용합니다.
+     * 반납 예정일이 오늘이거나 이미 지났는데 아직 반납 처리(IN_PROGRESS)되지 않은 거래 목록을 조회합니다.
+     * 반납일 당일 알림과 반납기한 초과 알림 스케줄러에서 사용합니다.
      */
-    List<Trade> findAllByTradeStatusAndTradeEndateBefore(TradeStatus tradeStatus, LocalDate date);
+    List<Trade> findAllByTradeStatusAndTradeEndateLessThanEqual(TradeStatus tradeStatus, LocalDate date);
 
     /**
      * 특정 아이템의 특정 상태인 거래 목록을 조회합니다. (대여 불가 기간 조회용)
