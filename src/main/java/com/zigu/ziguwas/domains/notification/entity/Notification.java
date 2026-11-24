@@ -23,7 +23,9 @@ import java.time.LocalDateTime;
                 // 알림목록 조회 : user_id 로 찾고 rec_time 최신순으로 가져오기
                 @Index(name = "idx_notification_user_rec", columnList = "user_id, rec_time"),
                 // 미읽음 카운트 : user_id 가 123 이고 읽지 않은(is_read 가 false) 알림이 몇 개인지 세기
-                @Index(name = "idx_notification_user_read", columnList = "user_id, is_read")
+                @Index(name = "idx_notification_user_read", columnList = "user_id, is_read"),
+                // 90일 보관 배치가 rec_time 만으로 지우므로 단독 인덱스가 있어야 매일 전체 스캔을 하지 않는다
+                @Index(name = "idx_notification_rec_time", columnList = "rec_time")
         }
 )
 @NoArgsConstructor
