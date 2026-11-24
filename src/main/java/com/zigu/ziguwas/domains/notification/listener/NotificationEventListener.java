@@ -3,6 +3,7 @@ package com.zigu.ziguwas.domains.notification.listener;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -21,8 +22,12 @@ public class NotificationEventListener {
      *
      * fallbackExecution 활성화로 트랜잭션이 있는 경우 커밋 대개, 완료 후 리스너가 실행되어 (거래가)롤백되면 알림이 생기지 않습니다.
      * fallbackExecution 활성화로 트랜잭션이 없는 경우 즉시 리스너를 실행하여 (채팅이)드롭되지 않습니다.
+     *
+     * 알림 저장은 전용 비동기 실행기(notificationExecutor, AsyncConfig)에서 한다. 요청 스레드에서 돌리면 알림 저장이
+     * 요청이 이미 쥔 연결 말고 새 연결을 기다려, 동시 요청이 많을 때 모두 멈추고 알림이 사라진다.
      * @param event 알림 생성 이벤트
      */
+    @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleNotificationCreated(NotificationCreatedEvent event) {
         // 1. 실제 알림 저장 로직은 NotificationService에 위임
