@@ -32,7 +32,8 @@ public class ItemListService {
         // 1. 정렬 조건 결정
         Sort sort = Sort.by(Sort.Direction.DESC, "id"); // 기본값: 최신순
 
-        if ("인기순".equals(cond.getSort())) {
+        // "인기순"과 "조회수순"은 같은 조회수 정렬이다 (홈 화면 정렬 이름이 "조회수순"으로 바뀌어도 받아준다)
+        if ("인기순".equals(cond.getSort()) || "조회수순".equals(cond.getSort())) {
             sort = Sort.by(Sort.Direction.DESC, "viewCount").and(Sort.by(Sort.Direction.DESC, "id"));
         } else if ("낮은가격순".equals(cond.getSort())) {
             sort = Sort.by(Sort.Direction.ASC, "dayPerPrice").and(Sort.by(Sort.Direction.DESC, "id"));
