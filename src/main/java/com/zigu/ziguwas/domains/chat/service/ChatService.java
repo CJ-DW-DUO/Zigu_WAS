@@ -520,7 +520,7 @@ public class ChatService {
 
         // 어느 한쪽이라도 상대를 차단한 상태라면 채팅방을 새로 만들거나 재사용할 수 없다.
         if (blockRepository.existsBlockBetween(sender.getId(), receiver.getId())) {
-            throw new CustomException(ErrorCode.BLOCKED_USER_ACCESS);
+            throw new CustomException(ErrorCode.BLOCKED_USER_CHAT);
         }
 
         // 3. 해당 물품과 거래로 이루어진 채팅방이 이미 존재한다면, 그냥 해당 ID를 반환

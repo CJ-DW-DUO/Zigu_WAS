@@ -80,6 +80,7 @@ public enum ErrorCode {
     INVALID_MESSAGE(400, "유효하지 않은 메시지입니다."),
     ALREADY_LEFT_CHATROOM(400, "이미 나간 채팅방입니다."),
     INVALID_CHAT_RECEIVER(400, "채팅 대상자가 올바르지 않습니다."),
+    BLOCKED_USER_CHAT(403, "차단된 사용자와는 채팅할 수 없습니다."),
 
     // 알림 관련
     NOTIFICATION_NOT_FOUND(404, "해당 알림을 찾을 수 없습니다."),
