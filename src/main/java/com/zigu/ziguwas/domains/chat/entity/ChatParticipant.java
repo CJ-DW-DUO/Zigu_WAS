@@ -1,42 +1,49 @@
 package com.zigu.ziguwas.domains.chat.entity;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-//@Entity
-@Document(collection = "chat_participants")
-/**
- * name : 인덱스 이름 (Mongo에서 확인할 때 보이는 이름, 식별하기 쉽게만 지으면 됨)
- * def : 어떤 필드를 인덱스로 묶을지 정의, 1은 오름차순, -1은 내림차순
- */
-@CompoundIndexes({
-        // 채팅방 목록 조회 : 사용자가 나가지 않은(leftAt이 null인) 참여 정보만 골라내기 위한 인덱스
-        @CompoundIndex(name = "idx_userId_leftAt", def = "{'userId': 1, 'leftAt': 1}"),
-        // 참여자 검증 : 특정 채팅방에 특정 사용자가 있는지 단건 조회하기 위한 인덱스
-        // 한 사람이 같은 채팅방에 두 번 등록되는 것을 막기 위해 unique로 설정
-        @CompoundIndex(name = "idx_chatRoomId_userId", def = "{'chatRoomId': 1, 'userId': 1}", unique = true)
-})
+@Entity
+@Table(
+        name = "chat_participant",
+        indexes = {
+                // 채팅방 목록 조회 : 사용자가 나가지 않은(left_at 이 null 인) 참여 정보만 골라내기 위한 인덱스
+                @Index(name = "idx_chat_participant_user_left", columnList = "user_id, left_at")
+        },
+        uniqueConstraints = {
+                // 참여자 검증 : 특정 채팅방에 특정 사용자가 있는지 단건 조회하기 위한 인덱스
+                // 한 사람이 같은 채팅방에 두 번 등록되는 것을 막기 위해 unique 로 설정
+                @UniqueConstraint(name = "uk_chat_participant_room_user", columnNames = {"chat_room_id", "user_id"})
+        }
+)
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Builder
 public class ChatParticipant {
 
+    // ponytail: UUIDv4 문자열 PK, 쓰기량이 커져 인덱스 단편화가 보이면 UUIDv7 또는 IDENTITY 로
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    // RDB와 NoSQL PK 타입 차이로 인하여 String
+    // 값 참조(FK 없음) — ponytail: 무결성 사고가 나면 FK(@ManyToOne) 로
+    @Column(nullable = false)
     private String chatRoomId;
 
-    // RDB와 NoSQL PK 타입 차이로 인하여 Long
+    @Column(nullable = false)
     private Long userId;
 
     // 해당 사용자가 채팅방을 나간(숨긴) 시각. null이면 현재 참여중인 상태이다.

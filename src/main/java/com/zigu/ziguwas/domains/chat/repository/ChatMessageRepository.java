@@ -3,13 +3,17 @@ package com.zigu.ziguwas.domains.chat.repository;
 import com.zigu.ziguwas.domains.chat.entity.ChatMessage;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface ChatMessageRepository extends MongoRepository<ChatMessage, String> {
+public interface ChatMessageRepository extends JpaRepository<ChatMessage, String> {
 
     /**
      * 조회 하한선 이후에 보낸 메시지 중 가장 최근의 메시지 조회
@@ -41,7 +45,11 @@ public interface ChatMessageRepository extends MongoRepository<ChatMessage, Stri
      *
      * @param chatRoomId 채팅방ID
      */
-    void deleteAllByChatRoomId(String chatRoomId);
+    // 파생 delete 는 한 건씩 읽어 지우고 트랜잭션 밖에서 부르면 실패하므로(보관 배치에는 트랜잭션이 없다) 직접 쿼리로 한 번에 지운다
+    @Transactional
+    @Modifying
+    @Query("delete from ChatMessage m where m.chatRoomId = :chatRoomId")
+    void deleteAllByChatRoomId(@Param("chatRoomId") String chatRoomId);
 
     /**
      * 특정 채팅방에서 이미지가 첨부된 메시지만 조회합니다.

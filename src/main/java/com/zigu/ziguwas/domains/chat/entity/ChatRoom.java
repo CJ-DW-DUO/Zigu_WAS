@@ -1,32 +1,40 @@
 package com.zigu.ziguwas.domains.chat.entity;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-//@Entity
-@Document(collection="chat_rooms")
+@Entity
+// 폐쇄된 채팅방을 보관기간 배치가 closed_at 만으로 조회하므로 인덱스가 필요하다
+@Table(name = "chat_room", indexes = @Index(name = "idx_chat_room_closed_at", columnList = "closed_at"))
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Builder
 public class ChatRoom {
 
+    // ponytail: UUIDv4 문자열 PK, 쓰기량이 커져 인덱스 단편화가 보이면 UUIDv7 또는 IDENTITY 로
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    // 값 참조(FK 없음) — ponytail: 무결성 사고가 나면 FK(@ManyToOne) 로
+    @Column(nullable = false)
     private Long itemId;
 
     // 모든 참여자가 나가 채팅방이 폐쇄된 시각. null이면 아직 참여자가 남아있는 채팅방이다.
     // 이 시각으로부터 보관기간이 지나면 채팅방과 메시지가 통째로 삭제된다.
     // (보관기간 배치가 이 필드만으로 조회하므로 인덱스가 필요하다)
-    @Indexed
     private LocalDateTime closedAt;
 
     /**

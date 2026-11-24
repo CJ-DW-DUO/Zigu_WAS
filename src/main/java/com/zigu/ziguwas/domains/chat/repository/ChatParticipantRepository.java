@@ -1,13 +1,17 @@
 package com.zigu.ziguwas.domains.chat.repository;
 
 import com.zigu.ziguwas.domains.chat.entity.ChatParticipant;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-public interface ChatParticipantRepository extends MongoRepository<ChatParticipant, String> {
+public interface ChatParticipantRepository extends JpaRepository<ChatParticipant, String> {
 
     /**
      * 해당 채팅방에 나가지 않은 사람이 있는지 검사하는 JPA 메소드
@@ -70,5 +74,8 @@ public interface ChatParticipantRepository extends MongoRepository<ChatParticipa
      *
      * @param chatRoomId 채팅방ID
      */
-    void deleteAllByChatRoomId(String chatRoomId);
+    @Transactional
+    @Modifying
+    @Query("delete from ChatParticipant p where p.chatRoomId = :chatRoomId")
+    void deleteAllByChatRoomId(@Param("chatRoomId") String chatRoomId);
 }
