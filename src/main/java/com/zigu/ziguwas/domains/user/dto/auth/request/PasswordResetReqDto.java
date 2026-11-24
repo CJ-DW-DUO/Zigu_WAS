@@ -3,6 +3,7 @@ package com.zigu.ziguwas.domains.user.dto.auth.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data
@@ -15,6 +16,7 @@ public class PasswordResetReqDto {
 
     @Schema(description = "새 비밀번호", example = "newpass123!")
     @NotBlank(message = "새 비밀번호 입력은 필수입니다.")
+    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,16}$", message = "영문, 숫자, 특수문자 조합 8~16자로 입력해 주세요.")
     private String newPassword;
 
     @Schema(description = "새 비밀번호 확인", example = "newpass123!")

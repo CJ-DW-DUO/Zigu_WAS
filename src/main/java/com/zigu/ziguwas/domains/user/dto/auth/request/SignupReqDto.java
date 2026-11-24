@@ -30,8 +30,9 @@ public class SignupReqDto {
     @Schema(description = "프로필에 성별 표시 여부", example = "false")
     private boolean genderVisible;
 
-    @Schema(description = "비밀번호", example = "zigu123123")
+    @Schema(description = "비밀번호 (영문, 숫자, 특수문자 조합 8~16자)", example = "zigu1234!")
     @NotBlank(message = "비밀번호는 필수 입력입니다.")
+    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,16}$", message = "영문, 숫자, 특수문자 조합 8~16자로 입력해 주세요.")
     private String password;
 
     @Schema(description = "프로필 이미지 URL", example = "https://s3.ap-northeast-2.amazonaws.com/bucket/profile.jpg")
