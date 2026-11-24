@@ -3,6 +3,7 @@ package com.zigu.ziguwas.domains.user.service;
 import com.zigu.ziguwas.S3.S3Service;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemStatus;
+import com.zigu.ziguwas.domains.item.event.ItemImagesDeletedEvent;
 import com.zigu.ziguwas.domains.item.repository.ItemListRepository;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
 import com.zigu.ziguwas.domains.user.dto.mypage.request.MyPageProfileReqDto;
@@ -14,10 +15,9 @@ import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -30,6 +30,7 @@ public class MyPageService {
     private final ItemRepository itemRepository;
     private final ItemListRepository itemListRepository;
     private final S3Service s3Service;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 마이페이지 메인 화면에 필요한 사용자 정보와 등록 물건 요약 리스트를 조회합니다.
@@ -119,18 +120,9 @@ public class MyPageService {
             if (!uploadedUrl.isEmpty()) {
                 user.updateProfileImage(uploadedUrl);
 
-                // 이전 이미지는 DB 커밋이 끝난 뒤에 삭제한다 (S3 용량 관리)
+                // 이전 이미지는 DB 커밋이 끝난 뒤 이벤트 리스너가 삭제한다 (실패해도 프로필 수정은 유지, 리스너가 로그를 남김)
                 if (oldImageUrl != null) {
-                    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                        @Override
-                        public void afterCommit() {
-                            try {
-                                s3Service.deleteFile(oldImageUrl);
-                            } catch (CustomException ignored) {
-                                // ponytail: 삭제 실패 시 이전 객체가 S3 에 남을 뿐 프로필 수정은 유지, 고아 객체가 문제되면 정리 배치로
-                            }
-                        }
-                    });
+                    eventPublisher.publishEvent(new ItemImagesDeletedEvent(List.of(oldImageUrl)));
                 }
             }
         }
