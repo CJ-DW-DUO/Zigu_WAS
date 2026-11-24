@@ -1,5 +1,7 @@
 package com.zigu.ziguwas.domains.item.entity;
 
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import com.zigu.ziguwas.domains.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -19,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "item", indexes = {@Index(name = "idx_item_user", columnList = "user_id")})
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter

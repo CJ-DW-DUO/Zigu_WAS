@@ -31,6 +31,7 @@ import java.time.LocalDate;
 
 
 @Entity
+@Table(name = "trade", indexes = {@Index(name = "idx_trade_item", columnList = "item_id"), @Index(name = "idx_trade_renter", columnList = "renter_id"), @Index(name = "idx_trade_rentee", columnList = "rentee_id")})
 @EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor
 @AllArgsConstructor

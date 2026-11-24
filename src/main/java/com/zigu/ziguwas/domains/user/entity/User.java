@@ -7,6 +7,7 @@ import com.zigu.ziguwas.domains.university.entity.University;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -29,7 +30,7 @@ import java.util.UUID;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "users") // user 는 PostgreSQL 예약어
+@Table(name = "users", indexes = @Index(name = "idx_users_univ", columnList = "univ_id")) // user 는 PostgreSQL 예약어
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter

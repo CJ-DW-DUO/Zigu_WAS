@@ -1,5 +1,8 @@
 package com.zigu.ziguwas.domains.report.entity;
 
+import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Table;
+import jakarta.persistence.Index;
 import java.time.LocalDateTime;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.data.annotation.CreatedDate;
@@ -26,6 +29,7 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 @Entity
+@Table(name = "report", uniqueConstraints = {@UniqueConstraint(name = "uk_report_reporter_item", columnNames = {"reporter_id", "item_id"})})
 @EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor
 @AllArgsConstructor
@@ -47,7 +51,8 @@ public class Report {
     private User user; // 신고자 ID
 
     @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "report_category", joinColumns = @JoinColumn(name = "report_id"))
+    @CollectionTable(name = "report_category", joinColumns = @JoinColumn(name = "report_id"),
+            indexes = @Index(name = "idx_report_category_report", columnList = "report_id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "rep_category")
     private List<ReportCategory> repCategory; // 신고 카테고리

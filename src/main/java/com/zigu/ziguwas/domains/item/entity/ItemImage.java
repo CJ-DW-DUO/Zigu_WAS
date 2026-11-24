@@ -1,5 +1,7 @@
 package com.zigu.ziguwas.domains.item.entity;
 
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -18,6 +20,7 @@ import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "item_image", indexes = {@Index(name = "idx_item_image_item", columnList = "item_id")})
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
