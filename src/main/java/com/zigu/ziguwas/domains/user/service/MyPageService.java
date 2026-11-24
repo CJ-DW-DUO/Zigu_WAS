@@ -2,8 +2,6 @@ package com.zigu.ziguwas.domains.user.service;
 
 import com.zigu.ziguwas.S3.S3Service;
 import com.zigu.ziguwas.domains.item.entity.Item;
-import com.zigu.ziguwas.domains.item.entity.ItemStatus;
-import com.zigu.ziguwas.domains.item.event.ItemImagesDeletedEvent;
 import com.zigu.ziguwas.domains.item.repository.ItemListRepository;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
 import com.zigu.ziguwas.domains.user.dto.mypage.request.MyPageProfileReqDto;
@@ -54,13 +52,12 @@ public class MyPageService {
      * 내가 등록한 아이템 목록을 전체 조회합니다.
      *
      * @param userId 현재 로그인한 사용자의 식별자
-     * @return 사용자가 등록한 REGISTERED 상태의 아이템 DTO 리스트
+     * @return 사용자가 등록한 모든 상태(REGISTERED·RENTING)의 아이템 DTO 리스트
      */
     @Transactional(readOnly = true)
     public List<MyRegisteredItemResDto> getMyRegisteredItems(Long userId) {
 
-        List<Item> items = itemListRepository.findAllByUserIdAndItemStatusOrderByCreatedAtDesc(
-                userId, ItemStatus.REGISTERED);
+        List<Item> items = itemListRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
 
         return items.stream()
                 .map(MyRegisteredItemResDto::fromEntity)

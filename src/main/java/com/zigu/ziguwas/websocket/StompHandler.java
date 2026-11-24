@@ -5,6 +5,7 @@ import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
+import com.zigu.ziguwas.redis.RedisService;
 import com.zigu.ziguwas.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
@@ -30,6 +31,7 @@ public class StompHandler implements ChannelInterceptor {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final ChatParticipantRepository chatParticipantRepository;
+    private final RedisService redisService;
 
     /**
      * 허용되는 유일한 구독 주소 형식.
@@ -95,6 +97,11 @@ public class StompHandler implements ChannelInterceptor {
         // 검증만 하는 getEmailFromToken은 토큰 타입을 구분하지 않으므로 여기서 따로 막는다.
         if (jwtUtil.isRefreshToken(token)) {
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        // 로그아웃·탈퇴로 블랙리스트에 오른 access 토큰도 연결할 수 없다 (REST 필터 JwtAuthenticationFilter 와 같은 키).
+        if (redisService.getData("BLACKLIST:" + token) != null) {
+            throw new CustomException(ErrorCode.BLACKLIST_TOKEN);
         }
 
         // JwtUtil의 이메일 추출 로직을 활용해 검증 (서명/만료가 어긋나면 예외)

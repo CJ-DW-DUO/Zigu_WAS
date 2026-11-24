@@ -28,10 +28,10 @@ public interface MyPageTradeRepository extends JpaRepository<Trade, Long> {
      * 내가 빌려준 모든 물건 조회
      *
      * @param renter 빌려준사람으로 조회 하기위해
-     * @param status 특정 상태 조회
+     * @param statuses 조회할 거래 상태들
      */
     @EntityGraph(attributePaths = {"item", "rentee"})
-    List<Trade> findAllByRenterAndTradeStatus(User renter, TradeStatus status);
+    List<Trade> findAllByRenterAndTradeStatusIn(User renter, List<TradeStatus> statuses);
 
     /**
      * 내가 먼저 보낸 요청/제안 목록을 상태별로 필터링하여 조회합니다.

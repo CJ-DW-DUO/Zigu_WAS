@@ -25,7 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Tag(name = "Chat API", description = "채팅 관련 API 입니다.")
 public interface ChatApi {
 
-    @Operation(summary = "채팅방 목록 조회", description = "사용자가 참여 중인 모든 채팅방의 미리보기 목록을 조회합니다. 나간 채팅방은 목록에 포함되지 않습니다.")
+    @Operation(summary = "채팅방 목록 조회", description = "사용자가 참여 중인 채팅방의 미리보기 목록을 조회합니다. 나간 채팅방, 그리고 메시지가 한 건도 없고 진행 중인 대여 신청(요청됨·진행 중)도 없는 빈 채팅방은 목록에 포함되지 않습니다. 대여 신청만 있고 메시지가 없는 방은 목록에 포함되며, 이때 lastMessage 는 \"대화 내역이 없습니다.\", lastMessageTimestamp 는 null 입니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = ChatRoomPreviewResDto.class)))
@@ -111,7 +111,11 @@ public interface ChatApi {
     @Operation(summary = "1대1 채팅방 생성", description = "특정 상대방과의 1대1 채팅방을 생성합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "채팅방 생성 성공"),
-            @ApiResponse(responseCode = "400", description = "채팅방 생성 실패"),
+            @ApiResponse(responseCode = "400", description = "채팅방 생성 실패 (채팅 대상자는 게시글 작성자여야 하며 본인과는 채팅할 수 없습니다)",
+                    content = @Content(examples = @ExampleObject(name = "채팅 대상자 오류", value = """
+                            { "status": 400, "message": "채팅 대상자가 올바르지 않습니다." }
+                            """))
+            ),
             @ApiResponse(responseCode = "403", description = "다른 대학교 매물에 대한 채팅 생성 시도",
                     content = @Content(examples = @ExampleObject(value = """
                             { "status": 403, "message": "해당 대학에 대한 권한이 없습니다." }

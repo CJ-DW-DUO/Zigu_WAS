@@ -38,7 +38,11 @@ public class NotificationService {
     public void createNotification(NotificationCreatedEvent event) {
 
         // 1. 해당 알림을 유저가 켰는지 확인
-        User user = userRepository.findById(event.receiverUserId()).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        // 탈퇴한 수신자는 알림을 건너뛴다. 예외를 던지면 이미 끝난 채팅 전송·거래 처리가 실패처럼 보인다.
+        User user = userRepository.findById(event.receiverUserId()).orElse(null);
+        if (user == null) {
+            return;
+        }
 
         if(!user.getNotificationSetting().isAllowed(event.type().getCategory())) {
             return;

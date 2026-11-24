@@ -33,6 +33,12 @@ public class MyRegisteredItemResDto {
     @Schema(description = "등록 날짜", example = "2026-08-20T12:34:56")
     private final LocalDateTime createdAt;
 
+    @Schema(description = "대여 상태 (REGISTERED, RENTING)", example = "REGISTERED")
+    private final String itemStatus;
+
+    @Schema(description = "카테고리 (HOUSEHOLD_GOODS, ELECTRONICS, BOOKS_AND_ACADEMICS, HOBBY_AND_LEISURE, BEAUTY_AND_FASHION, HEALTHY, ETC)", example = "ELECTRONICS")
+    private final String itemCategory;
+
     public static MyRegisteredItemResDto fromEntity(Item item) {
         return MyRegisteredItemResDto.builder()
                 .itemId(item.getId())
@@ -45,6 +51,8 @@ public class MyRegisteredItemResDto {
                         .orElse(null))
                 .dayPerPrice(item.getDayPerPrice())
                 .createdAt(item.getCreatedAt())
+                .itemStatus(item.getItemStatus().name())
+                .itemCategory(item.getCategory().name())
                 .build();
     }
 }
