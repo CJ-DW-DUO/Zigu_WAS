@@ -33,6 +33,9 @@ public class OngoingTradeResDto {
     @Schema(description = "일일 대여 가격", example = "15000")
     private final Long price;
 
+    @Schema(description = "총 대여 금액 (일일 대여 가격 × 대여 일수)", example = "45000")
+    private final Long totalPrice;
+
     @Schema(description = "메인이미지 url", example = "이미지url~~~~~~")
     private final String mainImageUrl;
 
@@ -45,6 +48,7 @@ public class OngoingTradeResDto {
                 .title(trade.getItem().getTitle())
                 .status(trade.getTradeStatus().getDescription())
                 .price(trade.getItem().getDayPerPrice())
+                .totalPrice(trade.calculateTotalPrice())
                 .mainImageUrl(trade.getItem().getImageUrl().stream()
                         .filter(ItemImage::isMainImageUrl)
                         .map(ItemImage::getImageUrl)
