@@ -2,6 +2,7 @@ package com.zigu.ziguwas.domains.user.service;
 
 import com.zigu.ziguwas.S3.S3Service;
 import com.zigu.ziguwas.domains.item.entity.Item;
+import com.zigu.ziguwas.domains.item.event.ItemImagesDeletedEvent;
 import com.zigu.ziguwas.domains.item.repository.ItemListRepository;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
 import com.zigu.ziguwas.domains.user.dto.mypage.request.MyPageProfileReqDto;
