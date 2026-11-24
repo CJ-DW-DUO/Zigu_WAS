@@ -86,8 +86,8 @@ public class SearchService {
         if (sortType == null) return Sort.by(Sort.Direction.DESC, "id");
 
         return switch (sortType) {
-            // 인기순으로 정렬하되 같다면 id 순으로 보여줌
-            case "인기순" -> Sort.by(Sort.Direction.DESC, "viewCount")
+            // 인기순(=조회수순)으로 정렬하되 같다면 id 순으로 보여줌
+            case "인기순", "조회수순" -> Sort.by(Sort.Direction.DESC, "viewCount")
                     .and(Sort.by(Sort.Direction.DESC, "id"));
             case "낮은가격순" -> Sort.by(Sort.Direction.ASC, "dayPerPrice")
                     .and(Sort.by(Sort.Direction.DESC, "id"));
