@@ -124,7 +124,7 @@ public class TradeService {
 
         // 5-0. 어느 한쪽이라도 상대를 차단한 상태면 신청 불가
         if (blockRepository.existsBlockBetween(rentee.getId(), renter.getId())) {
-            throw new CustomException(ErrorCode.BLOCKED_USER_ACCESS);
+            throw new CustomException(ErrorCode.BLOCKED_USER_TRADE);
         }
 
         // 5-0-1. 같은 사용자가 같은 매물에 이미 요청 중(REQUESTED)이면 중복 신청 불가
@@ -217,7 +217,7 @@ public class TradeService {
 
         // 7. 어느 한쪽이라도 상대를 차단한 상태면 제안 불가
         if (blockRepository.existsBlockBetween(renter.getId(), rentee.getId())) {
-            throw new CustomException(ErrorCode.BLOCKED_USER_ACCESS);
+            throw new CustomException(ErrorCode.BLOCKED_USER_TRADE);
         }
 
         // 8. 이미 매칭 완료된 요청글이면 제안 불가

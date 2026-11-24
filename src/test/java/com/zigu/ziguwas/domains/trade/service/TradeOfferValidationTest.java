@@ -89,7 +89,7 @@ class TradeOfferValidationTest {
     void 차단_관계면_거절() {
         when(blockRepository.existsBlockBetween(1L, 2L)).thenReturn(true);
         LocalDate today = Kst.today();
-        assertEquals(ErrorCode.BLOCKED_USER_ACCESS, errorOf(today, today.plusDays(1)));
+        assertEquals(ErrorCode.BLOCKED_USER_TRADE, errorOf(today, today.plusDays(1)));
     }
 
     @Test
