@@ -62,7 +62,7 @@ public class MyPageTradeDetailResDto {
     private final String tradeStatusCode;
 
     @Schema(description = "거래 상대방 userId", example = "7")
-    private final Long counterpartUserId;
+    private final Long counterpartId;
 
     @Schema(description = "상대방과의 채팅방 ID. 아직 채팅방이 없거나 내가 나간 방이면 null", example = "665f1c2e9a3b4d0012ab34cd")
     private final String chatRoomId;
@@ -96,7 +96,7 @@ public class MyPageTradeDetailResDto {
                 .totalPrice(itemDeleted ? 0L : trade.calculateTotalPrice())
                 .myRole(role)
                 .tradeStatusCode(trade.getTradeStatus().name())
-                .counterpartUserId(counterpart.getId())
+                .counterpartId(counterpart.getId())
                 .chatRoomId(chatRoomId)
                 .build();
     }

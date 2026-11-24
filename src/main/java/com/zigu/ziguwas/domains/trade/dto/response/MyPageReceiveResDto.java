@@ -56,7 +56,7 @@ public class MyPageReceiveResDto {
     private final LocalDate tradeEndate;
 
     @Schema(description = "상대방(요청을 보낸 사람) userId", example = "7")
-    private final Long counterpartUserId;
+    private final Long counterpartId;
 
     @Schema(description = "상대방과의 채팅방 ID. 아직 채팅방이 없거나 내가 나간 방이면 null", example = "665f1c2e9a3b4d0012ab34cd")
     private final String chatRoomId;
@@ -82,7 +82,7 @@ public class MyPageReceiveResDto {
                 .tradeReqDate(trade.getTradeReqdate())
                 .tradeStdate(trade.getTradeStdate())
                 .tradeEndate(trade.getTradeEndate())
-                .counterpartUserId(trade.isProposedByRenter()
+                .counterpartId(trade.isProposedByRenter()
                         ? trade.getRenter().getId()
                         : trade.getRentee().getId())
                 .chatRoomId(chatRoomId)

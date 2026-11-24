@@ -60,13 +60,13 @@ class TradeResponseTest {
     @Test
     void 상대방은_조회자_반대편이고_날짜와_채팅방이_채워진다() {
         MyPageTradeListResDto asRentee = MyPageTradeListResDto.fromEntity(trade, 1L, "room1");
-        assertEquals(2L, asRentee.getCounterpartUserId());
+        assertEquals(2L, asRentee.getCounterpartId());
         assertEquals("빌려주는사람", asRentee.getCounterpartNickname());
         assertEquals(LocalDate.of(2026, 12, 1), asRentee.getTradeStdate());
         assertEquals("room1", asRentee.getChatRoomId());
 
         MyPageTradeListResDto asRenter = MyPageTradeListResDto.fromEntity(trade, 2L, null);
-        assertEquals(1L, asRenter.getCounterpartUserId());
+        assertEquals(1L, asRenter.getCounterpartId());
         assertNull(asRenter.getChatRoomId());
     }
 
@@ -77,13 +77,13 @@ class TradeResponseTest {
         assertEquals(10L, dto.getItemId());
         assertEquals("SUPPLY", dto.getPostType());
         assertEquals("REQUESTED", dto.getTradeStatusCode());
-        assertEquals(1L, dto.getCounterpartUserId());
+        assertEquals(1L, dto.getCounterpartId());
         assertEquals("room1", dto.getChatRoomId());
     }
 
     @Test
     void 받은요청의_상대방은_요청을_보낸_사람() {
-        assertEquals(1L, MyPageReceiveResDto.fromEntity(trade, null).getCounterpartUserId());
+        assertEquals(1L, MyPageReceiveResDto.fromEntity(trade, null).getCounterpartId());
     }
 
     @Test
@@ -110,7 +110,7 @@ class TradeResponseTest {
 
     @Test
     void Mongo_조회가_실패해도_거래_응답은_막지_않는다() {
-        when(participantRepository.findAllByUserIdAndLeftAtIsNull(any())).thenThrow(new RuntimeException("mongo down"));
+        when(participantRepository.findAllByUserIdAndLeftAtIsNull(any())).thenThrow(new org.springframework.dao.DataAccessResourceFailureException("mongo down"));
         assertTrue(finder.find(2L, List.of(trade)).isEmpty());
     }
 }

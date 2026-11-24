@@ -7,6 +7,7 @@ import com.zigu.ziguwas.domains.chat.repository.ChatRoomRepository;
 import com.zigu.ziguwas.domains.trade.entity.Trade;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -80,7 +81,7 @@ public class TradeChatRoomFinder {
                     }
                 });
             }
-        } catch (RuntimeException e) {
+        } catch (DataAccessException e) {
             // 채팅 저장소(Mongo) 문제로 거래 목록 전체가 실패하지 않도록 chatRoomId 만 비운다.
             log.warn("거래 응답용 채팅방 조회 실패: {}", e.toString());
             return new HashMap<>();
