@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.user.service;
 
+import com.zigu.ziguwas.domains.notification.repository.PushTokenRepository;
 import com.zigu.ziguwas.domains.trade.entity.Trade;
 import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
 import com.zigu.ziguwas.domains.trade.repository.TradeRepository;
@@ -57,6 +58,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final TokenService tokenService;
     private final TradeRepository tradeRepository;
+    private final PushTokenRepository pushTokenRepository;
 
 
     /**
@@ -526,6 +528,9 @@ public class AuthService {
         tokenService.deleteRefreshToken(userId);
         long remainingTime = jwtUtil.getExpiration(accessToken);
         redisService.setDataExpire("BLACKLIST:" + accessToken, "withdrawn", remainingTime);
+
+        // 푸시 토큰 삭제 (탈퇴한 계정으로 알림이 계속 가지 않도록)
+        pushTokenRepository.deleteByUserId(userId);
 
         // 개인정보 마스킹 및 사유 저장 (User 엔티티 내부 메서드 활용)
         user.applyWithdrawal(reason);
