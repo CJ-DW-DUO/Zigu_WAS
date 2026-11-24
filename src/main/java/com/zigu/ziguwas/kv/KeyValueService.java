@@ -1,4 +1,4 @@
-package com.zigu.ziguwas.redis;
+package com.zigu.ziguwas.kv;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class RedisService {
+public class KeyValueService {
 
     private final KvEntryRepository kvEntryRepository;
 

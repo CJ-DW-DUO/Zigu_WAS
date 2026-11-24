@@ -1,4 +1,4 @@
-package com.zigu.ziguwas.redis;
+package com.zigu.ziguwas.kv;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -18,10 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @EnabledIfEnvironmentVariable(named = "ZIGU_VERIFY_STEP", matches = "kv")
-@Import(RedisService.class)
+@Import(KeyValueService.class)
 class KvStoreTest {
 
-    @Autowired RedisService store;
+    @Autowired KeyValueService store;
     @Autowired TestEntityManager em;
 
     @Test

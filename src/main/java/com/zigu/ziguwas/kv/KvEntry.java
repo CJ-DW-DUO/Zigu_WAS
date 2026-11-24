@@ -1,4 +1,4 @@
-package com.zigu.ziguwas.redis;
+package com.zigu.ziguwas.kv;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
