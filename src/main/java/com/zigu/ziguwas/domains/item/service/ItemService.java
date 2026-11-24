@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -281,7 +282,6 @@ public class ItemService {
      * @param userId 조회 요청을 보낸 유저 (이미 인증 됨)
      * @return 해당 item 정보
      */
-    @Transactional
     public ItemResDto getItemDetail(Long itemId, Long userId, Long univId) {
 
         Item item = itemRepository.findById(itemId)
@@ -308,15 +308,24 @@ public class ItemService {
             throw new CustomException(ErrorCode.WITHDRAWN_USER_ITEM);
         }
 
-        // 조회수 증가는 상세조회 결과에 영향을 주지 않는 부가 기능이므로,
-        // 실패하더라도 상세조회 자체는 정상 응답하도록 best-effort로 처리
+        return ItemResDto.fromEntity(item, userId);
+    }
+
+    /**
+     * 상세조회한 아이템의 조회수를 1 올립니다.
+     * 상세조회 트랜잭션이 끝난 뒤 컨트롤러에서 따로 호출해, 요청 하나가 DB 연결을 하나만 쓰도록 한다.
+     * 조회수 증가는 상세조회 결과에 영향을 주지 않는 부가 기능이므로,
+     * 실패하더라도 상세조회 자체는 정상 응답하도록 best-effort로 처리
+     *
+     * @param itemId 조회수를 올릴 아이템 ID
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void increaseViewCount(Long itemId) {
         try {
             itemRepository.increaseViewCount(itemId);
         } catch (Exception e) {
             log.warn("조회수 증가 실패 - itemId: {}", itemId, e);
         }
-
-        return ItemResDto.fromEntity(item, userId);
     }
 
 }
