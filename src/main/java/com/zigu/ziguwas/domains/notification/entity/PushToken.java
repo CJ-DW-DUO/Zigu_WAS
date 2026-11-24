@@ -1,5 +1,7 @@
 package com.zigu.ziguwas.domains.notification.entity;
 
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import com.zigu.ziguwas.domains.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,6 +25,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "push_token", indexes = {@Index(name = "idx_push_token_user", columnList = "user_id")})
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter

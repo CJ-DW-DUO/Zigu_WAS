@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -35,6 +36,10 @@ public class NotificationService {
      *
      * @param event 알림 생성 이벤트
      */
+    // 알림 저장은 AFTER_COMMIT 리스너에서 불린다. 이때 걸쳐 있는 트랜잭션은 이미 커밋된 것이라 거기에 참여하면 저장이 커밋되지 않고 사라진다.
+    // 그래서 항상 새 트랜잭션으로 저장한다 (PushTokenService#deleteInvalidToken 과 같은 이유).
+    // ponytail: 이 안에서 Expo 푸시 HTTP(3s/5s)까지 돌아 그동안 커넥션 1개를 쥔다. 풀 고갈이 보이면 저장만 REQUIRES_NEW 로 분리
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createNotification(NotificationCreatedEvent event) {
 
         // 1. 해당 알림을 유저가 켰는지 확인

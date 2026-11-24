@@ -1,51 +1,63 @@
 package com.zigu.ziguwas.domains.notification.entity;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-@Document(collection = "notifications")
-/**
- * name : 인덱스 이름 (Mongo에서 확인할 때 보이는 이름, 식별하기 쉽게만 지으면 됨)
- * def : 어떤 필드를 인덱스로 묶을지 정의, 1은 오름차순, -1은 내림차순
- */
-@CompoundIndexes({
-        // 알림목록 조회 : userId와 recTime을 묶어서 인덱스를 생성, recTime은 내림차순으로 정렬
-        // userId가 123인 알림을 recTime 최신순(내림차순)으로 가져오기
-        @CompoundIndex(name = "idx_userId_recTime", def = "{'userId': 1, 'recTime': -1}"),
-        // 미읽음 카운트 : userId와 isRead를 묶어서 인덱스를 생성, isRead는 오름차순으로 정렬
-        // userId가 123인 읽지않은(isRead가 false)인 알림이 몇개인지 카운트하기 위해 isRead를 오름차순으로 정렬(이때 오름차순 정렬은 의미없음)
-        @CompoundIndex(name = "idx_userId_isRead",  def = "{'userId': 1, 'isRead': 1}")
-})
+@Entity
+@Table(
+        name = "notification",
+        indexes = {
+                // 알림목록 조회 : user_id 로 찾고 rec_time 최신순으로 가져오기
+                @Index(name = "idx_notification_user_rec", columnList = "user_id, rec_time"),
+                // 미읽음 카운트 : user_id 가 123 이고 읽지 않은(is_read 가 false) 알림이 몇 개인지 세기
+                @Index(name = "idx_notification_user_read", columnList = "user_id, is_read"),
+                // 90일 보관 배치가 rec_time 만으로 지우므로 단독 인덱스가 있어야 매일 전체 스캔을 하지 않는다
+                @Index(name = "idx_notification_rec_time", columnList = "rec_time")
+        }
+)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Getter
 public class Notification {
 
+    // ponytail: UUIDv4 문자열 PK, 쓰기량이 커져 인덱스 단편화가 보이면 UUIDv7 또는 IDENTITY 로
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @Column(nullable = false)
     private Long userId;
 
+    // 숫자(ORDINAL)로 저장되면 enum 순서가 바뀔 때 의미가 뒤바뀐다
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private NotificationType notificationType;
 
     private String notiTitle;
 
+    // 채팅 알림은 "닉네임님: 메시지 전문" 이라 255자를 넘을 수 있다
+    @Column(columnDefinition = "text")
     private String notiContent;
 
-    // ISO-8601 형식, 90일, 오래된 알림은 제거하기 위한 TTL 인덱스 설정
-    @Indexed(expireAfter = "P90D")
+    // 90일이 지난 알림은 NotificationRetentionScheduler 가 매일 지운다 (Mongo TTL 인덱스 대체)
+    @Column(nullable = false)
     private LocalDateTime recTime;
 
+    @Column(nullable = false)
     private Boolean isRead;
 
     private LocalDateTime readAt;

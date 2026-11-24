@@ -1,5 +1,8 @@
 package com.zigu.ziguwas.domains.search.entity;
 
+import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import com.zigu.ziguwas.domains.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -20,6 +23,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "search_history", indexes = {@Index(name = "idx_search_history_user", columnList = "user_id")}, uniqueConstraints = {@UniqueConstraint(name = "uk_search_history_user_name", columnNames = {"user_id", "search_name"})})
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter

@@ -1,5 +1,7 @@
 package com.zigu.ziguwas.domains.university.entity;
 
+import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Table;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -10,6 +12,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "university", uniqueConstraints = {@UniqueConstraint(name = "uk_university_univ_email", columnNames = {"univ_email"})})
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter

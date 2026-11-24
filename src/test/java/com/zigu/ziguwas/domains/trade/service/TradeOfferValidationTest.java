@@ -60,6 +60,7 @@ class TradeOfferValidationTest {
         when(renter.getUniv()).thenReturn(univ);
         when(item.getPostType()).thenReturn(PostType.SUPPLY);
         when(item.getUser()).thenReturn(renter);
+        when(item.getDayPerPrice()).thenReturn(1500L);
         when(itemRepository.findById(10L)).thenReturn(Optional.of(item));
         when(tradeRepository.save(any(Trade.class))).thenReturn(Trade.builder().id(99L).build());
     }
@@ -111,6 +112,9 @@ class TradeOfferValidationTest {
         ArgumentCaptor<Trade> cap = ArgumentCaptor.forClass(Trade.class);
         verify(tradeRepository).save(cap.capture());
         assertEquals(3L, cap.getValue().getPeriod());
+        // 거래를 만들 때의 하루 단가가 거래에 남고, 총액은 그 값으로 계산된다 (이후 물건 가격이 바뀌어도 불변)
+        assertEquals(1500L, cap.getValue().getDayPerPrice());
+        assertEquals(4500L, cap.getValue().calculateTotalPrice());
         assertEquals(today, cap.getValue().getTradeReqdate());
         assertEquals(TradeStatus.REQUESTED, cap.getValue().getTradeStatus());
     }

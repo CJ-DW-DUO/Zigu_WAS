@@ -29,24 +29,23 @@ import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
 import com.zigu.ziguwas.exception.CustomException;
 import com.zigu.ziguwas.exception.ErrorCode;
-import com.zigu.ziguwas.redis.RedisService;
 import com.zigu.ziguwas.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -64,14 +63,7 @@ public class ChatService {
 
     private final SimpMessageSendingOperations messagingTemplate;
     private final S3Service s3Service;
-    private final RedisService redisService;
-
-    // 같은 clientMessageId 재전송을 중복으로 판단하는 기간(ms). 재전송은 전송 실패·타임아웃 직후에 일어나므로 짧게 둔다.
-    // ponytail: 기록이 Redis 에만 있어 이 기간이 지나면 같은 ID 도 새 메시지로 저장된다. 더 길게 보장해야 하면 메시지 저장소의 유니크 키로 옮긴다.
-    private static final long CLIENT_MESSAGE_ID_TTL_MS = 10 * 60 * 1000L;
-
-    // 첫 요청이 아직 저장 중일 때 clientMessageId 기록에 임시로 넣어두는 값
-    private static final String SAVING = "SAVING";
+    private final TransactionTemplate transactionTemplate;
 
     // 채팅방을 나간 적이 없는 참여자의 조회 하한선으로 사용하는 기준 시각.
     // 모든 메시지의 timestamp는 이 시각보다 뒤이므로, 하한선이 없는 경우와 동일하게 동작한다.
@@ -394,7 +386,7 @@ public class ChatService {
      * @param hasImage 이미지 포함 여부
      * @return 저장된 메시지 (ID와 저장 시각이 채워진 상태)
      */
-    private ChatMessage saveMessage(String content, User sender, ChatRoom chatRoom, boolean hasImage) {
+    private ChatMessage saveMessage(String content, User sender, ChatRoom chatRoom, boolean hasImage, String clientMessageId) {
 
         // 발신자 조회, 채팅방 조회, 참여자 권한 검증은 호출부(branchMessage)에서 이미 수행되었다.
 
@@ -405,6 +397,7 @@ public class ChatService {
                 .message(hasImage ? null : content)
                 .imageUrl(hasImage ? content : null)
                 .timestamp(LocalDateTime.now())
+                .clientMessageId(clientMessageId)
                 .build();
 
         // 2. 채팅 저장
@@ -489,41 +482,28 @@ public class ChatService {
 
         String content = dto.hasImage() ? dto.getImageUrl() : dto.getMessage();
 
-        // 4-2. 같은 clientMessageId 로 이미 받은 메시지인지 확인 (재전송이면 새로 저장하지 않는다)
-        // 먼저 선점한 요청 하나만 저장하도록 Redis 에 먼저 자리를 잡는다. 동시에 두 번 들어와도 하나만 통과한다.
+        // 4-2. 같은 clientMessageId 로 이미 저장된 메시지면 재전송이다 (새로 저장하지 않고 처음 저장된 메시지를 다시 내려준다)
         String clientMessageId = dto.resolveClientMessageId();
-        String clientMessageKey = (clientMessageId != null)
-                ? "CHATMSG:" + chatRoomId + ":" + sender.getId() + ":" + clientMessageId : null;
-        boolean isResend = clientMessageKey != null
-                && !redisService.setDataIfAbsent(clientMessageKey, SAVING, CLIENT_MESSAGE_ID_TTL_MS);
-
-        ChatMessage saved = null;
-
-        if (isResend) {
-            saved = findAlreadySaved(clientMessageKey);
-
-            // 첫 요청이 아직 저장 중이면 그 요청이 전송까지 마치므로 여기서는 아무것도 하지 않는다.
-            if (saved == null) {
-                return;
-            }
-        }
+        ChatMessage saved = (clientMessageId == null) ? null
+                : chatMessageRepository.findByChatRoomIdAndSenderIdAndClientMessageId(chatRoomId, sender.getId(), clientMessageId)
+                .orElse(null);
+        boolean isResend = saved != null;
 
         // 5. 메시지 저장
         // 전송보다 저장이 먼저여야 한다. 전송을 먼저 하면 저장이 실패했을 때
         // 상대 화면에는 떴다가 새로고침하면 사라지는 유령 메시지가 남는다.
         if (!isResend) {
             try {
-                saved = saveMessage(content, sender, chatRoom, dto.hasImage());
-            } catch (RuntimeException e) {
-                // 저장에 실패하면 같은 ID 로 다시 보낼 수 있도록 자리를 비운다.
-                if (clientMessageKey != null) {
-                    redisService.deleteData(clientMessageKey);
+                saved = saveMessage(content, sender, chatRoom, dto.hasImage(), clientMessageId);
+            } catch (DataIntegrityViolationException e) {
+                // 위 조회와 저장 사이에 같은 clientMessageId 가 동시에 들어와 유니크 키가 막은 경우 — 먼저 저장된 메시지를 쓴다.
+                saved = (clientMessageId == null) ? null
+                        : chatMessageRepository.findByChatRoomIdAndSenderIdAndClientMessageId(chatRoomId, sender.getId(), clientMessageId)
+                        .orElse(null);
+                if (saved == null) {
+                    throw e;
                 }
-                throw e;
-            }
-
-            if (clientMessageKey != null) {
-                redisService.setDataExpire(clientMessageKey, saved.getId(), CLIENT_MESSAGE_ID_TTL_MS);
+                isResend = true;
             }
         }
 
@@ -552,23 +532,6 @@ public class ChatService {
         // 매물명은 알림 목록/푸시 표시용 스냅샷이므로, 조회 실패(소프트 딜리트 등) 시에도 메시지 전송 자체는 막지 않는다.
         String itemTitle = itemRepository.findById(chatRoom.getItemId()).map(Item::getTitle).orElse(null);
         notifyParticipants(content, sender, chatRoom, dto.hasImage(), itemTitle);
-    }
-
-    /**
-     * clientMessageId 기록으로 이미 저장된 메시지를 찾는 서비스
-     *
-     * @param clientMessageKey 중복 확인용 키
-     * @return 이미 저장된 메시지, 아직 저장 중이거나 찾을 수 없으면 null
-     */
-    private ChatMessage findAlreadySaved(String clientMessageKey) {
-        String savedMessageId = redisService.getData(clientMessageKey);
-
-        // 기록이 없거나, 첫 요청이 아직 저장 중이면 찾을 메시지가 없다.
-        if (savedMessageId == null || SAVING.equals(savedMessageId)) {
-            return null;
-        }
-
-        return chatMessageRepository.findById(savedMessageId).orElse(null);
     }
 
     /**
@@ -614,29 +577,8 @@ public class ChatService {
             throw new CustomException(ErrorCode.BLOCKED_USER_CHAT);
         }
 
-        // 3. 해당 물품과 거래로 이루어진 채팅방이 이미 존재한다면, 그냥 해당 ID를 반환
-//        ChatRoom chatRoom = chatRoomRepository.findByItemAndParticipants(item, sender, receiver).orElse(null);
-
-        // 4. sender 참여 방 ID 목록
-        Set<String> senderRoomIds = chatParticipantRepository.findAllByUserId(sender.getId())
-                // 리스트를 스트림 파이프라인으로 변환
-                .stream()
-                // 각 ChatParticipant 객체에서 chatRoomId(String)만 꺼내기 (p -> p.getChatRoomId()로 쓸 수 있음.)
-                .map(ChatParticipant::getChatRoomId)
-                // 결과 모으기 (중복 제거를 위해 Set으로)
-                .collect(Collectors.toSet());
-
-        // 5. receiver 참여 목록 중 sender와 겹치는 방 찾기
-        Optional<ChatRoom> existingRoom = chatParticipantRepository.findAllByUserId(receiver.getId())
-                .stream()
-                // receiver의 참여 목록 중 chatRoomId가 sender의 방 ID 목록에 포함되는 것만 남김. 즉 두 사람이 같이 있는 방만 걸러냄(남은요소)
-                .filter(p -> senderRoomIds.contains(p.getChatRoomId()))
-                // 걸러진 결과로 chatRoom객체를 MongoDB에서 조회하여 반환받음(새배열)
-                .map(p -> chatRoomRepository.findById(p.getChatRoomId()).orElse(null))
-                // 조회된 ChatRoom 중 itemId가 요청한 item과 일치하는 것만 남김. 즉, 두 사람이 참여하고 있는 방 중에서 해당 물품과 연결된 방만 남김(남은 요소)
-                .filter(room -> room != null && room.getItemId().equals(item.getId()))
-                // 조건을 만족하는 첫번째 ChatRoom을 Optional로 반환.
-                .findFirst();
+        // 3. 이 물품에 이 사용자가 이미 만든 채팅방(나간 방 포함)이 있다면, 그냥 해당 ID를 반환
+        Optional<ChatRoom> existingRoom = chatRoomRepository.findByItemIdAndRequesterId(item.getId(), sender.getId());
 
         if (existingRoom.isPresent()) {
             ChatRoom room = existingRoom.get();
@@ -660,12 +602,26 @@ public class ChatService {
         }
 
         // 6. 채팅방 생성 (존재하는 채팅방이 없을 경우)
-        ChatRoom chatRoom = chatRoomRepository.save(ChatRoom.builder().itemId(item.getId()).build());
+        // 방과 참여자 2명을 한 트랜잭션으로 저장한다. 따로 저장하면 방만 저장되고 참여자 저장이 실패했을 때
+        // 참여자 없는 방이 남아, (물품, 요청자) 유니크 때문에 그 사람이 그 물품으로 영영 채팅을 못 만든다.
+        ChatRoom chatRoom;
+        try {
+            chatRoom = transactionTemplate.execute(status -> {
+                ChatRoom saved = chatRoomRepository.saveAndFlush(
+                        ChatRoom.builder().itemId(item.getId()).requesterId(sender.getId()).build());
 
-        // 7. 참여자 등록 (발신자, 수신자 모두 등록)
-        // leftAt과 visibleFrom은 null로 두어 참여중 + 전체 대화 조회 가능 상태로 시작한다.
-        chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(chatRoom.getId()).userId(sender.getId()).build());
-        chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(chatRoom.getId()).userId(receiver.getId()).build());
+                // 7. 참여자 등록 (발신자, 수신자 모두 등록)
+                // leftAt과 visibleFrom은 null로 두어 참여중 + 전체 대화 조회 가능 상태로 시작한다.
+                chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(saved.getId()).userId(sender.getId()).build());
+                chatParticipantRepository.save(ChatParticipant.builder().chatRoomId(saved.getId()).userId(receiver.getId()).build());
+                return saved;
+            });
+        } catch (DataIntegrityViolationException e) {
+            // 같은 물품·같은 요청자의 방이 동시에 만들어졌다 — 유니크 키가 막았으니(우리 쪽은 전부 롤백) 먼저 만들어진 방을 쓴다.
+            return chatRoomRepository.findByItemIdAndRequesterId(item.getId(), sender.getId())
+                    .orElseThrow(() -> e)
+                    .getId();
+        }
 
         // 8. 채팅방 ID 반환
         return chatRoom.getId();

@@ -1,5 +1,12 @@
 package com.zigu.ziguwas.domains.trade.entity;
 
+import java.time.LocalDateTime;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.annotation.CreatedDate;
+import jakarta.persistence.Table;
+import jakarta.persistence.Index;
+import jakarta.persistence.EntityListeners;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.entity.ItemStatus;
 import com.zigu.ziguwas.domains.item.entity.PostType;
@@ -24,6 +31,8 @@ import java.time.LocalDate;
 
 
 @Entity
+@Table(name = "trade", indexes = {@Index(name = "idx_trade_item", columnList = "item_id"), @Index(name = "idx_trade_renter", columnList = "renter_id"), @Index(name = "idx_trade_rentee", columnList = "rentee_id")})
+@EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -46,6 +55,10 @@ public class Trade {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rentee_id", nullable = false)
     private User rentee; // 임차인ID
+
+    // 거래를 만들 때의 하루 단가. 주인이 나중에 가격을 고치거나 물건을 지워도 이 거래의 금액은 바뀌지 않게 따로 남긴다.
+    @Column(name = "day_per_price", nullable = false)
+    private Long dayPerPrice;
 
     @Column(name = "period", nullable = false)
     private Long period; // 대여기간, 시작일부터 종료일까지의 기간을 포함.
@@ -73,12 +86,29 @@ public class Trade {
     @Column(name = "proposed_by_renter", nullable = false)
     private boolean proposedByRenter = false;
 
+    // 거래가 만들어진 시각 (요청일은 날짜만 남아 있어서 시각까지 따로 기록)
+    @CreatedDate
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private LocalDateTime createdAt;
+
+    // 마지막으로 바뀐 시각
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    // 반납 처리된 시각 (연체 판단·거래 기록 보존용). 반납 전에는 null
+    @Column(name = "returned_at")
+    private LocalDateTime returnedAt;
+
     /**
      * 거래 상태를 변경하고 아이템의 상태도 함께 제어합니다.
      * @param newTradeStatus 변경할 거래 상태
      */
     public void updateStatus(TradeStatus newTradeStatus) {
         this.tradeStatus = newTradeStatus;
+        if (newTradeStatus == TradeStatus.RETURNED) {
+            this.returnedAt = LocalDateTime.now();
+        }
 
         if (newTradeStatus == TradeStatus.IN_PROGRESS) {
             this.item.updateItemStatus(ItemStatus.RENTING);
@@ -91,13 +121,13 @@ public class Trade {
     /**
      * 총 대여 금액을 계산합니다.
      *
-     * @return (아이템 하루 가격 * 대여 일수)
+     * @return (거래 당시 하루 가격 * 대여 일수)
      */
     public Long calculateTotalPrice() {
-        if (this.item == null || this.period == null) {
+        if (this.dayPerPrice == null || this.period == null) {
             return 0L; // 혹시나 하는 null일때..
         }
-        return this.item.getDayPerPrice() * this.period;
+        return this.dayPerPrice * this.period;
     }
 
     /**

@@ -47,7 +47,7 @@ public class OngoingTradeResDto {
                 .lesseeId(trade.getRentee().getId())
                 .title(trade.getItem().getTitle())
                 .status(trade.getTradeStatus().getDescription())
-                .price(trade.getItem().getDayPerPrice())
+                .price(trade.getDayPerPrice())
                 .totalPrice(trade.calculateTotalPrice())
                 .mainImageUrl(trade.getItem().getImageUrl().stream()
                         .filter(ItemImage::isMainImageUrl)

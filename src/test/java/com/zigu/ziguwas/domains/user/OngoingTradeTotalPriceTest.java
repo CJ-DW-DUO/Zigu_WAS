@@ -21,7 +21,7 @@ class OngoingTradeTotalPriceTest {
         User rentee = User.builder().id(2L).email("b@snu.ac.kr").nickname("b").univ(univ).build();
         Item item = Item.builder().id(10L).user(renter).title("노트북").category(ItemCategory.ELECTRONICS)
                 .dayPerPrice(15000L).build();
-        Trade trade = Trade.builder().id(5L).item(item).renter(renter).rentee(rentee).period(3L)
+        Trade trade = Trade.builder().id(5L).item(item).renter(renter).rentee(rentee).dayPerPrice(15000L).period(3L)
                 .tradeStatus(TradeStatus.IN_PROGRESS).build();
 
         OngoingTradeResDto dto = OngoingTradeResDto.from(trade);

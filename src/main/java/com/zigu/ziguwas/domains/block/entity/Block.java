@@ -8,6 +8,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -22,7 +23,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "block", uniqueConstraints = @UniqueConstraint(name = "uk_block_blocker_blocked", columnNames = {"blocker_id", "blocked_id"}))
+@Table(name = "block", indexes = @Index(name = "idx_block_blocked", columnList = "blocked_id"), uniqueConstraints = @UniqueConstraint(name = "uk_block_blocker_blocked", columnNames = {"blocker_id", "blocked_id"}))
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

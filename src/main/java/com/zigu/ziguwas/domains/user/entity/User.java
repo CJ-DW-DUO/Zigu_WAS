@@ -1,9 +1,14 @@
 package com.zigu.ziguwas.domains.user.entity;
 
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.data.annotation.CreatedDate;
+import jakarta.persistence.EntityListeners;
 import com.zigu.ziguwas.domains.university.entity.University;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
@@ -24,11 +29,13 @@ import java.util.UUID;
 
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
+@Table(name = "users", indexes = @Index(name = "idx_users_univ", columnList = "univ_id")) // user 는 PostgreSQL 예약어
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Builder
-@SQLDelete(sql = "UPDATE user SET is_deleted = true, deleted_at = NOW() WHERE id = ?")
+@SQLDelete(sql = "UPDATE users SET is_deleted = true, deleted_at = NOW() WHERE id = ?")
 @SQLRestriction("is_deleted = false")
 public class User {
 
@@ -94,6 +101,11 @@ public class User {
     // 동의한 약관 버전 (예: v1.0)
     @Column(name = "terms_version")
     private String termsVersion;
+
+    // 가입한 시각 (약관 동의 시점 기록용)
+    @CreatedDate
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private LocalDateTime createdAt;
 
     @Embedded
     private NotificationSetting notificationSetting;
