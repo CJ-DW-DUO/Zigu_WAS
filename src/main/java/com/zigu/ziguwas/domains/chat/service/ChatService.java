@@ -22,6 +22,7 @@ import com.zigu.ziguwas.domains.item.repository.ItemRepository;
 import com.zigu.ziguwas.domains.notification.entity.NotificationType;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.trade.entity.Trade;
+import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
 import com.zigu.ziguwas.domains.trade.repository.TradeRepository;
 import com.zigu.ziguwas.domains.user.entity.User;
 import com.zigu.ziguwas.domains.user.repository.UserRepository;
@@ -138,6 +139,21 @@ public class ChatService {
     }
 
     /**
+     * 두 사용자 사이에 진행 중인 대여 신청(요청됨·진행 중)이 있는지 확인하는 서비스
+     *
+     * 글 종류(공급글/요청글)에 따라 임대인·임차인 방향이 달라지므로 두 방향을 모두 확인한다.
+     *
+     * @param itemId 채팅방에 연결된 물품ID
+     * @param userId 사용자ID
+     * @param otherUserId 채팅방 상대방ID
+     */
+    private boolean hasActiveTrade(Long itemId, Long userId, Long otherUserId) {
+        List<TradeStatus> activeStatuses = List.of(TradeStatus.REQUESTED, TradeStatus.IN_PROGRESS);
+        return tradeRepository.existsByItemIdAndRenterIdAndRenteeIdAndTradeStatusIn(itemId, userId, otherUserId, activeStatuses)
+                || tradeRepository.existsByItemIdAndRenterIdAndRenteeIdAndTradeStatusIn(itemId, otherUserId, userId, activeStatuses);
+    }
+
+    /**
      * 참여중인 채팅방 조회 DTO
      *
      * @param customUserDetails 로그인 사용자 정보
@@ -166,28 +182,24 @@ public class ChatService {
                     () -> new CustomException(ErrorCode.CHATROOM_NOT_FOUND)
             );
 
-            // 3-2. 상대 참여자 이름(방이름) 조회
+            // 3-2. 상대 참여자 조회
 
             // 방 기준 모든 참여자 조회 (자기 자신 포함)
             List<ChatParticipant> participant = chatParticipantRepository.findAllByChatRoomId(room.getId());
 
-            // 방 이름 초기화
-            String roomName = null;
+            // 상대방 ID 초기화
+            Long otherUserId = null;
 
-            // 자기 이름이 아닌 상대방 이름으로 방 이름 설정 (1:1 채팅이므로 상대방은 한명)
+            // 자기 자신이 아닌 참여자를 상대방으로 설정 (1:1 채팅이므로 상대방은 한명)
             // 만약 채팅방이 여러명으로 이뤄진다면 해당 부분은 수정 필요
             for(ChatParticipant p : participant) {
                 if(!p.getUserId().equals(user.getId())) {
-                    // 문제가 지금 ChatParticipant에서는 탈퇴한 User가 존재하는데 그거 기반으로 userRepository에서 검색이 안되는 상황임.
-
-                    roomName = userRepository.findById(p.getUserId())
-                            .map(User::getNickname)
-                            .orElse("탈퇴한 사용자");
+                    otherUserId = p.getUserId();
                 }
             }
 
             // 만약 방에 상대방이 없다면(자기 자신만 있다면) 예외 처리
-            if(roomName == null){
+            if(otherUserId == null){
                 throw new CustomException(ErrorCode.CHATMATE_NOT_FOUND);
             }
 
@@ -198,17 +210,32 @@ public class ChatService {
                     resolveVisibleFrom(chatParticipant)
             ).orElse(null);
 
-            // 3-3-1. 보이는 메시지가 한 건도 없는 방(대여 신청 직전에 만들어진 빈 방 등)은 목록에서 제외한다.
+            // 3-3-1. 보이는 메시지가 없고 진행 중인 대여 신청(요청됨·진행 중)도 없는 방은 목록에서 제외한다.
+            // 대여 신청만 하고 대화는 없는 방은 상대방(물건 주인)이 먼저 연락할 수 있도록 목록에 남긴다.
             // 방 자체는 그대로여서 roomId 로의 진입·재생성(기존 방 재사용)은 영향받지 않는다.
-            if (lastMessage == null) {
+            if (lastMessage == null && !hasActiveTrade(room.getItemId(), user.getId(), otherUserId)) {
                 continue;
             }
 
+            // 3-3-2. 상대방 이름(방이름) 조회
+            // 문제가 지금 ChatParticipant에서는 탈퇴한 User가 존재하는데 그거 기반으로 userRepository에서 검색이 안되는 상황임.
+            String roomName = userRepository.findById(otherUserId)
+                    .map(User::getNickname)
+                    .orElse("탈퇴한 사용자");
+
             // 3-4. 마지막으로 대화한 시각 조회
-            LocalDateTime lastSendTime = lastMessage.getTimestamp();
-            String lastMessageContent = (lastMessage.getImageUrl() != null && !lastMessage.getImageUrl().isEmpty())
-                    ? "사진을 보냈습니다."
-                    : lastMessage.getMessage();
+
+            LocalDateTime lastSendTime = null;
+            String lastMessageContent;
+
+            if (lastMessage == null) {
+                lastMessageContent = "대화 내역이 없습니다.";
+            } else {
+                lastSendTime = lastMessage.getTimestamp();
+                lastMessageContent = (lastMessage.getImageUrl() != null && !lastMessage.getImageUrl().isEmpty())
+                        ? "사진을 보냈습니다."
+                        : lastMessage.getMessage();
+            }
 
             // 3-5. dto에 담기
             dtos.add(ChatRoomPreviewResDto.builder()

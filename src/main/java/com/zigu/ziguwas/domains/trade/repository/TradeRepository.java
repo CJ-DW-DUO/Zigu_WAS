@@ -18,6 +18,9 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
     // 특정 아이템에서 두 사용자 사이의 가장 최근 거래 조회 (채팅방 상대와의 거래 상태 표시용)
     Optional<Trade> findFirstByItemAndRenterIdAndRenteeIdOrderByIdDesc(Item item, Long renterId, Long renteeId);
 
+    // 특정 아이템에서 두 사용자 사이에 주어진 상태(예: 요청/진행 중)의 거래가 있는지 확인 (채팅 목록에서 빈 방을 남길지 판단용)
+    boolean existsByItemIdAndRenterIdAndRenteeIdAndTradeStatusIn(Long itemId, Long renterId, Long renteeId, List<TradeStatus> statuses);
+
     /**
      * 유저가 대여인(Renter) 혹은 임차인(Lessee)으로 참여 중인 거래 중
      * 특정 상태(예: 진행 중)인 거래 목록을 조회합니다.

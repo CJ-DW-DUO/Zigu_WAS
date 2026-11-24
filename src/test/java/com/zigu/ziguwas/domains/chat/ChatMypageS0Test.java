@@ -47,10 +47,12 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -148,22 +150,25 @@ class ChatMypageS0Test {
         assertEquals("http://s3/real.png", res.getImageUrl());
     }
 
-    // W-17 — 메시지 0건 방은 목록에서 제외, 메시지 있는 방은 유지.
+    // W-17 용 — "me" 의 방 하나를 만든다(상대는 other 가 아닌 사람). messageText 가 null 이면 메시지 없는 방.
+    private void givenRoom(User me, User mate, String roomId, Long itemId, String messageText) {
+        when(chatRoomRepository.findById(roomId)).thenReturn(Optional.of(ChatRoom.builder().id(roomId).itemId(itemId).build()));
+        when(chatParticipantRepository.findAllByChatRoomId(roomId)).thenReturn(List.of(
+                ChatParticipant.builder().chatRoomId(roomId).userId(me.getId()).build(),
+                ChatParticipant.builder().chatRoomId(roomId).userId(mate.getId()).build()));
+        when(chatMessageRepository.findFirstByChatRoomIdAndTimestampAfterOrderByTimestampDesc(eq(roomId), any()))
+                .thenReturn(messageText == null ? Optional.empty()
+                        : Optional.of(ChatMessage.builder().chatRoomId(roomId).message(messageText).timestamp(LocalDateTime.now()).build()));
+    }
+
+    // W-17 — 메시지도 대여 신청도 없는 방은 목록에서 제외, 메시지 있는 방은 유지.
     @Test
-    void chatroomsPreview_메시지없는_방은_제외() {
-        ChatParticipant emptyP = ChatParticipant.builder().chatRoomId("empty").userId(other.getId()).build();
-        ChatParticipant fullP = ChatParticipant.builder().chatRoomId("full").userId(other.getId()).build();
-        when(chatParticipantRepository.findAllByUserIdAndLeftAtIsNull(other.getId())).thenReturn(List.of(emptyP, fullP));
-        for (String id : List.of("empty", "full")) {
-            when(chatRoomRepository.findById(id)).thenReturn(Optional.of(ChatRoom.builder().id(id).itemId(1L).build()));
-            when(chatParticipantRepository.findAllByChatRoomId(id)).thenReturn(List.of(
-                    ChatParticipant.builder().chatRoomId(id).userId(author.getId()).build(),
-                    ChatParticipant.builder().chatRoomId(id).userId(other.getId()).build()));
-        }
-        when(chatMessageRepository.findFirstByChatRoomIdAndTimestampAfterOrderByTimestampDesc(anyString(), any()))
-                .thenReturn(Optional.empty());
-        when(chatMessageRepository.findFirstByChatRoomIdAndTimestampAfterOrderByTimestampDesc(org.mockito.ArgumentMatchers.eq("full"), any()))
-                .thenReturn(Optional.of(ChatMessage.builder().chatRoomId("full").message("hi").timestamp(LocalDateTime.now()).build()));
+    void chatroomsPreview_메시지도_신청도_없는_방은_숨김() {
+        givenRoom(other, author, "empty", 1L, null);
+        givenRoom(other, author, "full", 1L, "hi");
+        when(chatParticipantRepository.findAllByUserIdAndLeftAtIsNull(other.getId())).thenReturn(List.of(
+                ChatParticipant.builder().chatRoomId("empty").userId(other.getId()).build(),
+                ChatParticipant.builder().chatRoomId("full").userId(other.getId()).build()));
 
         List<ChatRoomPreviewResDto> rooms = chatService.getChatroomsPreview(details(other));
 
@@ -171,14 +176,33 @@ class ChatMypageS0Test {
         assertEquals("full", rooms.get(0).getRoomId());
     }
 
+    // W-17 — 메시지는 없어도 진행 중 신청(REQUESTED·IN_PROGRESS)이 있으면 보임. 글 종류에 따라 임대인·임차인 방향이 달라 둘 다 확인한다.
+    // 주인(author) 입장: SUPPLY 는 author=renter / DEMAND 는 author=rentee.
+    @Test
+    void chatroomsPreview_메시지없어도_신청있으면_보임() {
+        givenRoom(author, other, "supplyRoom", 1L, null);
+        givenRoom(author, other, "demandRoom", 2L, null);
+        when(chatParticipantRepository.findAllByUserIdAndLeftAtIsNull(author.getId())).thenReturn(List.of(
+                ChatParticipant.builder().chatRoomId("supplyRoom").userId(author.getId()).build(),
+                ChatParticipant.builder().chatRoomId("demandRoom").userId(author.getId()).build()));
+        when(tradeRepository.existsByItemIdAndRenterIdAndRenteeIdAndTradeStatusIn(eq(1L), eq(author.getId()), eq(other.getId()), any())).thenReturn(true);
+        when(tradeRepository.existsByItemIdAndRenterIdAndRenteeIdAndTradeStatusIn(eq(2L), eq(other.getId()), eq(author.getId()), any())).thenReturn(true);
+
+        List<ChatRoomPreviewResDto> rooms = chatService.getChatroomsPreview(details(author));
+
+        assertEquals(2, rooms.size());
+        assertEquals("대화 내역이 없습니다.", rooms.get(0).getLastMessage());
+        assertNull(rooms.get(0).getLastMessageTimestamp());
+    }
+
     // W-06 — 탈퇴한(조회 안 되는) 수신자는 예외 없이 건너뛰고 저장·푸시하지 않는다.
     @Test
     void createNotification_탈퇴_수신자는_건너뜀() {
-        UserRepository users = org.mockito.Mockito.mock(UserRepository.class);
-        NotificationRepository notifications = org.mockito.Mockito.mock(NotificationRepository.class);
-        PushNotificationService push = org.mockito.Mockito.mock(PushNotificationService.class);
+        UserRepository users = mock(UserRepository.class);
+        NotificationRepository notifications = mock(NotificationRepository.class);
+        PushNotificationService push = mock(PushNotificationService.class);
         NotificationService service = new NotificationService(notifications, users,
-                org.mockito.Mockito.mock(ChatParticipantRepository.class), push);
+                mock(ChatParticipantRepository.class), push);
         when(users.findById(99L)).thenReturn(Optional.empty());
 
         service.createNotification(new NotificationCreatedEvent(99L, NotificationType.CHAT, "t", "c", "room1", 1L, "i"));
