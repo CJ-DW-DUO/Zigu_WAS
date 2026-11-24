@@ -5,11 +5,6 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
-  data:
-    redis:
-      host: ${REDIS_HOST} # 실제 서버용 Redis 주소
-      port: 6379
-
   jpa:
     hibernate.ddl-auto: update
     show-sql: false
