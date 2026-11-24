@@ -17,11 +17,12 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * 반납 기한이 지났는데 아직 반납 처리되지 않은 거래를 매일 찾아
- * 임대인/임차인 양쪽에게 반납기한 초과 알림을 발송합니다.
+ * 반납일이 오늘이거나 이미 지났는데 아직 반납 처리되지 않은 거래를 매일 찾아
+ * 임대인/임차인 양쪽에게 반납 알림을 발송합니다.
  *
+ * 반납일 당일에는 "반납하는 날이에요", 반납일이 지났다면 "반납 기한 초과" 문구로 나뉩니다.
  * 상태(TradeStatus)를 늘리는 방식이 아니라, IN_PROGRESS 상태이면서
- * 반납예정일(tradeEndate)이 지난 거래를 매일 다시 조회하는 방식이라
+ * 반납예정일(tradeEndate)이 오늘 이전인 거래를 매일 다시 조회하는 방식이라
  * 실제로 반납 처리(RETURNED)되기 전까지 매일 반복 발송됩니다.
  */
 @Slf4j
@@ -41,23 +42,45 @@ public class TradeReturnReminderScheduler {
     @Transactional(readOnly = true)
     @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
     public void remindOverdueReturns() {
-        // 1. 대여중(IN_PROGRESS)인데 반납예정일이 이미 지난 거래를 조회
-        List<Trade> overdueTrades = tradeRepository.findAllByTradeStatusAndTradeEndateBefore(
-                TradeStatus.IN_PROGRESS,
-                Kst.today()
-        );
-
-        // 2. 대상 거래마다 임대인/임차인 각각에게 알림 이벤트 발행
-        for (Trade trade : overdueTrades) {
-            notifyRenter(trade);
-            notifyRentee(trade);
-        }
-
-        log.info("반납기한 초과 알림 발송 대상 거래 {}건 처리 완료", overdueTrades.size());
+        remindReturns(Kst.today());
     }
 
     /**
-     * 임대인(빌려준 사람)에게 반납 확인을 요청하는 알림을 발행합니다.
+     * 기준일(today)을 받아 반납 알림을 발행합니다. (스케줄 시각을 기다리지 않고 날짜 경계를 시험할 수 있도록 분리)
+     */
+    void remindReturns(LocalDate today) {
+        // 1. 대여중(IN_PROGRESS)인데 반납예정일이 오늘이거나 이미 지난 거래를 조회
+        List<Trade> targetTrades = tradeRepository.findAllByTradeStatusAndTradeEndateLessThanEqual(
+                TradeStatus.IN_PROGRESS,
+                today
+        );
+
+        // 2. 대상 거래마다 반납일 당일인지 지났는지에 따라 임대인/임차인 각각에게 알림 이벤트 발행
+        int dueTodayCount = 0;
+        int overdueCount = 0;
+        for (Trade trade : targetTrades) {
+            LocalDate endDate = trade.getTradeEndate();
+            if (endDate.isAfter(today)) {
+                // 조회 조건상 올 수 없지만, 아직 반납일이 안 된 거래에는 알림을 보내지 않는다
+                continue;
+            }
+
+            boolean dueToday = endDate.isEqual(today);
+            notifyRenter(trade);
+            if (dueToday) {
+                notifyRenteeDueToday(trade);
+                dueTodayCount++;
+            } else {
+                notifyRenteeOverdue(trade);
+                overdueCount++;
+            }
+        }
+
+        log.info("반납 알림 발송 완료 - 반납일 당일 {}건, 기한 초과 {}건", dueTodayCount, overdueCount);
+    }
+
+    /**
+     * 임대인(빌려준 사람)에게 반납 확인을 요청하는 알림을 발행합니다. (반납일 당일·기한 초과 문구 동일)
      */
     private void notifyRenter(Trade trade) {
         eventPublisher.publishEvent(new NotificationCreatedEvent(
@@ -72,9 +95,25 @@ public class TradeReturnReminderScheduler {
     }
 
     /**
-     * 임차인(빌린 사람)에게 반납을 독촉하는 알림을 발행합니다.
+     * 임차인(빌린 사람)에게 반납일 당일임을 알리는 알림을 발행합니다.
+     * 알림 타입은 기한 초과와 같은 RETURN_OVERDUE_RENTEE 를 쓴다 (앱이 아는 알림 종류를 늘리지 않기 위함).
      */
-    private void notifyRentee(Trade trade) {
+    private void notifyRenteeDueToday(Trade trade) {
+        eventPublisher.publishEvent(new NotificationCreatedEvent(
+                trade.getRentee().getId(),
+                NotificationType.RETURN_OVERDUE_RENTEE,
+                "오늘이 반납일이에요",
+                trade.getItem().getTitle() + " 반납하는 날이에요. 물건을 반납해 주세요.",
+                trade.getId().toString(),
+                trade.getItem().getId(),
+                trade.getItem().getTitle()
+        ));
+    }
+
+    /**
+     * 임차인(빌린 사람)에게 반납 기한이 지났으니 반납을 독촉하는 알림을 발행합니다.
+     */
+    private void notifyRenteeOverdue(Trade trade) {
         eventPublisher.publishEvent(new NotificationCreatedEvent(
                 trade.getRentee().getId(),
                 NotificationType.RETURN_OVERDUE_RENTEE,
