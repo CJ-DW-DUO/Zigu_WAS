@@ -42,6 +42,10 @@ public interface AuthApi {
             @ApiResponse(responseCode = "409", description = "이미 가입된 이메일",
                     content = @Content(mediaType = "application/json", examples = {
                             @ExampleObject(value = "{\"status\": 409, \"message\": \"이미 존재하는 이메일입니다.\"}")
+                    })),
+            @ApiResponse(responseCode = "429", description = "같은 이메일로 1분 안에 다시 요청",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 429, \"message\": \"인증번호는 1분 뒤에 다시 요청할 수 있습니다.\", \"code\": \"VERIFY_CODE_RESEND_TOO_SOON\"}")
                     }))
     })
     ResponseEntity<?> emailCodeSend(@Valid @RequestBody EmailReqDto dto);
@@ -53,6 +57,10 @@ public interface AuthApi {
             @ApiResponse(responseCode = "400", description = "인증번호 불일치 혹은 만료",
                     content = @Content(mediaType = "application/json", examples = {
                             @ExampleObject(value = "{\"status\": 400, \"message\": \"인증 코드가 일치하지 않거나 만료되었습니다.\"}")
+                    })),
+            @ApiResponse(responseCode = "429", description = "인증번호를 1분에 5번 넘게 틀림 (1분 뒤 다시 시도)",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 429, \"message\": \"인증번호를 너무 많이 틀렸습니다. 1분 뒤에 다시 시도해 주세요.\", \"code\": \"VERIFY_CODE_TOO_MANY_ATTEMPTS\"}")
                     }))
     })
     ResponseEntity<?> emailVerification(@Valid @RequestBody EmailVerifyReqDto dto);
@@ -166,6 +174,10 @@ public interface AuthApi {
             @ApiResponse(responseCode = "404", description = "가입되지 않은 이메일",
                     content = @Content(mediaType = "application/json", examples = {
                             @ExampleObject(value = "{\"status\": 404, \"message\": \"사용자를 찾을 수 없습니다.\"}")
+                    })),
+            @ApiResponse(responseCode = "429", description = "같은 이메일로 1분 안에 다시 요청",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 429, \"message\": \"인증번호는 1분 뒤에 다시 요청할 수 있습니다.\", \"code\": \"VERIFY_CODE_RESEND_TOO_SOON\"}")
                     }))
     })
     ResponseEntity<?> passwordResetEmailSend(@Valid @RequestBody EmailReqDto dto);
@@ -180,6 +192,10 @@ public interface AuthApi {
             @ApiResponse(responseCode = "404", description = "인증코드 미발급 혹은 만료",
                     content = @Content(mediaType = "application/json", examples = {
                             @ExampleObject(value = "{\"status\": 404, \"message\": \"인증코드를 발급하지 않은 이메일 입니다.\"}")
+                    })),
+            @ApiResponse(responseCode = "429", description = "인증번호를 1분에 5번 넘게 틀림 (1분 뒤 다시 시도)",
+                    content = @Content(mediaType = "application/json", examples = {
+                            @ExampleObject(value = "{\"status\": 429, \"message\": \"인증번호를 너무 많이 틀렸습니다. 1분 뒤에 다시 시도해 주세요.\", \"code\": \"VERIFY_CODE_TOO_MANY_ATTEMPTS\"}")
                     }))
     })
     ResponseEntity<?> passwordResetEmailVerify(@Valid @RequestBody EmailVerifyReqDto dto);

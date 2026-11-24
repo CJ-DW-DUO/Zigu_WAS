@@ -5,6 +5,7 @@ import com.zigu.ziguwas.domains.item.entity.ItemCategory;
 import com.zigu.ziguwas.domains.item.entity.ItemImage;
 import com.zigu.ziguwas.domains.item.entity.ItemStatus;
 import com.zigu.ziguwas.domains.item.entity.PostType;
+import com.zigu.ziguwas.domains.user.entity.Gender;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
@@ -73,6 +74,12 @@ public class ItemResDto {
     @Schema(description = "아이템을 등록한 사용자의 닉네임", example = "코딩하는지구인")
     private final String nickname;
 
+    @Schema(description = "아이템을 등록한 사용자의 학번", example = "20261234")
+    private final String studentNumber;
+
+    @Schema(description = "아이템을 등록한 사용자의 성별 (MALE, FEMALE). 작성자가 프로필에서 성별 표시를 켠 경우에만 값이 있고, 아니면 null", example = "MALE")
+    private final Gender gender;
+
     @Schema(description = "업로드된 아이템 이미지 고유 ID 목록", example = "[1, 2]")
     private final List<Long> imageIds;
 
@@ -114,6 +121,9 @@ public class ItemResDto {
                 .itemStatusKor(item.getItemStatus().descriptionFor(item.getPostType()))
                 .dayPerPrice(item.getDayPerPrice())
                 .nickname(item.getUser().getNickname())
+                .studentNumber(item.getUser().getStudentNumber())
+                // 성별은 작성자가 공개로 둔 경우에만 내려준다.
+                .gender(item.getUser().isGenderVisible() ? item.getUser().getGender() : null)
                 .imageIds(itemImages.stream().map(ItemImage::getImageId).toList())
                 .imageUrl(itemImages.stream().map(ItemImage::getImageUrl).toList())
                 .title(item.getTitle())

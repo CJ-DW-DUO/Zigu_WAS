@@ -2,6 +2,7 @@ package com.zigu.ziguwas.domains.user.service;
 
 import com.zigu.ziguwas.S3.S3Service;
 import com.zigu.ziguwas.domains.item.entity.Item;
+import com.zigu.ziguwas.domains.item.entity.PostType;
 import com.zigu.ziguwas.domains.item.event.ItemImagesDeletedEvent;
 import com.zigu.ziguwas.domains.item.repository.ItemListRepository;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +32,9 @@ public class MyPageService {
     private final ItemListRepository itemListRepository;
     private final S3Service s3Service;
     private final ApplicationEventPublisher eventPublisher;
+
+    // 학교가 부여한 학생번호 전체: 숫자 7~10자리 (회원가입 요청 DTO 의 검증과 같은 규칙)
+    private static final Pattern STUDENT_NUMBER_FORMAT = Pattern.compile("^\\d{7,10}$");
 
     /**
      * 마이페이지 메인 화면에 필요한 사용자 정보와 등록 물건 요약 리스트를 조회합니다.
@@ -46,7 +51,10 @@ public class MyPageService {
         // 해당 유저가 등록한 물건 중 최신순으로 3개만 조회
         List<Item> top3Items = itemRepository.findTop3ByUserOrderByCreatedAtDesc(user);
 
-        return MyPageMainResDto.fromEntity(user, top3Items);
+        // 요청글(빌려주세요)은 따로 최신순 3개를 담아 내려준다.
+        List<Item> top3DemandItems = itemRepository.findTop3ByUserAndPostTypeOrderByCreatedAtDesc(user, PostType.DEMAND);
+
+        return MyPageMainResDto.fromEntity(user, top3Items, top3DemandItems);
     }
 
     /**
@@ -94,13 +102,21 @@ public class MyPageService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        // 학번은 값이 바뀌는 경우에만 형식을 검사한다.
+        // 화면이 다른 항목(사진·이름)만 바꿔도 현재 학번을 그대로 다시 보내는데, 예전 형식으로 저장된 학번이면 그 수정까지 막히기 때문이다.
+        String newStudentNumber = reqDto.getStudentNumber();
+        if (newStudentNumber != null && !newStudentNumber.equals(user.getStudentNumber())
+                && !STUDENT_NUMBER_FORMAT.matcher(newStudentNumber).matches()) {
+            throw new CustomException(ErrorCode.INVALID_STUDENT_NUMBER);
+        }
+
         // 1. 프로필 정보 업데이트 (이름은 실명이라 중복 허용)
         String newNickname = reqDto.getNickname();
         if (newNickname != null && !newNickname.isBlank()) {
             user.updateNickname(newNickname.trim());
         }
-        if (reqDto.getStudentNumber() != null) {
-            user.updateStudentNumber(reqDto.getStudentNumber());
+        if (newStudentNumber != null) {
+            user.updateStudentNumber(newStudentNumber);
         }
         if (reqDto.getGender() != null) {
             user.updateGender(reqDto.getGender());
