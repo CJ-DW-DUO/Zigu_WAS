@@ -43,6 +43,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     return;
                 }
 
+                // refresh 토큰(7일)은 재발급 전용 — 일반 API 의 access 토큰으로 받아들이지 않는다.
+                if (jwtUtil.isRefreshToken(token)) {
+                    request.setAttribute("exception", ErrorCode.UNAUTHORIZED_ACCESS);
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 // 3. 기존 토큰 검증 및 인증 로직
                 String email = jwtUtil.getEmailFromToken(token);
                 UserDetails userDetails = customUserDetailService.loadUserByUsername(email);
