@@ -21,8 +21,15 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,11 +54,19 @@ class VerifyCodeLimitTest {
     @Mock RedisService redisService;
     @InjectMocks AuthService authService;
 
-    Map<String, String> redis = new HashMap<>();
+    Map<String, String> redis = new ConcurrentHashMap<>();
+    // 동시성 테스트에서 "확인 → 기록" 사이를 일부러 벌려 잠금이 없으면 오답 횟수가 넘어가도록 만드는 지연
+    volatile boolean slowFailRead = false;
 
     @BeforeEach
     void setUp() {
-        when(redisService.getData(anyString())).thenAnswer(i -> redis.get(i.<String>getArgument(0)));
+        when(redisService.getData(anyString())).thenAnswer(i -> {
+            String key = i.getArgument(0);
+            if (slowFailRead && key.startsWith("VERIFYFAIL:")) {
+                Thread.sleep(2);
+            }
+            return redis.get(key);
+        });
         doAnswer(i -> redis.put(i.getArgument(0), i.getArgument(1)))
                 .when(redisService).setDataExpire(anyString(), anyString(), anyLong());
         doAnswer(i -> redis.remove(i.<String>getArgument(0))).when(redisService).deleteData(anyString());
@@ -129,5 +144,90 @@ class VerifyCodeLimitTest {
         redis.put("b@snu.ac.kr", "111111");
         CustomException other = assertThrows(CustomException.class, () -> authService.emailVerification(verifyDto("b@snu.ac.kr", "000000")));
         assertEquals(ErrorCode.VERIFY_CODE_NOT_MATCHED, other.getErrorCode());
+    }
+
+    // 대소문자·앞뒤 공백만 다른 주소도 같은 이메일로 본다: 같은 인증코드·재발송 대기·오답 기록을 쓴다. (변형 주소로 횟수 제한을 피할 수 없다)
+    @Test
+    void 대소문자와_공백만_다른_주소는_같은_이메일로_센다() throws Exception {
+        authService.emailCodeSend(emailDto("a@snu.ac.kr"));
+
+        CustomException tooSoon = assertThrows(CustomException.class, () -> authService.emailCodeSend(emailDto(" A@SNU.AC.KR ")));
+        assertEquals(ErrorCode.VERIFY_CODE_RESEND_TOO_SOON, tooSoon.getErrorCode());
+        assertEquals(null, redis.get("A@SNU.AC.KR"));
+
+        redis.put("a@snu.ac.kr", "123456");
+        String[] variants = {"a@snu.ac.kr", "A@snu.ac.kr", "a@SNU.ac.kr", " a@snu.ac.kr", "A@SNU.AC.KR"};
+        for (String v : variants) {
+            CustomException wrong = assertThrows(CustomException.class, () -> authService.emailVerification(verifyDto(v, "000000")));
+            assertEquals(ErrorCode.VERIFY_CODE_NOT_MATCHED, wrong.getErrorCode());
+        }
+        CustomException blocked = assertThrows(CustomException.class, () -> authService.emailVerification(verifyDto("a@snu.ac.kr", "123456")));
+        assertEquals(ErrorCode.VERIFY_CODE_TOO_MANY_ATTEMPTS, blocked.getErrorCode());
+
+        // 비밀번호 찾기도 같다: 변형 주소의 오답이 같은 기록에 쌓인다
+        redis.put("PWRESET:b@snu.ac.kr", "654321");
+        String[] pwVariants = {"B@SNU.AC.KR", "b@snu.ac.kr", "B@snu.ac.kr", " b@snu.ac.kr", "b@SNU.AC.KR"};
+        for (String v : pwVariants) {
+            assertThrows(CustomException.class, () -> authService.passwordResetEmailVerify(verifyDto(v, "000000")));
+        }
+        CustomException pwBlocked = assertThrows(CustomException.class, () -> authService.passwordResetEmailVerify(verifyDto("B@snu.ac.kr", "654321")));
+        assertEquals(ErrorCode.VERIFY_CODE_TOO_MANY_ATTEMPTS, pwBlocked.getErrorCode());
+    }
+
+    // 같은 이메일로 동시에 오답을 몰아 보내도 400 은 정확히 5번만 나가고 나머지는 429 다.
+    @Test
+    void 동시에_몰아쳐도_오답은_다섯번까지만_통과() throws Exception {
+        redis.put("a@snu.ac.kr", "123456");
+        slowFailRead = true;
+
+        ExecutorService pool = Executors.newFixedThreadPool(40);
+        AtomicInteger notMatched = new AtomicInteger();
+        AtomicInteger tooMany = new AtomicInteger();
+        List<Future<?>> futures = new ArrayList<>();
+        for (int i = 0; i < 40; i++) {
+            futures.add(pool.submit(() -> {
+                try {
+                    authService.emailVerification(verifyDto("a@snu.ac.kr", "000000"));
+                } catch (CustomException e) {
+                    (e.getErrorCode() == ErrorCode.VERIFY_CODE_NOT_MATCHED ? notMatched : tooMany).incrementAndGet();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }));
+        }
+        for (Future<?> f : futures) {
+            f.get(10, TimeUnit.SECONDS);
+        }
+        pool.shutdown();
+
+        assertEquals(5, notMatched.get());
+        assertEquals(35, tooMany.get());
+    }
+
+    // 같은 이메일로 인증번호를 동시에 요청해도 메일은 한 번만 나간다.
+    @Test
+    void 동시에_재발송해도_메일은_한번만() throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(20);
+        AtomicInteger accepted = new AtomicInteger();
+        List<Future<?>> futures = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            futures.add(pool.submit(() -> {
+                try {
+                    authService.emailCodeSend(emailDto("a@snu.ac.kr"));
+                    accepted.incrementAndGet();
+                } catch (CustomException ignored) {
+                    // 대기 중이라 거절됨
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }));
+        }
+        for (Future<?> f : futures) {
+            f.get(10, TimeUnit.SECONDS);
+        }
+        pool.shutdown();
+
+        assertEquals(1, accepted.get());
+        verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
     }
 }
