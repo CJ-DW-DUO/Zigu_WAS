@@ -521,7 +521,7 @@ public class AuthService {
         // 진행 중 거래 존재 시 예외 발생
         List<Trade> activeTrades = tradeRepository.findAllByUserIdInvolvedAndStatus(userId, TradeStatus.IN_PROGRESS);
         if (!activeTrades.isEmpty()) {
-            throw new CustomException(ErrorCode.ACTIVE_TRADE_EXISTS);
+            throw new CustomException(ErrorCode.WITHDRAW_ACTIVE_TRADE_EXISTS);
         }
 
         // 토큰 처리
