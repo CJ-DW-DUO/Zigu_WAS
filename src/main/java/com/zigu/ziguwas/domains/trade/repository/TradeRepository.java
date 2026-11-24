@@ -5,7 +5,9 @@ import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.trade.entity.Trade;
 import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
 import com.zigu.ziguwas.domains.user.entity.User;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -72,6 +74,24 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
             "WHERE t.item = :item AND t.tradeStatus = :status " +
             "AND t.tradeStdate <= :endDate AND t.tradeEndate >= :startDate")
     boolean existsOverlappingTrade(
+            @Param("item") Item item,
+            @Param("status") TradeStatus status,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
+    /**
+     * 주어진 기간과 겹치는 특정 상태의 거래를 잠금 읽기(FOR UPDATE)로 조회합니다.
+     *
+     * 승인 시 같은 아이템의 동시 승인을 막는 용도입니다. 일반 조회(existsOverlappingTrade)는
+     * 트랜잭션 시작 시점의 스냅샷을 읽기 때문에, 아이템 락을 기다리는 사이 다른 승인이 커밋돼도 보지 못합니다.
+     * 잠금 읽기는 항상 최신 커밋 데이터를 읽으므로 아이템 락을 얻은 뒤 호출하면 앞선 승인을 확실히 본다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT t FROM Trade t " +
+            "WHERE t.item = :item AND t.tradeStatus = :status " +
+            "AND t.tradeStdate <= :endDate AND t.tradeEndate >= :startDate")
+    List<Trade> findOverlappingTradesForUpdate(
             @Param("item") Item item,
             @Param("status") TradeStatus status,
             @Param("startDate") LocalDate startDate,
