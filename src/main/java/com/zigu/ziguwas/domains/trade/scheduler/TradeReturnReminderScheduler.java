@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.trade.scheduler;
 
+import com.zigu.ziguwas.config.Kst;
 import com.zigu.ziguwas.domains.notification.entity.NotificationType;
 import com.zigu.ziguwas.domains.notification.event.NotificationCreatedEvent;
 import com.zigu.ziguwas.domains.trade.entity.Trade;
@@ -43,7 +44,7 @@ public class TradeReturnReminderScheduler {
         // 1. 대여중(IN_PROGRESS)인데 반납예정일이 이미 지난 거래를 조회
         List<Trade> overdueTrades = tradeRepository.findAllByTradeStatusAndTradeEndateBefore(
                 TradeStatus.IN_PROGRESS,
-                LocalDate.now()
+                Kst.today()
         );
 
         // 2. 대상 거래마다 임대인/임차인 각각에게 알림 이벤트 발행

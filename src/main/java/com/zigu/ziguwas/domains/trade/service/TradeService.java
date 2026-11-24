@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.trade.service;
 
+import com.zigu.ziguwas.config.Kst;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.block.repository.BlockRepository;
 import com.zigu.ziguwas.domains.item.entity.ItemStatus;
@@ -85,6 +86,14 @@ public class TradeService {
             CustomUserDetails details,
             TradeOfferReqDto dto
     ){
+        // 0. 대여 기간 검증 (역순·과거 날짜. null 은 컨트롤러 @Valid 에서 걸러짐. "오늘"은 KST 기준)
+        if (dto.getStartDate().isAfter(dto.getEndDate())) {
+            throw new CustomException(ErrorCode.INVALID_DATE_RANGE);
+        }
+        if (dto.getStartDate().isBefore(Kst.today())) {
+            throw new CustomException(ErrorCode.TRADE_PAST_DATE);
+        }
+
         // 1. 임차인 조회(로그인 정보 검증)
         User rentee = getCurrentUser(details.getUsername());
 
@@ -113,6 +122,16 @@ public class TradeService {
             throw new CustomException(ErrorCode.SELF_TRADE_NOT_ALLOWED);
         }
 
+        // 5-0. 어느 한쪽이라도 상대를 차단한 상태면 신청 불가
+        if (blockRepository.existsBlockBetween(rentee.getId(), renter.getId())) {
+            throw new CustomException(ErrorCode.BLOCKED_USER_ACCESS);
+        }
+
+        // 5-0-1. 같은 사용자가 같은 매물에 이미 요청 중(REQUESTED)이면 중복 신청 불가
+        if (tradeRepository.existsByItemAndRenteeAndTradeStatusIn(item, rentee, List.of(TradeStatus.REQUESTED))) {
+            throw new CustomException(ErrorCode.ACTIVE_TRADE_EXISTS);
+        }
+
         // 5-1. 요청한 기간이 이미 승인/진행 중인 다른 거래와 겹치면 신청 자체를 막음
         if (tradeRepository.existsOverlappingTrade(item, TradeStatus.IN_PROGRESS, dto.getStartDate(), dto.getEndDate())) {
             throw new CustomException(ErrorCode.TRADE_PERIOD_CONFLICT);
@@ -133,7 +152,7 @@ public class TradeService {
                 // 거래 기간 계산 (시작일, 종료일 모두 포함한 일수를 포함해야 하므로 +1를 해서 기간을 보정한다)
                 .period(ChronoUnit.DAYS.between(dto.getStartDate(), dto.getEndDate()) + 1)
                 .tradeStatus(TradeStatus.REQUESTED) // 요청됨
-                .tradeReqdate(LocalDate.now()) // 요청은 지금 보내는 것
+                .tradeReqdate(Kst.today()) // 요청은 지금 보내는 것
                 .build();
 
         // 7. 거래 요청 저장
@@ -215,7 +234,7 @@ public class TradeService {
         // 10. 요청글의 희망 기간 확인 (기간이 없거나 이미 지난 요청글은 제안 불가)
         LocalDate startDate = item.getDesiredStartDate();
         LocalDate endDate = item.getDesiredEndDate();
-        if (startDate == null || endDate == null || endDate.isBefore(LocalDate.now())) {
+        if (startDate == null || endDate == null || endDate.isBefore(Kst.today())) {
             throw new CustomException(ErrorCode.INVALID_DESIRED_PERIOD);
         }
 
@@ -228,7 +247,7 @@ public class TradeService {
                 .tradeEndate(endDate)
                 .period(ChronoUnit.DAYS.between(startDate, endDate) + 1)
                 .tradeStatus(TradeStatus.REQUESTED)
-                .tradeReqdate(LocalDate.now())
+                .tradeReqdate(Kst.today())
                 .proposedByRenter(true)
                 .build();
 
@@ -318,7 +337,7 @@ public class TradeService {
 
             // 7A - 2. 거래 상태 변경 (대여 시작/종료일은 신청 시점에 이미 확정되어 있으므로 유지)
             trade.updateStatus(TradeStatus.IN_PROGRESS);
-            trade.markAccepted(LocalDate.now());
+            trade.markAccepted(Kst.today());
 
             // 7A - 3. 매물 상태 변경
             item.updateItemStatus(ItemStatus.RENTING);
@@ -375,6 +394,7 @@ public class TradeService {
      * @param details 임대인 / 임차인 로그인 여부
      * @param tradeId 거래ID
      */
+    @Transactional
     public void returnTradeCheck(
             CustomUserDetails details,
             Long tradeId
@@ -452,7 +472,7 @@ public class TradeService {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
 
-        LocalDate rangeFrom = (from != null) ? from : LocalDate.now();
+        LocalDate rangeFrom = (from != null) ? from : Kst.today();
         LocalDate rangeTo = (to != null) ? to : rangeFrom.plusDays(DEFAULT_BLOCK_RANGE_WINDOW_DAYS);
 
         if (rangeTo.isBefore(rangeFrom)) {

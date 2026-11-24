@@ -1,5 +1,6 @@
 package com.zigu.ziguwas.domains.trade.service;
 
+import com.zigu.ziguwas.config.Kst;
 import com.zigu.ziguwas.domains.item.entity.Item;
 import com.zigu.ziguwas.domains.item.repository.ItemRepository;
 import com.zigu.ziguwas.domains.trade.dto.response.BlockSource;
@@ -50,7 +51,7 @@ public class ItemBlockService {
     public void addBlockedDates(Long itemId, List<LocalDate> dates, Long userId) {
         Item item = getOwnedItem(itemId, userId);
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = Kst.today();
         if (dates.stream().anyMatch(date -> date.isBefore(today))) {
             throw new CustomException(ErrorCode.PAST_DATE_NOT_BLOCKABLE);
         }
