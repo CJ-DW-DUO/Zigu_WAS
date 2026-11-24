@@ -21,6 +21,8 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 등록자가 직접 설정하는 아이템 대여 불가 차단(특정 날짜 / 반복 요일)을 관리합니다.
@@ -56,9 +58,14 @@ public class ItemBlockService {
             throw new CustomException(ErrorCode.PAST_DATE_NOT_BLOCKABLE);
         }
 
+        // 날짜마다 존재 여부를 묻지 않고, 이미 차단된 날짜를 한 번에 불러와 걸러낸다
+        Set<LocalDate> alreadyBlocked = itemBlockedDateRepository.findAllByItem(item).stream()
+                .map(ItemBlockedDate::getBlockedDate)
+                .collect(Collectors.toSet());
+
         List<ItemBlockedDate> toSave = dates.stream()
                 .distinct()
-                .filter(date -> !itemBlockedDateRepository.existsByItemAndBlockedDate(item, date))
+                .filter(date -> !alreadyBlocked.contains(date))
                 .map(date -> ItemBlockedDate.builder()
                         .item(item)
                         .blockedDate(date)
@@ -102,9 +109,13 @@ public class ItemBlockService {
     public void addBlockedWeekdays(Long itemId, List<DayOfWeek> daysOfWeek, Long userId) {
         Item item = getOwnedItem(itemId, userId);
 
+        Set<DayOfWeek> alreadyBlocked = itemBlockWeekdayRepository.findAllByItem(item).stream()
+                .map(ItemBlockWeekday::getDayOfWeek)
+                .collect(Collectors.toSet());
+
         List<ItemBlockWeekday> toSave = daysOfWeek.stream()
                 .distinct()
-                .filter(day -> !itemBlockWeekdayRepository.existsByItemAndDayOfWeek(item, day))
+                .filter(day -> !alreadyBlocked.contains(day))
                 .map(day -> ItemBlockWeekday.builder()
                         .item(item)
                         .dayOfWeek(day)
