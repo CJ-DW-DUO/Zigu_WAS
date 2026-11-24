@@ -41,8 +41,7 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       # JVM 메모리 상한 (근거 3-3)
       JAVA_TOOL_OPTIONS: "-Xms256m -Xmx320m -XX:MaxMetaspaceSize=192m -XX:ReservedCodeCacheSize=48m -Xss512k -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError"
-      SERVER_TOMCAT_THREADS_MAX: 50                # 기본 200 → 스레드 스택 메모리 절약
-      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 5 # 기본 10 → PG 백엔드 프로세스 수 절약
+      # Tomcat 스레드(50)·Hikari 풀(5)은 application-prod.yml 한 곳에서 정한다
       DB_URL: jdbc:postgresql://db:5432/${DB_NAME}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -53,6 +52,7 @@ services:
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
       BUCKET_NAME: ${BUCKET_NAME}
       SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL}    # 옛 compose 에 빠져 있던 키(U-45)
+      AWS_REGION: ${AWS_REGION:-ap-southeast-2}    # S3 리전(시드니). 서울로 옮기면 .env 의 AWS_REGION 만 바꾼다
     logging:
       options: { max-size: "10m", max-file: "3" }
 
