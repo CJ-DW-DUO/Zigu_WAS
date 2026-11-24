@@ -15,6 +15,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final StompHandler stompHandler;
     private final ChatDeliveryInterceptor chatDeliveryInterceptor;
+    private final StompErrorHandler stompErrorHandler;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -26,6 +27,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // 인증·구독 오류를 ERROR 프레임의 message 헤더와 본문에 담아 클라이언트가 원인을 알 수 있게 함
+        registry.setErrorHandler(stompErrorHandler);
         registry.addEndpoint("/ws-stomp") // 웹소켓 연결 엔드포인트
                 .setAllowedOriginPatterns("*"); // 앱 통신을 위해 허용 범위 설정
     }
