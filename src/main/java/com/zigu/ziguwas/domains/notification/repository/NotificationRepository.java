@@ -4,12 +4,17 @@ import com.zigu.ziguwas.domains.notification.entity.Notification;
 import com.zigu.ziguwas.domains.notification.entity.NotificationType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface NotificationRepository extends MongoRepository<Notification, String> {
+public interface NotificationRepository extends JpaRepository<Notification, String> {
 
 	/**
 	 * 사용자 알림을 최신순으로 페이지 조회합니다.
@@ -39,4 +44,14 @@ public interface NotificationRepository extends MongoRepository<Notification, St
 	List<Notification> findAllByUserIdAndNotificationTypeAndReferenceIdAndIsReadFalse(
 			Long userId, NotificationType notificationType, String referenceId
 	);
+
+	/**
+	 * 수신 시각이 기준보다 오래된 알림을 모두 지웁니다. (보관 배치용)
+	 *
+	 * @return 지운 알림 수
+	 */
+	@Transactional
+	@Modifying
+	@Query("delete from Notification n where n.recTime < :cutoff")
+	int deleteByRecTimeBefore(@Param("cutoff") LocalDateTime cutoff);
 }
