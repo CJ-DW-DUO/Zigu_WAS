@@ -488,13 +488,12 @@ public class TradeService {
             throw new CustomException(ErrorCode.INVALID_DATE_RANGE);
         }
 
-        List<Trade> activeTrades = tradeRepository.findAllByItemAndTradeStatus(item, TradeStatus.IN_PROGRESS);
+        // 조회 구간과 겹치는 진행 중 거래만 DB 에서 가져온다
+        List<Trade> activeTrades = tradeRepository.findOverlappingTrades(item, TradeStatus.IN_PROGRESS, rangeFrom, rangeTo);
 
         List<ItemBlockRangeResDto.BlockRangeItem> blockRange = new ArrayList<>();
 
-        activeTrades.stream()
-                .filter(trade -> !trade.getTradeEndate().isBefore(rangeFrom) && !trade.getTradeStdate().isAfter(rangeTo))
-                .forEach(trade -> blockRange.add(ItemBlockRangeResDto.BlockRangeItem.builder()
+        activeTrades.forEach(trade -> blockRange.add(ItemBlockRangeResDto.BlockRangeItem.builder()
                         .startDate(trade.getTradeStdate())
                         .endDate(trade.getTradeEndate())
                         .source(BlockSource.RESERVATION)

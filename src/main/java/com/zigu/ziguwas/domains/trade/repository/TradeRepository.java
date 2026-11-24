@@ -62,11 +62,6 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
     List<Trade> findAllByTradeStatusAndTradeEndateLessThanEqual(TradeStatus tradeStatus, LocalDate date);
 
     /**
-     * 특정 아이템의 특정 상태인 거래 목록을 조회합니다. (대여 불가 기간 조회용)
-     */
-    List<Trade> findAllByItemAndTradeStatus(Item item, TradeStatus tradeStatus);
-
-    /**
      * 주어진 기간과 겹치는(구간 교집합이 존재하는) 특정 상태의 거래가 있는지 확인합니다.
      * 겹침 조건: 기존거래.시작일 <= 요청.종료일 AND 기존거래.종료일 >= 요청.시작일
      */
@@ -74,6 +69,20 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
             "WHERE t.item = :item AND t.tradeStatus = :status " +
             "AND t.tradeStdate <= :endDate AND t.tradeEndate >= :startDate")
     boolean existsOverlappingTrade(
+            @Param("item") Item item,
+            @Param("status") TradeStatus status,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
+    /**
+     * 주어진 기간과 겹치는 특정 상태의 거래 목록을 조회합니다. (대여 불가 기간 조회용)
+     * 겹침 조건은 existsOverlappingTrade 와 같다.
+     */
+    @Query("SELECT t FROM Trade t " +
+            "WHERE t.item = :item AND t.tradeStatus = :status " +
+            "AND t.tradeStdate <= :endDate AND t.tradeEndate >= :startDate")
+    List<Trade> findOverlappingTrades(
             @Param("item") Item item,
             @Param("status") TradeStatus status,
             @Param("startDate") LocalDate startDate,

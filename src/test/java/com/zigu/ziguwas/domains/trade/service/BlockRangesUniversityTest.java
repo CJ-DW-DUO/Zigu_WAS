@@ -59,7 +59,7 @@ class BlockRangesUniversityTest {
     @Test
     void 같은_대학_사용자는_정상_조회() {
         Item item = itemOfUniv(1L);
-        when(tradeRepository.findAllByItemAndTradeStatus(any(), any())).thenReturn(List.of());
+        when(tradeRepository.findOverlappingTrades(any(), any(), any(), any())).thenReturn(List.of());
         when(itemBlockService.getOwnerBlockedRanges(any(), any(), any())).thenReturn(List.of());
 
         ItemBlockRangeResDto res = service.getBlockRanges(10L, 1L, LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 10));

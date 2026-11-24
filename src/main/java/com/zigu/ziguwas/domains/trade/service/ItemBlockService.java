@@ -185,9 +185,8 @@ public class ItemBlockService {
     public List<ItemBlockRangeResDto.BlockRangeItem> getOwnerBlockedRanges(Item item, LocalDate from, LocalDate to) {
         List<ItemBlockRangeResDto.BlockRangeItem> result = new ArrayList<>();
 
-        itemBlockedDateRepository.findAllByItem(item).stream()
+        itemBlockedDateRepository.findAllByItemAndBlockedDateBetween(item, from, to).stream()
                 .map(ItemBlockedDate::getBlockedDate)
-                .filter(date -> !date.isBefore(from) && !date.isAfter(to))
                 .forEach(date -> result.add(ItemBlockRangeResDto.BlockRangeItem.builder()
                         .startDate(date)
                         .endDate(date)

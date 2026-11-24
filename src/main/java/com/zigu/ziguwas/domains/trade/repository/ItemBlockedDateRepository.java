@@ -12,6 +12,9 @@ public interface ItemBlockedDateRepository extends JpaRepository<ItemBlockedDate
     // 아이템의 등록자 지정 차단 날짜 전체 조회 (관리 화면, 캘린더 표시용)
     List<ItemBlockedDate> findAllByItem(Item item);
 
+    // 주어진 기간 안의 등록자 지정 차단 날짜 조회 (캘린더 표시용)
+    List<ItemBlockedDate> findAllByItemAndBlockedDateBetween(Item item, LocalDate startDate, LocalDate endDate);
+
     /**
      * 주어진 기간과 겹치는 등록자 지정 차단 날짜가 있는지 확인합니다. (대여 신청/승인 검증용)
      */
