@@ -249,9 +249,11 @@ public class AuthService {
      *
      * 키-값 저장소를 이용한 랜덤 인증 코드 생성 후 발송
      *
+     * 트랜잭션을 걸지 않는다. 걸면 재발송 대기 키가 메일 발송이 끝난 뒤에야 커밋되어, 동시에 같은 이메일로
+     * 요청한 쪽이 대기 키를 못 보고 통과하고(메일 2통) 메일 발송 동안 DB 연결과 잠금을 붙잡는다.
+     *
      * @param dto 이메일
      */
-    @Transactional
     public void emailCodeSend(EmailReqDto dto) {
         String email = normalizeEmail(dto.getEmail());
         // 1. 이메일 검증
@@ -320,9 +322,10 @@ public class AuthService {
      *
      * 회원가입과 반대로, 이미 가입되어 있는 이메일인지 확인 후 코드를 발송합니다.
      *
+     * 트랜잭션을 걸지 않는다(이유는 emailCodeSend 와 같다). 키-값 저장은 호출마다 바로 커밋된다.
+     *
      * @param dto 이메일
      */
-    @Transactional
     public void passwordResetEmailSend(EmailReqDto dto) {
         String email = normalizeEmail(dto.getEmail());
         // 1. 가입된 유저인지 확인
