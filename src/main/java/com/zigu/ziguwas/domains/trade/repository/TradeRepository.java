@@ -96,8 +96,8 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
      * 트랜잭션 시작 시점의 스냅샷을 읽기 때문에, 아이템 락을 기다리는 사이 다른 승인이 커밋돼도 보지 못합니다.
      * 잠금 읽기는 항상 최신 커밋 데이터를 읽으므로 아이템 락을 얻은 뒤 호출하면 앞선 승인을 확실히 본다.
      *
-     * 잠금 범위: InnoDB 는 item_id 인덱스로 훑은 그 아이템의 거래 행을 모두(+갭) 잠근다(상태·기간 조건은 훑은 뒤 거름).
-     * 승인 트랜잭션이 끝날 때까지 같은 아이템의 새 신청(INSERT)이 잠깐 대기할 수 있다. 트랜잭션이 짧아 영향은 작다.
+     * 잠금 범위: PostgreSQL 은 조건에 맞는 거래 행만 잠그고 갭 잠금이 없어 같은 아이템의 새 신청(INSERT)은 막지 않는다.
+     * 동시 승인끼리의 순서는 먼저 잡는 아이템 행 잠금(findByIdForUpdate)이 정한다.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT t FROM Trade t " +

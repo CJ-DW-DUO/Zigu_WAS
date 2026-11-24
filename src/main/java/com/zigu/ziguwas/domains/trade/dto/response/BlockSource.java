@@ -5,5 +5,5 @@ package com.zigu.ziguwas.domains.trade.dto.response;
  */
 public enum BlockSource {
     RESERVATION, // 승인/진행 중인 거래로 인한 차단
-    OWNER        // 등록자가 직접 설정한 차단 (추후 지원)
+    OWNER        // 등록자가 직접 설정한 차단 (특정 날짜 / 매주 반복 요일)
 }
