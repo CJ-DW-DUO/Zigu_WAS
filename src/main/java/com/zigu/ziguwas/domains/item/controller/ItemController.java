@@ -139,6 +139,7 @@ public class ItemController implements ItemApi {
             @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
         ItemResDto response = itemService.getItemDetail(itemId, customUserDetails.getUserId(), customUserDetails.getUnivId());
+        itemService.increaseViewCount(itemId);
         return ResponseEntity.ok(response);
     }
 
