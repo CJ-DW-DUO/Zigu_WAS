@@ -35,6 +35,9 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class ItemService {
 
+    // 이미지 업로드 1회 요청의 최대 장수 (FE 등록 화면 POST_VALIDATION.maxPhotos 와 동일)
+    private static final int MAX_IMAGES_PER_UPLOAD = 5;
+
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     private final ItemImageRepository itemImageRepository;
@@ -90,6 +93,11 @@ public class ItemService {
 
         if (!item.getUser().getId().equals(userId)) {
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        // 한 번에 올릴 수 있는 사진은 FE 등록 화면의 최대 장수(5장)와 같다.
+        if (images.stream().filter(image -> image != null && !image.isEmpty()).count() > MAX_IMAGES_PER_UPLOAD) {
+            throw new CustomException(ErrorCode.TOO_MANY_FILES);
         }
 
         List<String> uploadedUrls = s3Service.uploadFiles(images);
