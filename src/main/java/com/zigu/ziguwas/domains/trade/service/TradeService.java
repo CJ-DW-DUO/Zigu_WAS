@@ -326,8 +326,9 @@ public class TradeService {
                 throw new CustomException(ErrorCode.ITEM_ALREADY_RENTING);
             }
 
-            if (tradeRepository.existsOverlappingTrade(
-                    item, TradeStatus.IN_PROGRESS, trade.getTradeStdate(), trade.getTradeEndate())) {
+            // 락을 얻은 뒤에는 잠금 읽기로 확인해야 먼저 커밋된 다른 승인을 확실히 본다(일반 조회는 락 이전 스냅샷을 읽음)
+            if (!tradeRepository.findOverlappingTradesForUpdate(
+                    item, TradeStatus.IN_PROGRESS, trade.getTradeStdate(), trade.getTradeEndate()).isEmpty()) {
                 throw new CustomException(ErrorCode.TRADE_PERIOD_CONFLICT);
             }
             // 신청 이후 승인 사이에 등록자가 해당 기간을 차단했을 수도 있으므로 승인 시점에도 재검증

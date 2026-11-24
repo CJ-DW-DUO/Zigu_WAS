@@ -2,6 +2,7 @@ package com.zigu.ziguwas.domains.trade.service;
 
 import com.zigu.ziguwas.domains.trade.dto.response.MyPageReceiveResDto;
 import com.zigu.ziguwas.domains.trade.dto.response.MyPageTradeListResDto;
+import com.zigu.ziguwas.domains.trade.entity.Trade;
 import com.zigu.ziguwas.domains.trade.entity.TradeStatus;
 import com.zigu.ziguwas.domains.trade.repository.MyPageTradeRepository;
 import com.zigu.ziguwas.domains.user.entity.User;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ public class MyPageTradeService {
 
     private final MyPageTradeRepository myPageTradeRepository;
     private final UserRepository userRepository;
+    private final TradeChatRoomFinder tradeChatRoomFinder;
 
     /**
      * 내가 빌린 물건 내역을 조회합니다.
@@ -36,8 +39,7 @@ public class MyPageTradeService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        return myPageTradeRepository.findAllByRenteeAndTradeStatus(user, tradeStatus)
-                .stream().map(MyPageTradeListResDto::fromEntity).toList();
+        return toListDtos(userId, myPageTradeRepository.findAllByRenteeAndTradeStatus(user, tradeStatus));
     }
 
     /**
@@ -52,8 +54,7 @@ public class MyPageTradeService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        return myPageTradeRepository.findAllByRenterAndTradeStatusIn(user, List.of(TradeStatus.IN_PROGRESS, TradeStatus.RETURNED))
-                .stream().map(MyPageTradeListResDto::fromEntity).toList();
+        return toListDtos(userId, myPageTradeRepository.findAllByRenterAndTradeStatusIn(user, List.of(TradeStatus.IN_PROGRESS, TradeStatus.RETURNED)));
     }
 
     /**
@@ -74,8 +75,9 @@ public class MyPageTradeService {
                 ? List.of(TradeStatus.IN_PROGRESS,TradeStatus.REQUESTED,TradeStatus.REJECTED)
                 : List.of(tradeStatus);
 
-        return myPageTradeRepository.findSentRequests(user, statuses, pageable)
-                .map(MyPageTradeListResDto::fromEntity);
+        Page<Trade> trades = myPageTradeRepository.findSentRequests(user, statuses, pageable);
+        Map<Long, String> chatRoomIds = tradeChatRoomFinder.find(userId, trades.getContent());
+        return trades.map(trade -> MyPageTradeListResDto.fromEntity(trade, userId, chatRoomIds.get(trade.getId())));
     }
 
     /**
@@ -95,9 +97,19 @@ public class MyPageTradeService {
                 ? List.of(TradeStatus.IN_PROGRESS, TradeStatus.REQUESTED, TradeStatus.REJECTED)
                 : List.of(tradeStatus);
 
-        return myPageTradeRepository.findReceivedRequests(user, statuses, pageable)
-                .map(MyPageReceiveResDto::fromEntity);
+        Page<Trade> trades = myPageTradeRepository.findReceivedRequests(user, statuses, pageable);
+        Map<Long, String> chatRoomIds = tradeChatRoomFinder.find(userId, trades.getContent());
+        return trades.map(trade -> MyPageReceiveResDto.fromEntity(trade, chatRoomIds.get(trade.getId())));
     }
 
+    /**
+     * 거래 목록을 응답 DTO 로 바꿉니다. 상대방과의 채팅방 ID 는 목록 전체를 한 번에 조회해서 채웁니다.
+     */
+    private List<MyPageTradeListResDto> toListDtos(Long userId, List<Trade> trades) {
+        Map<Long, String> chatRoomIds = tradeChatRoomFinder.find(userId, trades);
+        return trades.stream()
+                .map(trade -> MyPageTradeListResDto.fromEntity(trade, userId, chatRoomIds.get(trade.getId())))
+                .toList();
+    }
 
 }

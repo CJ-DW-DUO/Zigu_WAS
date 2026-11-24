@@ -1,11 +1,15 @@
 package com.zigu.ziguwas.domains.trade.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.zigu.ziguwas.domains.item.entity.ItemImage;
 import com.zigu.ziguwas.domains.trade.entity.Trade;
+import com.zigu.ziguwas.domains.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDate;
 
 @Getter
 @RequiredArgsConstructor
@@ -37,7 +41,30 @@ public class MyPageTradeListResDto {
     @Schema(description = "거래 상태", example = "반납 완료")
     private final String tradeStatus;
 
-    public static MyPageTradeListResDto fromEntity(Trade trade) {
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy.MM.dd", timezone = "Asia/Seoul")
+    @Schema(description = "요청날짜", example = "2026.03.30")
+    private final LocalDate tradeReqDate;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy.MM.dd", timezone = "Asia/Seoul")
+    @Schema(description = "대여 시작일", example = "2026.04.01")
+    private final LocalDate tradeStdate;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy.MM.dd", timezone = "Asia/Seoul")
+    @Schema(description = "대여 종료일", example = "2026.04.30")
+    private final LocalDate tradeEndate;
+
+    @Schema(description = "거래 상대방 닉네임 (조회자가 임차인이면 임대인, 임대인이면 임차인)", example = "빌려주는사람")
+    private final String counterpartNickname;
+
+    @Schema(description = "거래 상대방 userId", example = "7")
+    private final Long counterpartId;
+
+    @Schema(description = "상대방과의 채팅방 ID. 아직 채팅방이 없거나 내가 나간 방이면 null", example = "665f1c2e9a3b4d0012ab34cd")
+    private final String chatRoomId;
+
+    public static MyPageTradeListResDto fromEntity(Trade trade, Long userId, String chatRoomId) {
+        boolean isRentee = trade.getRentee().getId().equals(userId);
+        User counterpart = isRentee ? trade.getRenter() : trade.getRentee();
         boolean itemDeleted = trade.getItem() == null;
         return MyPageTradeListResDto.builder()
                 .tradeId(trade.getId())
@@ -52,6 +79,12 @@ public class MyPageTradeListResDto {
                         .findFirst()
                         .orElse(null))
                 .tradeStatus(trade.getTradeStatus().getDescription())
+                .tradeReqDate(trade.getTradeReqdate())
+                .tradeStdate(trade.getTradeStdate())
+                .tradeEndate(trade.getTradeEndate())
+                .counterpartNickname(counterpart.getNickname())
+                .counterpartId(counterpart.getId())
+                .chatRoomId(chatRoomId)
                 .build();
     }
 
