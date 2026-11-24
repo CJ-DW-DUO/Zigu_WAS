@@ -198,19 +198,17 @@ public class ChatService {
                     resolveVisibleFrom(chatParticipant)
             ).orElse(null);
 
-            // 3-4. 마지막으로 대화한 시각 조회
-
-            LocalDateTime lastSendTime = null;
-            String lastMessageContent;
-
+            // 3-3-1. 보이는 메시지가 한 건도 없는 방(대여 신청 직전에 만들어진 빈 방 등)은 목록에서 제외한다.
+            // 방 자체는 그대로여서 roomId 로의 진입·재생성(기존 방 재사용)은 영향받지 않는다.
             if (lastMessage == null) {
-                lastMessageContent = "대화 내역이 없습니다.";
-            } else {
-                lastSendTime = lastMessage.getTimestamp();
-                lastMessageContent = (lastMessage.getImageUrl() != null && !lastMessage.getImageUrl().isEmpty())
-                        ? "사진을 보냈습니다."
-                        : lastMessage.getMessage();
+                continue;
             }
+
+            // 3-4. 마지막으로 대화한 시각 조회
+            LocalDateTime lastSendTime = lastMessage.getTimestamp();
+            String lastMessageContent = (lastMessage.getImageUrl() != null && !lastMessage.getImageUrl().isEmpty())
+                    ? "사진을 보냈습니다."
+                    : lastMessage.getMessage();
 
             // 3-5. dto에 담기
             dtos.add(ChatRoomPreviewResDto.builder()
@@ -487,6 +485,12 @@ public class ChatService {
         User receiver = userRepository.findById(dto.getReceiverId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        // 대화 대상자는 게시글 작성자여야 하고, 본인과의 채팅방은 만들 수 없다.
+        // (작성자의 대학은 위에서 로그인 사용자와 같음을 이미 확인했다.)
+        if (!receiver.getId().equals(item.getUser().getId()) || receiver.getId().equals(sender.getId())) {
+            throw new CustomException(ErrorCode.INVALID_CHAT_RECEIVER);
+        }
+
         // 어느 한쪽이라도 상대를 차단한 상태라면 채팅방을 새로 만들거나 재사용할 수 없다.
         if (blockRepository.existsBlockBetween(sender.getId(), receiver.getId())) {
             throw new CustomException(ErrorCode.BLOCKED_USER_ACCESS);
@@ -601,7 +605,7 @@ public class ChatService {
 
         String imageUrl = null;
         if (item.getImageUrl() != null && !item.getImageUrl().isEmpty()) {
-            imageUrl = item.getImageUrl().get(0).toString();
+            imageUrl = item.getImageUrl().get(0).getImageUrl();
         }
 
         // 7. 반환
